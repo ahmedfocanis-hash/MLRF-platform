@@ -1,0 +1,2080 @@
+import { useEffect, useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import {
+  Activity,
+  ArrowDownRight,
+  ArrowUpRight,
+  BadgeCheck,
+  Banknote,
+  Bell,
+  ChartNoAxesCombined,
+  Check,
+  ChevronDown,
+  ClipboardCheck,
+  Download,
+  FileSpreadsheet,
+  FileText,
+  Globe,
+  HeartPulse,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Moon,
+  MoreHorizontal,
+  Search,
+  Shield,
+  ShieldCheck,
+  Users,
+  WalletCards,
+  X,
+  Languages,
+  ScanLine,
+  RefreshCw,
+  Clock3,
+  LockKeyhole,
+  Stethoscope,
+  Building2,
+  ArrowRight,
+  UploadCloud,
+  CheckCircle2,
+  AlertTriangle,
+} from 'lucide-react';
+import { request } from './lib/api';
+import {
+  actionLabel,
+  cohortLabel,
+  formatCount,
+  formatDate,
+  formatDateTime,
+  formatLongDate,
+  governorateLabel,
+  messageFromError,
+  money,
+  reasonLabel,
+  riskLabel,
+  roleLabel,
+  specialtyLabel,
+  stageLabel,
+  statusLabel,
+  timeAgo,
+} from './lib/labels';
+import { DEMO_TIERS, ROLE_PERMISSIONS, type Role } from '@mlrf/shared';
+type Page =
+  | 'overview'
+  | 'subscriber'
+  | 'inspector'
+  | 'analytics'
+  | 'bulk'
+  | 'claims'
+  | 'audit'
+  | 'users'
+  | 'guide';
+type User = { id: string; name: string; email: string; role: Role; status: string };
+const roles: Role[] = [
+  'super_admin',
+  'finance_admin',
+  'practitioner_analyst',
+  'facility_analyst',
+  'claims_admin',
+  'inspector',
+  'subscriber',
+];
+const PROFILE_GOVERNORATES = [
+  'Cairo',
+  'Alexandria',
+  'Giza',
+  'Qalyubia',
+  'Port Said',
+  'Suez',
+  'Dakahlia',
+  'Asyut',
+  'Luxor',
+  'Aswan',
+] as const;
+export default function App() {
+  const { t, i18n } = useTranslation();
+  const qc = useQueryClient();
+  const [token, setToken] = useState(localStorage.getItem('mlrf-token') ?? '');
+  const [role, setRole] = useState<Role>(
+    (localStorage.getItem('mlrf-role') as Role) || 'super_admin',
+  );
+  const [page, setPage] = useState<Page>('overview');
+  const [year, setYear] = useState('year2_3');
+  const [dark, setDark] = useState(false);
+  const [sidebar, setSidebar] = useState(false);
+  const [search, setSearch] = useState('');
+  const [toast, setToast] = useState('');
+  const [identifier, setIdentifier] = useState('demo-qr-valid-7f0c1a');
+  const [verifyResult, setVerifyResult] = useState<any>(null);
+  const [bulkText, setBulkText] = useState(
+    'name,phone,nationalId,specialty,amount\nDr. Sample One,01012345678,29901011234567,General Practitioner,1800\nDr. Sample Two,01112345678,29902021234568,Surgery,4200\nDuplicate Example,01012345678,29901011234567,General Practitioner,1800\nInvalid ID,01212345678,123,Cardiology,3000',
+  );
+  const [bulkPreview, setBulkPreview] = useState<any>(null);
+  const [loginEmail, setLoginEmail] = useState('super_admin@mlrf.demo');
+  const [loginPassword, setLoginPassword] = useState('demo12345');
+  const meQuery = useQuery({
+    queryKey: ['me', token],
+    queryFn: () => request<{ user: User }>('/auth/me').then((r) => r.user),
+    enabled: !!token,
+    retry: false,
+  });
+  const currentUser = meQuery.data;
+  const analytics = useQuery({
+    queryKey: ['analytics', year, role],
+    queryFn: () => request<any>('/admin/analytics', 'get', undefined, { scenario: year }),
+    enabled: !!token && ['super_admin', 'practitioner_analyst', 'facility_analyst'].includes(role),
+  });
+  const claimsQuery = useQuery({
+    queryKey: ['claims'],
+    queryFn: () => request<any>('/admin/claims'),
+    enabled: !!token && ['super_admin', 'claims_admin'].includes(role),
+  });
+  const auditQuery = useQuery({
+    queryKey: ['audit'],
+    queryFn: () => request<any>('/admin/audit'),
+    enabled: !!token && ['super_admin'].includes(role),
+    refetchInterval: 5000,
+  });
+  const userQuery = useQuery({
+    queryKey: ['users'],
+    queryFn: () => request<User[]>('/admin/users'),
+    enabled: !!token && role === 'super_admin',
+  });
+  useEffect(() => {
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  }, [dark]);
+  useEffect(() => {
+    if (toast) {
+      const id = window.setTimeout(() => setToast(''), 3200);
+      return () => window.clearTimeout(id);
+    }
+  }, [toast]);
+  const can = (permission: string) => !!ROLE_PERMISSIONS[role]?.includes(permission);
+  const nav = useMemo(
+    () => [
+      { id: 'overview' as Page, label: t('overview'), icon: LayoutDashboard },
+      { id: 'subscriber' as Page, label: t('subscriber'), icon: HeartPulse },
+      { id: 'inspector' as Page, label: t('inspector'), icon: ScanLine },
+      {
+        id: 'analytics' as Page,
+        label: t('analytics'),
+        icon: ChartNoAxesCombined,
+        permission: 'analytics:individuals',
+      },
+      { id: 'bulk' as Page, label: t('bulk'), icon: FileSpreadsheet, permission: 'bulk:upload' },
+      { id: 'claims' as Page, label: t('claims'), icon: ClipboardCheck, permission: 'claims:read' },
+      { id: 'audit' as Page, label: t('audit'), icon: Shield, permission: 'audit:read' },
+      { id: 'users' as Page, label: t('users'), icon: Users, permission: 'users:manage' },
+      { id: 'guide' as Page, label: t('guide'), icon: Activity },
+    ],
+    [t],
+  );
+  const login = async (email = loginEmail) => {
+    try {
+      const r = await request<{ accessToken: string; user: User }>('/auth/login', 'post', {
+        email,
+        password: loginPassword,
+      });
+      localStorage.setItem('mlrf-token', r.accessToken);
+      localStorage.setItem('mlrf-role', r.user.role);
+      setToken(r.accessToken);
+      setRole(r.user.role);
+      setToast(t('toasts.signedIn'));
+      await qc.invalidateQueries();
+    } catch (e) {
+      setToast(messageFromError(e, t('toasts.signInFailed')));
+    }
+  };
+  const switchRole = async (next: Role) => {
+    try {
+      const r = await request<{ accessToken: string; user: User }>(
+        '/auth/demo/switch-role',
+        'post',
+        { role: next },
+      );
+      localStorage.setItem('mlrf-token', r.accessToken);
+      localStorage.setItem('mlrf-role', next);
+      setToken(r.accessToken);
+      setRole(next);
+      setPage('overview');
+      setToast(t('toasts.demoRole', { role: roleLabel(next) }));
+      await qc.invalidateQueries();
+    } catch (e) {
+      setToast(messageFromError(e, t('toasts.roleFailed')));
+    }
+  };
+  const signOut = () => {
+    localStorage.removeItem('mlrf-token');
+    localStorage.removeItem('mlrf-role');
+    setToken('');
+    setPage('overview');
+  };
+  const verify = async () => {
+    try {
+      setVerifyResult(
+        await request<any>('/inspector/verify', 'post', {
+          qrHash: identifier,
+          certificateNumber: identifier,
+        }),
+      );
+    } catch (e) {
+      setVerifyResult({
+        result: 'ERROR',
+        message: messageFromError(e, t('toasts.verifyFailed')),
+      });
+    }
+  };
+  const previewBulk = async (commit = false) => {
+    try {
+      const rows = bulkText
+        .trim()
+        .split(/\r?\n/)
+        .slice(1)
+        .map((line) => {
+          const [name, phone, nationalId, specialty, amount] = line.split(',');
+          return { name, phone, nationalId, specialty, amount: Number(amount) };
+        });
+      const data = await request<any>(
+        '/admin/bulk-batches',
+        'post',
+        { filename: 'demo-bank-upload.csv', rows },
+        { dryRun: String(!commit) },
+      );
+      setBulkPreview(data);
+      if (commit) {
+        setToast(t('toasts.batchCommitted'));
+        await qc.invalidateQueries();
+      }
+    } catch (e) {
+      setToast(messageFromError(e, t('toasts.bulkFailed')));
+    }
+  };
+  if (!token || !currentUser) {
+    return (
+      <div className="login-screen">
+        <div className="login-visual">
+          <div className="login-brand">
+            <div className="brand-mark">
+              <ShieldCheck size={28} />
+            </div>
+            <div>
+              <strong>MLRF</strong>
+              <span>{t('brandShort')}</span>
+            </div>
+          </div>
+          <div className="login-copy">
+            <span className="eyebrow">{t('login.eyebrow')}</span>
+            <h1>{t('login.headline')}</h1>
+            <p>{t('login.lead')}</p>
+            <div className="login-stats">
+              <div>
+                <strong>2,500+</strong>
+                <span>{t('login.subscribers')}</span>
+              </div>
+              <div>
+                <strong>27</strong>
+                <span>{t('login.governorates')}</span>
+              </div>
+              <div>
+                <strong>100%</strong>
+                <span>{t('login.flows')}</span>
+              </div>
+            </div>
+          </div>
+          <div className="login-foot">{t('login.foot')}</div>
+        </div>
+        <div className="login-panel">
+          <div className="mobile-brand">
+            <div className="brand-mark">
+              <ShieldCheck />
+            </div>
+            <strong>MLRF</strong>
+          </div>
+          <div className="login-form">
+            <span className="eyebrow">{t('login.portal')}</span>
+            <h2>{t('welcome')}</h2>
+            <p className="muted">{t('login.manage')}</p>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void login();
+              }}
+            >
+              <label>{t('login.email')}</label>
+              <div className="input-wrap">
+                <Users size={17} />
+                <input
+                  type="email"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <label>{t('login.password')}</label>
+              <div className="input-wrap">
+                <LockKeyhole size={17} />
+                <input
+                  type="password"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <button className="btn btn-primary full" type="submit">
+                {t('signIn')} <ArrowRight size={17} />
+              </button>
+            </form>
+            <div className="demo-login">
+              <div className="demo-login-title">
+                <span className="live-dot" /> {t('login.demoAccess')}{' '}
+                <span className="demo-tag">{t('login.demoTag')}</span>
+              </div>
+              <p>{t('login.chooseRole')}</p>
+              <div className="role-grid">
+                {roles.map((r) => (
+                  <button key={r} onClick={() => void switchRole(r)}>
+                    {roleLabel(r)}
+                  </button>
+                ))}
+              </div>
+              <div className="hint">{t('login.hint')}</div>
+            </div>
+          </div>
+          <div className="login-panel-foot">
+            <span>
+              <Shield size={14} /> {t('login.secure')}
+            </span>
+            <button onClick={() => void i18n.changeLanguage(i18n.language === 'en' ? 'ar' : 'en')}>
+              <Languages size={15} /> {i18n.language === 'en' ? t('arabic') : t('english')}
+            </button>
+          </div>
+        </div>
+        {toast && <div className="toast">{toast}</div>}
+      </div>
+    );
+  }
+  const kpis = analytics.data?.kpis ?? {
+    activeSubscribers: 2481,
+    totalRevenue: 6245000,
+    yoyRenewalRate: 78.4,
+    unrenewed: 342,
+  };
+  return (
+    <div className="app-shell">
+      <aside className={`sidebar ${sidebar ? 'sidebar-open' : ''}`}>
+        <div className="side-brand">
+          <div className="brand-mark">
+            <ShieldCheck size={23} />
+          </div>
+          <div>
+            <strong>MLRF</strong>
+            <span>{t('portal')}</span>
+          </div>
+          <button className="icon-btn close-side" onClick={() => setSidebar(false)}>
+            <X size={18} />
+          </button>
+        </div>
+        <div className="workspace-pill">
+          <div className="workspace-avatar">
+            <Building2 size={17} />
+          </div>
+          <div>
+            <strong>{t('shell.nationalFund')}</strong>
+            <span>{t('shell.egyptDemo')}</span>
+          </div>
+          <ChevronDown size={15} />
+        </div>
+        <div className="nav-label">{t('shell.workspace')}</div>
+        <nav>
+          {nav
+            .filter(
+              (n) =>
+                !n.permission ||
+                can(n.permission) ||
+                (n.id === 'analytics' && can('analytics:facilities')),
+            )
+            .map((item) => (
+              <button
+                key={item.id}
+                className={`nav-item ${page === item.id ? 'active' : ''}`}
+                onClick={() => {
+                  setPage(item.id);
+                  setSidebar(false);
+                }}
+              >
+                <item.icon size={18} />
+                <span>{item.label}</span>
+                {item.id === 'audit' && <span className="nav-live" />}
+              </button>
+            ))}
+        </nav>
+        <div className="side-bottom">
+          <div className="help-card">
+            <div className="help-icon">
+              <Activity size={17} />
+            </div>
+            <strong>{t('shell.needHelp')}</strong>
+            <p>{t('shell.helpBody')}</p>
+            <button onClick={() => setPage('guide')}>
+              {t('shell.openGuide')} <ArrowRight size={14} />
+            </button>
+          </div>
+          <div className="side-user">
+            <div className="avatar">
+              {currentUser.name
+                .split(' ')
+                .map((s) => s[0])
+                .slice(0, 2)
+                .join('')}
+            </div>
+            <div className="user-info">
+              <strong>{currentUser.name}</strong>
+              <span>{roleLabel(currentUser.role)}</span>
+            </div>
+            <button className="icon-btn" onClick={signOut} title={t('logout')}>
+              <LogOut size={17} />
+            </button>
+          </div>
+        </div>
+      </aside>
+      <main className="main">
+        <header className="topbar">
+          <div className="top-left">
+            <button className="icon-btn mobile-menu" onClick={() => setSidebar(true)}>
+              <Menu />
+            </button>
+            <div className="breadcrumb">
+              <span>{t('workspace')}</span>
+              <span className="crumb-slash">/</span>
+              <strong>{nav.find((n) => n.id === page)?.label ?? t('overview')}</strong>
+            </div>
+          </div>
+          <div className="top-actions">
+            <div className="environment">
+              <span className="live-dot" />
+              {t('demo')}
+            </div>
+            <div className="role-switch">
+              <span>{t('role')}</span>
+              <select
+                value={role}
+                onChange={(e) => void switchRole(e.target.value as Role)}
+                aria-label={t('role')}
+              >
+                {roles.map((r) => (
+                  <option value={r} key={r}>
+                    {roleLabel(r)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button className="icon-btn" title={t('shell.toggleTheme')} onClick={() => setDark(!dark)}>
+              {dark ? <Activity size={18} /> : <Moon size={18} />}
+            </button>
+            <button
+              className="icon-btn"
+              title={t('shell.switchLanguage')}
+              onClick={() => void i18n.changeLanguage(i18n.language === 'en' ? 'ar' : 'en')}
+            >
+              <Globe size={18} />
+            </button>
+            <button className="notification-btn" title={t('shell.notifications')}>
+              <Bell size={18} />
+              <i />
+            </button>
+            <div className="avatar small">
+              {currentUser.name
+                .split(' ')
+                .map((s) => s[0])
+                .slice(0, 2)
+                .join('')}
+            </div>
+          </div>
+        </header>
+        <div className="page-content">
+          {page === 'overview' && (
+            <>
+              <div className="welcome-row">
+                <div>
+                  <div className="eyebrow">
+                    {formatLongDate('2026-10-19T12:00:00')} <span className="gold-line" />
+                  </div>
+                  <h1>
+                    {t('welcome')}, {currentUser.name.split(' ')[0]} <span className="wave">✦</span>
+                  </h1>
+                  <p className="muted">{t('overviewPage.todayLead')}</p>
+                </div>
+                <button className="btn btn-outline" onClick={() => void qc.invalidateQueries()}>
+                  <RefreshCw size={16} /> {t('overviewPage.refresh')}
+                </button>
+              </div>
+              <div className="hero-banner">
+                <div className="hero-pattern" />
+                <div className="hero-content">
+                  <div className="hero-badge">
+                    <ShieldCheck size={14} /> {t('overviewPage.badge')}
+                  </div>
+                  <h2>
+                    {t('overviewPage.heroTitle')}
+                    <br />
+                    <em>{t('overviewPage.heroEmphasis')}</em>
+                  </h2>
+                  <p>{t('overviewPage.heroBody')}</p>
+                  <button className="btn btn-light" onClick={() => setPage('analytics')}>
+                    {t('overviewPage.explore')} <ArrowRight size={16} />
+                  </button>
+                </div>
+                <div className="hero-illustration">
+                  <div className="orbit orbit-one" />
+                  <div className="orbit orbit-two" />
+                  <div className="hero-shield">
+                    <ShieldCheck size={68} />
+                  </div>
+                  <div className="float-chip chip-one">
+                    <CheckCircle2 size={17} />
+                    <span>
+                      <b>{t('overviewPage.verified')}</b>
+                      <small>{t('overviewPage.coverageActive')}</small>
+                    </span>
+                  </div>
+                  <div className="float-chip chip-two">
+                    <Activity size={17} />
+                    <span>
+                      <b>+12.8%</b>
+                      <small>{t('overviewPage.renewalGrowth')}</small>
+                    </span>
+                  </div>
+                  <div className="float-chip chip-three">
+                    <Building2 size={17} />
+                    <span>
+                      <b>27</b>
+                      <small>{t('login.governorates')}</small>
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="section-heading">
+                <div>
+                  <h2>{t('overviewPage.glance')}</h2>
+                  <p>{t('overviewPage.glanceBody')}</p>
+                </div>
+                <div className="select-wrap">
+                  <span>{t('overviewPage.fiscalYear')}</span>
+                  <select value={year} onChange={(e) => setYear(e.target.value)}>
+                    <option value="year1">{t('years.year1')}</option>
+                    <option value="year2_3">{t('years.year23')}</option>
+                  </select>
+                </div>
+              </div>
+              <div className="kpi-grid">
+                <Kpi
+                  title={t('active')}
+                  value={formatCount(kpis.activeSubscribers)}
+                  change="12.8%"
+                  trend="up"
+                  icon={Users}
+                  color="teal"
+                  caption={t('overviewPage.vsPrior')}
+                />
+                <Kpi
+                  title={t('revenue')}
+                  value={money(kpis.totalRevenue)}
+                  change="8.3%"
+                  trend="up"
+                  icon={Banknote}
+                  color="gold"
+                  caption={t('overviewPage.vsPrior')}
+                />
+                <Kpi
+                  title={t('renewal')}
+                  value={`${kpis.yoyRenewalRate}%`}
+                  change="2.4%"
+                  trend="up"
+                  icon={RefreshCw}
+                  color="blue"
+                  caption={t('overviewPage.yoyCaption')}
+                />
+                <Kpi
+                  title={t('churn')}
+                  value={formatCount(kpis.unrenewed)}
+                  change="4.1%"
+                  trend="down"
+                  icon={ArrowDownRight}
+                  color="rose"
+                  caption={t('overviewPage.followUp')}
+                />
+              </div>
+              <div className="dashboard-grid">
+                <section className="panel growth-panel">
+                  <div className="panel-heading">
+                    <div>
+                      <h3>{t('overviewPage.growth')}</h3>
+                      <p>{t('overviewPage.growthBody')}</p>
+                    </div>
+                    <button
+                      className="subtle-select"
+                      onClick={() => setYear(year === 'year1' ? 'year2_3' : 'year1')}
+                    >
+                      {year === 'year1' ? t('years.year1') : t('years.year23')} <ChevronDown size={14} />
+                    </button>
+                  </div>
+                  <div className="chart-legend">
+                    <span>
+                      <i className="legend-dot teal-bg" /> {t('overviewPage.newSubscribers')}
+                    </span>
+                    <span>
+                      <i className="legend-dot gold-bg" /> {t('overviewPage.renewals')}
+                    </span>
+                  </div>
+                  <div className="bar-chart">
+                    {(
+                      analytics.data?.cohorts ?? [
+                        { name: 'Q1', signups: 440, renewals: 320 },
+                        { name: 'Q2', signups: 510, renewals: 370 },
+                        { name: 'Q3', signups: 390, renewals: 430 },
+                        { name: 'Q4', signups: 620, renewals: 500 },
+                      ]
+                    ).map((d: any, i: number) => (
+                      <div className="bar-group" key={d.name}>
+                        <div className="bars">
+                          <div
+                            className="bar teal-bar"
+                            style={{
+                              height: `${Math.max(15, Math.min(100, (d.signups ?? d.newSignups ?? 0) / 7))}%`,
+                            }}
+                            title={t('overviewPage.signupsTitle', {
+                              n: d.signups ?? d.newSignups ?? 0,
+                            })}
+                          />
+                          <div
+                            className="bar gold-bar"
+                            style={{
+                              height: `${Math.max(12, Math.min(100, (d.renewals ?? 0) / 7))}%`,
+                            }}
+                            title={t('overviewPage.renewalsTitle', { n: d.renewals ?? 0 })}
+                          />
+                        </div>
+                        <span>{cohortLabel(['Q1', 'Q2', 'Q3', 'Q4'][i] ?? d.name)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="chart-footer">
+                    <span>
+                      <span className="status-dot success-dot" /> {t('overviewPage.aboveTarget')}
+                    </span>
+                    <button onClick={() => setPage('analytics')}>
+                      {t('overviewPage.viewReport')} <ArrowRight size={14} />
+                    </button>
+                  </div>
+                </section>
+                <section className="panel activity-panel">
+                  <div className="panel-heading">
+                    <div>
+                      <h3>{t('recentActivity')}</h3>
+                      <p>{t('overviewPage.latestEvents')}</p>
+                    </div>
+                    <button
+                      className="icon-btn"
+                      onClick={() => void qc.invalidateQueries({ queryKey: ['audit'] })}
+                    >
+                      <MoreHorizontal />
+                    </button>
+                  </div>
+                  <div className="activity-list">
+                    {(
+                      auditQuery.data?.items ?? [
+                        {
+                          id: 'a1',
+                          action: 'PAYMENT_SUCCESS',
+                          user: 'Dr. Mariam Hassan',
+                          timestamp: new Date().toISOString(),
+                          role: 'subscriber',
+                        },
+                        {
+                          id: 'a2',
+                          action: 'PROFILE_UPDATED',
+                          user: 'Ahmed Inspector',
+                          timestamp: new Date(Date.now() - 3600000).toISOString(),
+                          role: 'inspector',
+                        },
+                        {
+                          id: 'a3',
+                          action: 'LOGIN',
+                          user: 'Finance Admin',
+                          timestamp: new Date(Date.now() - 7200000).toISOString(),
+                          role: 'finance_admin',
+                        },
+                        {
+                          id: 'a4',
+                          action: 'EXPORT_REQUESTED',
+                          user: 'Super Admin',
+                          timestamp: new Date(Date.now() - 10800000).toISOString(),
+                          role: 'super_admin',
+                        },
+                      ]
+                    )
+                      .slice(0, 4)
+                      .map((a: any, i: number) => (
+                        <div className="activity-item" key={a.id}>
+                          <div className={`activity-icon activity-${i % 4}`}>
+                            {i === 0 ? (
+                              <WalletCards size={16} />
+                            ) : i === 1 ? (
+                              <Users size={16} />
+                            ) : i === 2 ? (
+                              <LockKeyhole size={16} />
+                            ) : (
+                              <FileText size={16} />
+                            )}
+                          </div>
+                          <div className="activity-text">
+                            <strong>{actionLabel(a.action)}</strong>
+                            <span>
+                              {a.user} · {roleLabel(a.role ?? '')}
+                            </span>
+                          </div>
+                          <time>{timeAgo(a.timestamp)}</time>
+                        </div>
+                      ))}
+                  </div>
+                  <button className="activity-all" onClick={() => setPage('audit')}>
+                    {t('overviewPage.viewAll')} <ArrowRight size={14} />
+                  </button>
+                </section>
+              </div>
+              <div className="section-heading action-heading">
+                <div>
+                  <h2>{t('quickActions')}</h2>
+                  <p>{t('overviewPage.jump')}</p>
+                </div>
+              </div>
+              <div className="quick-grid">
+                <Quick
+                  icon={ScanLine}
+                  title={t('verify')}
+                  detail={t('overviewPage.scanDetail')}
+                  onClick={() => setPage('inspector')}
+                />
+                <Quick
+                  icon={UploadCloud}
+                  title={t('newBatch')}
+                  detail={t('overviewPage.batchDetail')}
+                  onClick={() => setPage('bulk')}
+                />
+                <Quick
+                  icon={ChartNoAxesCombined}
+                  title={t('viewAnalytics')}
+                  detail={t('overviewPage.analyticsDetail')}
+                  onClick={() => setPage('analytics')}
+                />
+              </div>
+            </>
+          )}
+          {page === 'subscriber' && <Subscriber setToast={setToast} />}
+          {page === 'inspector' && (
+            <section className="feature-layout">
+              <div className="feature-heading">
+                <div className="eyebrow">{t('inspectorPage.eyebrow')}</div>
+                <h1>{t('inspectorPage.title')}</h1>
+                <p>{t('inspectorPage.body')}</p>
+              </div>
+              <div className="inspector-device">
+                <div className="device-top">
+                  <span /> <span /> <span />
+                </div>
+                <div className="device-content">
+                  <div className="device-brand">
+                    <ShieldCheck />
+                    <strong>{t('inspectorBrand')}</strong>
+                  </div>
+                  <div className="scan-frame">
+                    <div className="scan-corner tl" />
+                    <div className="scan-corner tr" />
+                    <div className="scan-corner bl" />
+                    <div className="scan-corner br" />
+                    <ScanLine size={52} />
+                    <span>{t('inspectorPage.align')}</span>
+                  </div>
+                  <div className="or-divider">
+                    <span /> {t('inspectorPage.orSearch')} <span />
+                  </div>
+                  <label>{t('inspectorPage.label')}</label>
+                  <div className="search-field">
+                    <Search size={16} />
+                    <input
+                      value={identifier}
+                      onChange={(e) => setIdentifier(e.target.value)}
+                      placeholder="MLRF-2026-000123"
+                    />
+                  </div>
+                  <button className="btn btn-primary full" onClick={() => void verify()}>
+                    <ScanLine size={17} /> {t('inspectorPage.verify')}
+                  </button>
+                  {verifyResult && (
+                    <div
+                      className={`verification-result ${verifyResult.result === 'VALID' ? 'valid' : verifyResult.result === 'EXPIRED' ? 'expired' : 'invalid'}`}
+                    >
+                      <div className="result-icon">
+                        {verifyResult.result === 'VALID' ? (
+                          <CheckCircle2 />
+                        ) : verifyResult.result === 'EXPIRED' ? (
+                          <AlertTriangle />
+                        ) : (
+                          <X />
+                        )}
+                      </div>
+                      <div>
+                        <strong>
+                          {verifyResult.result === 'VALID'
+                            ? t('inspectorPage.valid')
+                            : verifyResult.result === 'EXPIRED'
+                              ? t('inspectorPage.expired')
+                              : verifyResult.result === 'INVALID'
+                                ? t('inspectorPage.invalid')
+                                : t('inspectorPage.error')}
+                        </strong>
+                        <p>
+                          {verifyResult.name ??
+                            verifyResult.message ??
+                            t('inspectorPage.noMatch')}
+                        </p>
+                        {verifyResult.expiry && (
+                          <small>
+                            {t('inspectorPage.expires', { date: formatDate(verifyResult.expiry) })}
+                          </small>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  <button
+                    className="text-link"
+                    onClick={() => {
+                      setIdentifier('demo-qr-valid-7f0c1a');
+                      setVerifyResult(null);
+                    }}
+                  >
+                    {t('inspectorPage.loadDemo')}
+                  </button>
+                </div>
+                <div className="device-foot">{t('inspectorPage.foot')}</div>
+              </div>
+              <div className="feature-side">
+                <div className="panel">
+                  <div className="panel-heading">
+                    <div>
+                      <h3>{t('inspectorPage.scenarios')}</h3>
+                      <p>{t('inspectorPage.scenariosBody')}</p>
+                    </div>
+                  </div>
+                  <div className="scenario-list">
+                    <button
+                      onClick={() => {
+                        setIdentifier('demo-qr-valid-7f0c1a');
+                        setVerifyResult(null);
+                      }}
+                    >
+                      <span className="scenario-dot valid-dot" />
+                      <div>
+                        <strong>{t('inspectorPage.validCert')}</strong>
+                        <small>MLRF-2026-000123</small>
+                      </div>
+                      <ArrowRight />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIdentifier('MLRF-EXPIRED-000001');
+                        setVerifyResult(null);
+                      }}
+                    >
+                      <span className="scenario-dot expired-dot" />
+                      <div>
+                        <strong>{t('inspectorPage.expiredCert')}</strong>
+                        <small>{t('inspectorPage.expiredHint')}</small>
+                      </div>
+                      <ArrowRight />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIdentifier('unregistered-certificate');
+                        setVerifyResult(null);
+                      }}
+                    >
+                      <span className="scenario-dot invalid-dot" />
+                      <div>
+                        <strong>{t('inspectorPage.unregistered')}</strong>
+                        <small>{t('inspectorPage.invalid')}</small>
+                      </div>
+                      <ArrowRight />
+                    </button>
+                  </div>
+                </div>
+                <div className="note-card">
+                  <ShieldCheck />
+                  <div>
+                    <strong>{t('inspectorPage.privacy')}</strong>
+                    <p>{t('inspectorPage.privacyBody')}</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+          {page === 'analytics' && (
+            <>
+              <PageTitle
+                eyebrow={t('analyticsPage.eyebrow')}
+                title={t('analyticsPage.title')}
+                description={t('analyticsPage.body')}
+                action={
+                  <button
+                    className="btn btn-outline"
+                    onClick={() =>
+                      void request('/admin/export/analytics', 'get', undefined, { format: 'xlsx' })
+                        .then(() => setToast(t('toasts.exportLogged')))
+                        .catch((e) => setToast(messageFromError(e, t('errors.REQUEST_FAILED'))))
+                    }
+                  >
+                    <Download size={16} /> {t('analyticsPage.export')}
+                  </button>
+                }
+              />
+              <div className="filter-row">
+                <div className="select-wrap">
+                  <span>{t('analyticsPage.scenario')}</span>
+                  <select value={year} onChange={(e) => setYear(e.target.value)}>
+                    <option value="year1">{t('years.year1')}</option>
+                    <option value="year2_3">{t('years.year23')}</option>
+                  </select>
+                </div>
+                <div className="filter-note">
+                  <Activity size={15} /> {t('analyticsPage.live')}
+                </div>
+              </div>
+              <div className="kpi-grid">
+                <Kpi
+                  title={t('active')}
+                  value={formatCount(kpis.activeSubscribers)}
+                  change="12.8%"
+                  trend="up"
+                  icon={Users}
+                  color="teal"
+                  caption={t('overviewPage.vsPriorShort')}
+                />
+                <Kpi
+                  title={t('revenue')}
+                  value={money(kpis.totalRevenue)}
+                  change="8.3%"
+                  trend="up"
+                  icon={Banknote}
+                  color="gold"
+                  caption={t('overviewPage.paidContributions')}
+                />
+                <Kpi
+                  title={t('yoyRenewal')}
+                  value={`${kpis.yoyRenewalRate}%`}
+                  change="2.4%"
+                  trend="up"
+                  icon={RefreshCw}
+                  color="blue"
+                  caption={t('overviewPage.yoyShort')}
+                />
+                <Kpi
+                  title={t('churn')}
+                  value={formatCount(kpis.unrenewed)}
+                  change="4.1%"
+                  trend="down"
+                  icon={ArrowDownRight}
+                  color="rose"
+                  caption={t('overviewPage.followUpShort')}
+                />
+              </div>
+              <div className="dashboard-grid">
+                <section className="panel">
+                  <div className="panel-heading">
+                    <div>
+                      <h3>{t('analyticsPage.revenueBy')}</h3>
+                      <p>{t('analyticsPage.revenueHint')}</p>
+                    </div>
+                  </div>
+                  <div className="horizontal-bars">
+                    {(
+                      analytics.data?.distribution ??
+                      DEMO_TIERS.slice(0, 6).map((tier, i) => ({
+                        name: tier.name,
+                        subscribers: 160 - i * 12,
+                        revenue: (160 - i * 12) * tier.fee,
+                      }))
+                    )
+                      .slice(0, 7)
+                      .map((d: any) => (
+                        <div className="horizontal-row" key={d.name}>
+                          <div>
+                            <span>{specialtyLabel(d.name)}</span>
+                            <strong>{money(d.revenue)}</strong>
+                          </div>
+                          <div className="track">
+                            <span
+                              style={{ width: `${Math.min(100, (d.revenue / 90000) * 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </section>
+                <section className="panel">
+                  <div className="panel-heading">
+                    <div>
+                      <h3>{t('analyticsPage.cohorts')}</h3>
+                      <p>{t('analyticsPage.cohortsHint')}</p>
+                    </div>
+                  </div>
+                  <div className="cohort-list">
+                    {(analytics.data?.cohorts ?? []).map((d: any) => (
+                      <div className="cohort-row" key={d.name}>
+                        <span>{cohortLabel(d.name)}</span>
+                        <strong>
+                          {formatCount(d.signups || d.newSignups || d.renewals || 0)}
+                        </strong>
+                        <div className="track">
+                          <span
+                            style={{
+                              width: `${Math.min(100, (d.signups || d.newSignups || d.renewals || 0) / 10)}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="note-card compact">
+                    <Activity />
+                    <div>
+                      <strong>
+                        {t('analyticsPage.scenarioNamed', {
+                          name: year === 'year1' ? t('years.year1') : t('years.years23'),
+                        })}
+                      </strong>
+                      <p>{t('analyticsPage.switchScenario')}</p>
+                    </div>
+                  </div>
+                </section>
+              </div>
+              <section className="panel heatmap-panel">
+                <div className="panel-heading">
+                  <div>
+                    <h3>{t('analyticsPage.heatmap')}</h3>
+                    <p>{t('analyticsPage.heatmapHint')}</p>
+                  </div>
+                  <span className="status-chip warning">{t('analyticsPage.weakest')}</span>
+                </div>
+                <div className="heatmap-table">
+                  <div className="heat-row heat-head">
+                    <span>{t('analyticsPage.governorate')}</span>
+                    {(
+                      analytics.data?.heatmap?.[0]?.values ??
+                      DEMO_TIERS.slice(0, 5).map((tier) => ({ specialty: tier.name }))
+                    )
+                      .slice(0, 5)
+                      .map((v: any) => (
+                        <span key={v.specialty}>{specialtyLabel(v.specialty)}</span>
+                      ))}
+                  </div>
+                  {(analytics.data?.heatmap ?? []).slice(0, 7).map((g: any) => (
+                    <div className="heat-row" key={g.governorate}>
+                      <strong>{governorateLabel(g.governorate)}</strong>
+                      {g.values.slice(0, 5).map((v: any) => (
+                        <span
+                          className={`heat-cell ${v.rate < 60 ? 'heat-low' : v.rate < 75 ? 'heat-mid' : 'heat-high'}`}
+                          key={v.specialty}
+                          title={`${specialtyLabel(v.specialty)}: ${v.rate}%`}
+                        >
+                          {v.rate}%
+                        </span>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </>
+          )}
+          {page === 'bulk' && (
+            <>
+              <PageTitle
+                eyebrow={t('bulkPage.eyebrow')}
+                title={t('bulkPage.title')}
+                description={t('bulkPage.body')}
+                action={
+                  <button
+                    className="btn btn-outline"
+                    onClick={() => {
+                      setBulkText(
+                        'name,phone,nationalId,specialty,amount\nDr. Sample One,01012345678,29901011234567,General Practitioner,1800\nDr. Sample Two,01112345678,29902021234568,Surgery,4200\nDuplicate Example,01012345678,29901011234567,General Practitioner,1800\nInvalid ID,01212345678,123,Cardiology,3000',
+                      );
+                      setBulkPreview(null);
+                    }}
+                  >
+                    <RefreshCw size={15} /> {t('bulkPage.reset')}
+                  </button>
+                }
+              />
+              <div className="bulk-summary">
+                <div>
+                  <FileSpreadsheet />
+                  <span>
+                    <small>{t('bulkPage.tiers')}</small>
+                    <strong>{t('bulkPage.feeTiers', { n: DEMO_TIERS.length })}</strong>
+                  </span>
+                </div>
+                <div>
+                  <ShieldCheck />
+                  <span>
+                    <small>{t('bulkPage.duplicates')}</small>
+                    <strong>{t('bulkPage.duplicateKey')}</strong>
+                  </span>
+                </div>
+                <div>
+                  <Bell />
+                  <span>
+                    <small>{t('bulkPage.notifications')}</small>
+                    <strong>{t('bulkPage.sms')}</strong>
+                  </span>
+                </div>
+              </div>
+              <div className="panel upload-panel">
+                <div className="panel-heading">
+                  <div>
+                    <h3>{t('bulkPage.import')}</h3>
+                    <p>{t('bulkPage.importBody')}</p>
+                  </div>
+                  <span className="status-chip neutral">{t('bulkPage.dryRun')}</span>
+                </div>
+                <textarea
+                  className="bulk-textarea"
+                  value={bulkText}
+                  onChange={(e) => setBulkText(e.target.value)}
+                  rows={7}
+                  aria-label={t('bulkPage.csvLabel')}
+                />
+                <div className="upload-footer">
+                  <span>
+                    <FileText size={15} /> {t('bulkPage.csvHint')}
+                  </span>
+                  <div>
+                    <button className="btn btn-outline" onClick={() => void previewBulk(false)}>
+                      <Search size={15} /> {t('bulkPage.preview')}
+                    </button>
+                    <button
+                      className="btn btn-primary"
+                      disabled={!bulkPreview?.rows?.length || bulkPreview?.dryRun === false}
+                      onClick={() => void previewBulk(true)}
+                    >
+                      <Check size={16} /> {t('bulkPage.commit')}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              {bulkPreview && (
+                <section className="panel results-panel">
+                  <div className="panel-heading">
+                    <div>
+                      <h3>{bulkPreview.dryRun ? t('bulkPage.previewTitle') : t('bulkPage.committedTitle')}</h3>
+                      <p>{t('bulkPage.review')}</p>
+                    </div>
+                    <span className={`status-chip ${bulkPreview.dryRun ? 'warning' : 'success'}`}>
+                      {bulkPreview.dryRun ? t('bulkPage.dryRunChip') : t('bulkPage.committedChip')}
+                    </span>
+                  </div>
+                  <div className="mini-kpis">
+                    <Mini
+                      label={t('bulkPage.total')}
+                      value={bulkPreview.summary?.total ?? bulkPreview.total}
+                    />
+                    <Mini
+                      label={t('bulkPage.created')}
+                      value={bulkPreview.summary?.created ?? bulkPreview.created}
+                      tone="success"
+                    />
+                    <Mini
+                      label={t('bulkPage.duplicate')}
+                      value={bulkPreview.summary?.duplicate ?? bulkPreview.duplicate}
+                      tone="warning"
+                    />
+                    <Mini
+                      label={t('bulkPage.invalid')}
+                      value={bulkPreview.summary?.invalid ?? bulkPreview.invalid}
+                      tone="danger"
+                    />
+                  </div>
+                  <div className="table-scroll">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>{t('bulkPage.row')}</th>
+                          <th>{t('bulkPage.name')}</th>
+                          <th>{t('bulkPage.nationalId')}</th>
+                          <th>{t('bulkPage.specialty')}</th>
+                          <th>{t('bulkPage.amount')}</th>
+                          <th>{t('bulkPage.status')}</th>
+                          <th>{t('bulkPage.reason')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(bulkPreview.rows ?? []).map((r: any) => (
+                          <tr key={r.rowNumber}>
+                            <td>{r.rowNumber}</td>
+                            <td>{r.name}</td>
+                            <td>{r.nationalId}</td>
+                            <td>{specialtyLabel(r.specialty)}</td>
+                            <td>{money(Number(r.amount) || 0)}</td>
+                            <td>
+                              <span
+                                className={`status-chip ${r.status === 'created' ? 'success' : r.status === 'duplicate' ? 'warning' : 'danger'}`}
+                              >
+                                {statusLabel(r.status)}
+                              </span>
+                            </td>
+                            <td>{reasonLabel(r.reason)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              )}
+            </>
+          )}
+          {page === 'claims' && (
+            <>
+              <PageTitle
+                eyebrow={t('claimsPage.eyebrow')}
+                title={t('claimsPage.title')}
+                description={t('claimsPage.body')}
+                action={<span className="status-chip neutral">{t('claimsPage.future')}</span>}
+              />
+              <div className="kpi-grid">
+                <Kpi
+                  title={t('claimsPage.filed')}
+                  value={formatCount(claimsQuery.data?.kpis.totalFiled ?? 28)}
+                  change=""
+                  trend="up"
+                  icon={ClipboardCheck}
+                  color="teal"
+                  caption={t('claimsPage.filedCaption')}
+                />
+                <Kpi
+                  title={t('claimsPage.review')}
+                  value={formatCount(claimsQuery.data?.kpis.underLegalReview ?? 6)}
+                  change=""
+                  trend="up"
+                  icon={Clock3}
+                  color="gold"
+                  caption={t('claimsPage.reviewCaption')}
+                />
+                <Kpi
+                  title={t('claimsPage.approved')}
+                  value={formatCount(claimsQuery.data?.kpis.approvedCompensations ?? 22)}
+                  change=""
+                  trend="up"
+                  icon={BadgeCheck}
+                  color="blue"
+                  caption={t('claimsPage.approvedCaption')}
+                />
+                <Kpi
+                  title={t('claimsPage.disbursed')}
+                  value={money(claimsQuery.data?.kpis.disbursed ?? 50000)}
+                  change=""
+                  trend="up"
+                  icon={Banknote}
+                  color="rose"
+                  caption={t('claimsPage.disbursedCaption')}
+                />
+              </div>
+              <section className="panel">
+                <div className="panel-heading">
+                  <div>
+                    <h3>{t('claimsPage.ledger')}</h3>
+                    <p>{t('claimsPage.ledgerBody')}</p>
+                  </div>
+                  <div className="search-field compact-search">
+                    <Search size={15} />
+                    <input
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder={t('claimsPage.search')}
+                    />
+                  </div>
+                </div>
+                <div className="table-scroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>{t('claimsPage.id')}</th>
+                        <th>{t('claimsPage.doctor')}</th>
+                        <th>{t('claimsPage.hospital')}</th>
+                        <th>{t('claimsPage.specialty')}</th>
+                        <th>{t('claimsPage.stage')}</th>
+                        <th>{t('claimsPage.awarded')}</th>
+                        <th>{t('claimsPage.paid')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(claimsQuery.data?.items ?? [])
+                        .filter((c: any) =>
+                          `${c.id} ${c.doctor} ${c.hospital}`
+                            .toLowerCase()
+                            .includes(search.toLowerCase()),
+                        )
+                        .map((c: any) => (
+                          <tr key={c.id}>
+                            <td>
+                              <strong>{c.id}</strong>
+                            </td>
+                            <td>{c.doctor}</td>
+                            <td>{c.hospital}</td>
+                            <td>{specialtyLabel(c.specialty)}</td>
+                            <td>
+                              <span
+                                className={`status-chip ${c.stage === 'Payout' ? 'success' : c.stage === 'Legal Review' ? 'warning' : 'neutral'}`}
+                              >
+                                {stageLabel(c.stage)}
+                              </span>
+                            </td>
+                            <td>{money(c.awarded)}</td>
+                            <td>{money(c.paid)}</td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            </>
+          )}
+          {page === 'audit' && (
+            <>
+              <PageTitle
+                eyebrow={t('auditPage.eyebrow')}
+                title={t('auditPage.title')}
+                description={t('auditPage.body')}
+                action={
+                  <span className="live-indicator">
+                    <i /> {t('auditPage.live')}
+                  </span>
+                }
+              />
+              <div className="filter-row">
+                <div className="search-field compact-search">
+                  <Search size={15} />
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder={t('auditPage.filter')}
+                  />
+                </div>
+                <button
+                  className="btn btn-outline"
+                  onClick={() => void qc.invalidateQueries({ queryKey: ['audit'] })}
+                >
+                  <RefreshCw size={15} /> {t('auditPage.refresh')}
+                </button>
+              </div>
+              <section className="panel">
+                <div className="panel-heading">
+                  <div>
+                    <h3>{t('auditPage.stream')}</h3>
+                    <p>{t('auditPage.streamBody')}</p>
+                  </div>
+                  <span className="status-chip success">{t('auditPage.enabled')}</span>
+                </div>
+                <div className="table-scroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>{t('auditPage.time')}</th>
+                        <th>{t('auditPage.user')}</th>
+                        <th>{t('auditPage.action')}</th>
+                        <th>{t('auditPage.entity')}</th>
+                        <th>{t('auditPage.ip')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(auditQuery.data?.items ?? [])
+                        .filter((a: any) =>
+                          `${a.user} ${a.action}`.toLowerCase().includes(search.toLowerCase()),
+                        )
+                        .map((a: any) => (
+                          <tr key={a.id}>
+                            <td className="mono">{formatDateTime(a.timestamp)}</td>
+                            <td>
+                              <strong>{a.user}</strong>
+                              <small className="table-sub">{roleLabel(a.role)}</small>
+                            </td>
+                            <td>
+                              <span className="action-label">{actionLabel(a.action)}</span>
+                            </td>
+                            <td>{a.entity}</td>
+                            <td className="mono">{a.ip}</td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                  {!auditQuery.data?.items?.length && (
+                    <Empty text={t('auditPage.empty')} />
+                  )}
+                </div>
+              </section>
+            </>
+          )}
+          {page === 'users' && (
+            <>
+              <PageTitle
+                eyebrow={t('usersPage.eyebrow')}
+                title={t('usersPage.title')}
+                description={t('usersPage.body')}
+                action={<span className="status-chip neutral">{t('usersPage.rbac')}</span>}
+              />
+              <section className="panel">
+                <div className="panel-heading">
+                  <div>
+                    <h3>{t('usersPage.demoUsers')}</h3>
+                    <p>{t('usersPage.demoBody')}</p>
+                  </div>
+                  <div className="search-field compact-search">
+                    <Search size={15} />
+                    <input
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder={t('usersPage.search')}
+                    />
+                  </div>
+                </div>
+                <div className="table-scroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>{t('usersPage.name')}</th>
+                        <th>{t('usersPage.email')}</th>
+                        <th>{t('usersPage.role')}</th>
+                        <th>{t('usersPage.status')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(userQuery.data ?? [])
+                        .filter((u) =>
+                          `${u.name} ${u.email} ${u.role}`
+                            .toLowerCase()
+                            .includes(search.toLowerCase()),
+                        )
+                        .map((u) => (
+                          <tr key={u.id}>
+                            <td>
+                              <strong>{u.name}</strong>
+                            </td>
+                            <td>{u.email}</td>
+                            <td>
+                              <span className="role-chip">{roleLabel(u.role)}</span>
+                            </td>
+                            <td>
+                              <span
+                                className={`status-chip ${u.status === 'active' ? 'success' : 'warning'}`}
+                              >
+                                {statusLabel(u.status)}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+              <section className="panel permissions-panel">
+                <div className="panel-heading">
+                  <div>
+                    <h3>{t('usersPage.matrix')}</h3>
+                    <p>{t('usersPage.matrixBody')}</p>
+                  </div>
+                </div>
+                <div className="table-scroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>{t('usersPage.role')}</th>
+                        {[
+                          'users:manage',
+                          'bulk:upload',
+                          'analytics',
+                          'claims:read',
+                          'audit:read',
+                          'inspections:verify',
+                          'export:run',
+                        ].map((p) => (
+                          <th key={p}>{t(`permissions.${p.replaceAll(':', '_')}`)}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {roles.map((r) => (
+                        <tr key={r}>
+                          <td>
+                            <strong>{roleLabel(r)}</strong>
+                          </td>
+                          {[
+                            'users:manage',
+                            'bulk:upload',
+                            'analytics',
+                            'claims:read',
+                            'audit:read',
+                            'inspections:verify',
+                            'export:run',
+                          ].map((p) => (
+                            <td key={p} className="permission-cell">
+                              {(ROLE_PERMISSIONS[r] as readonly string[]).some((x) =>
+                                p === 'analytics' ? x.startsWith('analytics:') : x === p,
+                              ) ? (
+                                <CheckCircle2 size={16} className="yes" />
+                              ) : (
+                                <span className="no">—</span>
+                              )}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            </>
+          )}
+          {page === 'guide' && (
+            <>
+              <PageTitle
+                eyebrow={t('guidePage.eyebrow')}
+                title={t('guidePage.title')}
+                description={t('guidePage.body')}
+              />
+              <div className="guide-grid">
+                <GuideStep
+                  n="01"
+                  title={t('guidePage.step1Title')}
+                  text={t('guidePage.step1')}
+                  onClick={() => setPage('analytics')}
+                />
+                <GuideStep
+                  n="02"
+                  title={t('guidePage.step2Title')}
+                  text={t('guidePage.step2')}
+                  onClick={() => setPage('inspector')}
+                />
+                <GuideStep
+                  n="03"
+                  title={t('guidePage.step3Title')}
+                  text={t('guidePage.step3')}
+                  onClick={() => setPage('bulk')}
+                />
+                <GuideStep
+                  n="04"
+                  title={t('guidePage.step4Title')}
+                  text={t('guidePage.step4')}
+                  onClick={() => setPage('audit')}
+                />
+              </div>
+              <div className="note-card">
+                <ShieldCheck />
+                <div>
+                  <strong>{t('guidePage.credentials')}</strong>
+                  <p>{t('guidePage.credentialsBody')}</p>
+                </div>
+              </div>
+              <button
+                className="btn btn-outline"
+                onClick={() =>
+                  void request('/dev/demo-guide')
+                    .then(() => setToast(t('toasts.checklist')))
+                    .catch((e) => setToast(messageFromError(e, t('errors.REQUEST_FAILED'))))
+                }
+              >
+                {t('guidePage.load')} <ArrowRight size={15} />
+              </button>
+            </>
+          )}
+        </div>
+      </main>
+      {sidebar && (
+        <button
+          className="sidebar-overlay"
+          aria-label={t('shell.closeNav')}
+          onClick={() => setSidebar(false)}
+        />
+      )}
+      {toast && (
+        <div className="toast">
+          <CheckCircle2 size={17} />
+          {toast}
+          <button onClick={() => setToast('')}>
+            <X size={15} />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+function Kpi({
+  title,
+  value,
+  change,
+  trend,
+  icon: Icon,
+  color,
+  caption,
+}: {
+  title: string;
+  value: string;
+  change: string;
+  trend: 'up' | 'down';
+  icon: any;
+  color: string;
+  caption: string;
+}) {
+  return (
+    <div className="kpi-card">
+      <div className="kpi-top">
+        <span>{title}</span>
+        <span className={`kpi-icon ${color}`}>
+          <Icon size={18} />
+        </span>
+      </div>
+      <div className="kpi-value">{value}</div>
+      <div className="kpi-bottom">
+        {change && (
+          <span className={`trend ${trend}`}>
+            <ArrowUpRight size={14} />
+            {change}
+          </span>
+        )}
+        <span>{caption}</span>
+      </div>
+      <div className="sparkline">
+        <svg viewBox="0 0 120 22" preserveAspectRatio="none">
+          <path
+            d={
+              trend === 'up'
+                ? 'M0 17 C12 15 14 18 24 12 S40 16 52 8 S71 13 82 6 S103 9 120 2'
+                : 'M0 4 C12 6 14 3 24 8 S40 4 52 13 S71 8 82 14 S103 12 120 19'
+            }
+          />
+        </svg>
+      </div>
+    </div>
+  );
+}
+function Quick({
+  icon: Icon,
+  title,
+  detail,
+  onClick,
+}: {
+  icon: any;
+  title: string;
+  detail: string;
+  onClick: () => void;
+}) {
+  return (
+    <button className="quick-card" onClick={onClick}>
+      <span className="quick-icon">
+        <Icon size={20} />
+      </span>
+      <span className="quick-copy">
+        <strong>{title}</strong>
+        <small>{detail}</small>
+      </span>
+      <ArrowRight className="quick-arrow" size={17} />
+    </button>
+  );
+}
+function PageTitle({
+  eyebrow,
+  title,
+  description,
+  action,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="page-title-row">
+      <div>
+        <div className="eyebrow">{eyebrow}</div>
+        <h1>{title}</h1>
+        <p className="muted">{description}</p>
+      </div>
+      {action}
+    </div>
+  );
+}
+function Mini({ label, value, tone = '' }: { label: string; value: any; tone?: string }) {
+  return (
+    <div className="mini-kpi">
+      <span>{label}</span>
+      <strong className={tone}>{value ?? 0}</strong>
+    </div>
+  );
+}
+function Empty({ text }: { text: string }) {
+  return (
+    <div className="empty-state">
+      <Activity size={24} />
+      <p>{text}</p>
+    </div>
+  );
+}
+function GuideStep({
+  n,
+  title,
+  text,
+  onClick,
+}: {
+  n: string;
+  title: string;
+  text: string;
+  onClick: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <button className="guide-step" onClick={onClick}>
+      <span>{n}</span>
+      <div>
+        <strong>{title}</strong>
+        <p>{text}</p>
+        <small>
+          {t('guidePage.open')} <ArrowRight size={13} />
+        </small>
+      </div>
+    </button>
+  );
+}
+function Subscriber({ setToast }: { setToast: (s: string) => void }) {
+  const { t } = useTranslation();
+  const [entity, setEntity] = useState<'individual' | 'facility'>('individual');
+  const [tier, setTier] = useState('gp');
+  const [governorate, setGovernorate] = useState('Cairo');
+  const [profileId, setProfileId] = useState('29901011234567');
+  const [step, setStep] = useState(1);
+  const [paid, setPaid] = useState(false);
+  const [selected, setSelected] = useState<any>(null);
+  const tiers = DEMO_TIERS.filter((t) => t.entityType === entity);
+  const active = tiers.find((t) => t.id === tier) ?? tiers[0]!;
+  const saveProfile = async () => {
+    try {
+      await request('/subscriber/profile', 'put', {
+        nationalId: profileId,
+        governorate,
+        entityType: entity,
+      });
+      setStep(2);
+      setToast(t('toasts.profileSaved'));
+    } catch (e) {
+      setToast(messageFromError(e, t('toasts.profileFailed')));
+    }
+  };
+  const saveTier = async () => {
+    try {
+      const r = await request<any>('/subscriber/select-tier', 'post', {
+        tierId: tier,
+        entityType: entity,
+      });
+      setSelected(r);
+      setStep(3);
+      setToast(t('toasts.specialtySelected'));
+    } catch (e) {
+      setToast(messageFromError(e, t('toasts.tierFailed')));
+    }
+  };
+  const pay = async (outcome: 'success' | 'failure') => {
+    try {
+      const init = await request<any>('/payments/initiate', 'post', {});
+      const r = await request<any>(`/payments/${init.payment.id}/simulate`, 'post', { outcome });
+      if (outcome === 'success') {
+        setPaid(true);
+        setStep(4);
+        setToast(t('toasts.paymentOk'));
+      } else setToast(t('toasts.paymentRetry'));
+    } catch (e) {
+      setToast(messageFromError(e, t('toasts.paymentFailed')));
+    }
+  };
+  return (
+    <>
+      <PageTitle
+        eyebrow={t('subscriberPage.eyebrow')}
+        title={t('subscriberPage.title')}
+        description={t('subscriberPage.body')}
+        action={
+          <span className={`status-chip ${paid ? 'success' : 'warning'}`}>
+            {paid ? t('subscriberPage.active') : t('subscriberPage.incomplete')}
+          </span>
+        }
+      />
+      <div className="subscriber-steps">
+        {[
+          { n: 1, title: t('subscriberPage.professional') },
+          { n: 2, title: t('subscriberPage.specialtyStep') },
+          { n: 3, title: t('subscriberPage.paymentStep') },
+          { n: 4, title: t('subscriberPage.certificateStep') },
+        ].map((s) => (
+          <div
+            className={`subscriber-step ${step === s.n ? 'current' : step > s.n ? 'done' : ''}`}
+            key={s.n}
+          >
+            <span>{step > s.n ? <Check size={15} /> : s.n}</span>
+            <strong>{s.title}</strong>
+          </div>
+        ))}
+      </div>
+      <div className="subscriber-layout">
+        <section className="panel subscriber-main">
+          <div className="panel-heading">
+            <div>
+              <h3>
+                {step === 1
+                  ? t('subscriberPage.professionalTitle')
+                  : step === 2
+                    ? t('subscriberPage.chooseTitle')
+                    : step === 3
+                      ? t('subscriberPage.payTitle')
+                      : t('subscriberPage.readyTitle')}
+              </h3>
+              <p>
+                {step === 1
+                  ? t('subscriberPage.professionalBody')
+                  : step === 2
+                    ? t('subscriberPage.chooseBody')
+                    : step === 3
+                      ? t('subscriberPage.payBody')
+                      : t('subscriberPage.readyBody')}
+              </p>
+            </div>
+          </div>
+          {step === 1 && (
+            <div className="form-grid">
+              <div className="form-field full-field">
+                <label>{t('subscriberPage.type')}</label>
+                <div className="entity-toggle">
+                  <button
+                    className={entity === 'individual' ? 'selected' : ''}
+                    onClick={() => {
+                      setEntity('individual');
+                      setTier('gp');
+                    }}
+                  >
+                    <Stethoscope size={17} /> {t('subscriberPage.individual')}
+                  </button>
+                  <button
+                    className={entity === 'facility' ? 'selected' : ''}
+                    onClick={() => {
+                      setEntity('facility');
+                      setTier('hospital');
+                    }}
+                  >
+                    <Building2 size={17} /> {t('subscriberPage.facility')}
+                  </button>
+                </div>
+              </div>
+              <div className="form-field full-field">
+                <label>
+                  {entity === 'individual' ? t('subscriberPage.nationalId') : t('subscriberPage.license')}
+                </label>
+                <input
+                  value={profileId}
+                  onChange={(e) => setProfileId(e.target.value)}
+                  placeholder={entity === 'individual' ? '29901011234567' : 'FAC-2026-0001'}
+                />
+                <small>{t('subscriberPage.demoOnly')}</small>
+              </div>
+              <div className="form-field full-field">
+                <label>{t('subscriberPage.governorate')}</label>
+                <select value={governorate} onChange={(e) => setGovernorate(e.target.value)}>
+                  {PROFILE_GOVERNORATES.map((g) => (
+                    <option key={g} value={g}>
+                      {governorateLabel(g)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-note full-field">
+                <ShieldCheck size={17} />
+                <span>{t('subscriberPage.detailsNote')}</span>
+              </div>
+              <button className="btn btn-primary" onClick={() => void saveProfile()}>
+                {t('subscriberPage.save')} <ArrowRight size={16} />
+              </button>
+            </div>
+          )}
+          {step === 2 && (
+            <>
+              <div className="form-field">
+                <label>{t('subscriberPage.tier')}</label>
+                <select value={tier} onChange={(e) => setTier(e.target.value)}>
+                  {tiers.map((item) => (
+                    <option value={item.id} key={item.id}>
+                      {specialtyLabel(item.name)} — {money(item.fee)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="tier-summary">
+                <div>
+                  <span>{t('subscriberPage.annual')}</span>
+                  <strong>{money(active.fee)}</strong>
+                </div>
+                <span className="status-chip neutral">
+                  {t('subscriberPage.risk', { level: riskLabel(active.risk) })}
+                </span>
+                <p>{t('subscriberPage.feeNote')}</p>
+              </div>
+              <div className="button-row">
+                <button className="btn btn-outline" onClick={() => setStep(1)}>
+                  {t('subscriberPage.back')}
+                </button>
+                <button className="btn btn-primary" onClick={() => void saveTier()}>
+                  {t('subscriberPage.confirm')} <ArrowRight size={16} />
+                </button>
+              </div>
+            </>
+          )}
+          {step === 3 && (
+            <>
+              <div className="payment-summary">
+                <div>
+                  <span>{t('subscriberPage.coverage')}</span>
+                  <strong>{specialtyLabel(active.name)}</strong>
+                </div>
+                <div>
+                  <span>{t('subscriberPage.annual')}</span>
+                  <strong>{money(selected?.amount ?? active.fee)}</strong>
+                </div>
+                <div>
+                  <span>{t('subscriberPage.channel')}</span>
+                  <strong>{t('subscriberPage.mockGateway')}</strong>
+                </div>
+                <div>
+                  <span>{t('subscriberPage.reference')}</span>
+                  <strong>MLRF-DEMO-2026</strong>
+                </div>
+              </div>
+              <div className="demo-payment">
+                <div className="payment-card">
+                  <div className="card-chip" />
+                  <div className="card-number">•••• •••• •••• 4242</div>
+                  <div className="card-foot">
+                    <span>{t('subscriberPage.demoBank')}</span>
+                    <span>12/29</span>
+                  </div>
+                </div>
+                <p>{t('subscriberPage.payNote')}</p>
+              </div>
+              <div className="button-row">
+                <button className="btn btn-outline" onClick={() => setStep(2)}>
+                  {t('subscriberPage.back')}
+                </button>
+                <button className="btn btn-danger" onClick={() => void pay('failure')}>
+                  {t('subscriberPage.fail')}
+                </button>
+                <button className="btn btn-primary" onClick={() => void pay('success')}>
+                  {t('subscriberPage.success')} <ArrowRight size={16} />
+                </button>
+              </div>
+            </>
+          )}
+          {step === 4 && (
+            <div className="certificate-preview">
+              <div className="certificate-seal">
+                <ShieldCheck size={36} />
+              </div>
+              <div className="eyebrow">{t('brandShort')}</div>
+              <h2>{t('subscriberPage.certTitle')}</h2>
+              <p>{t('subscriberPage.certifies')}</p>
+              <h3>{t('subscriberPage.demoSubscriber')}</h3>
+              <p>{t('subscriberPage.registered')}</p>
+              <div className="certificate-data">
+                <div>
+                  <span>{t('subscriberPage.certNumber')}</span>
+                  <strong>MLRF-2026-000123</strong>
+                </div>
+                <div>
+                  <span>{t('subscriberPage.coverageStatus')}</span>
+                  <strong className="success-text">{t('subscriberPage.valid')}</strong>
+                </div>
+                <div>
+                  <span>{t('subscriberPage.period')}</span>
+                  <strong>{t('subscriberPage.oneYear')}</strong>
+                </div>
+              </div>
+              <div className="qr-placeholder">
+                <div className="qr-grid">
+                  {Array.from({ length: 64 }, (_, i) => (
+                    <i key={i} style={{ opacity: (i * 7 + (i % 3)) % 5 < 2 ? 1 : 0.15 }} />
+                  ))}
+                </div>
+                <span>{t('subscriberPage.demoQr')}</span>
+              </div>
+              <button
+                className="btn btn-outline"
+                onClick={() => setToast(t('toasts.pdfPlaceholder'))}
+              >
+                <Download size={16} /> {t('subscriberPage.download')}
+              </button>
+            </div>
+          )}
+        </section>
+        <aside className="subscriber-aside">
+          <div className="panel progress-panel">
+            <div className="panel-heading">
+              <div>
+                <h3>{t('subscriberPage.progress')}</h3>
+                <p>{t('subscriberPage.progressBody')}</p>
+              </div>
+            </div>
+            <div className="progress-ring-wrap">
+              <svg viewBox="0 0 120 120" className="progress-ring">
+                <circle cx="60" cy="60" r="49" />
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="49"
+                  className="progress-ring-value"
+                  style={{
+                    strokeDasharray: `${(step === 4 ? 100 : step === 3 ? 75 : step === 2 ? 50 : 25) * 3.08} 308`,
+                  }}
+                />
+              </svg>
+              <div>
+                <strong>{step === 4 ? 100 : step === 3 ? 75 : step === 2 ? 50 : 25}%</strong>
+                <span>{t('subscriberPage.completed')}</span>
+              </div>
+            </div>
+            <div className="progress-list">
+              {[
+                t('subscriberPage.professionalTitle'),
+                t('subscriberPage.specialtyStep'),
+                t('subscriberPage.paymentStep'),
+                t('subscriberPage.issued'),
+              ].map((s, i) => (
+                <div key={s} className={step > i ? 'complete' : ''}>
+                  <span>{step > i ? <Check size={13} /> : i + 1}</span>
+                  {s}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="note-card">
+            <ShieldCheck />
+            <div>
+              <strong>{t('subscriberPage.secure')}</strong>
+              <p>{t('subscriberPage.secureBody')}</p>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </>
+  );
+}
