@@ -6,6 +6,7 @@ import {
   Sun,
   ArrowDownRight,
   ArrowUpRight,
+  Award,
   BadgeCheck,
   Banknote,
   Bell,
@@ -23,6 +24,7 @@ import {
   Menu,
   Moon,
   MoreHorizontal,
+  Scale,
   Search,
   Shield,
   ShieldCheck,
@@ -337,152 +339,311 @@ export default function App() {
   };
   if (!token || !currentUser) {
     return (
-      <div className="login-screen">
-        <div className="login-visual">
-          <div className="login-brand">
-            <div className="brand-mark">
-              <ShieldCheck size={28} />
-            </div>
-            <div>
-              <strong>MLRF</strong>
-              <span>{t('brandShort')}</span>
-            </div>
-          </div>
-          <div className="login-copy">
-            <span className="eyebrow">{t('login.eyebrow')}</span>
-            <h1>{t('login.headline')}</h1>
-            <p>{t('login.lead')}</p>
-            <div className="login-stats">
-              <div>
-                <strong>2,500+</strong>
-                <span>{t('login.subscribers')}</span>
+      <div className="landing-page-wrapper">
+        {/* Top Floating Navbar */}
+        <header className="landing-nav">
+          <div className="landing-nav-inner">
+            <div className="landing-brand">
+              <div className="brand-mark">
+                <ShieldCheck size={28} />
               </div>
               <div>
-                <strong>27</strong>
-                <span>{t('login.governorates')}</span>
-              </div>
-              <div>
-                <strong>100%</strong>
-                <span>{t('login.flows')}</span>
+                <strong>MLRF</strong>
+                <span>{t('brandShort')}</span>
               </div>
             </div>
-          </div>
-          <div className="login-foot">{t('login.foot')}</div>
-        </div>
-        <div className="login-panel">
-          <div className="mobile-brand">
-            <div className="brand-mark">
-              <ShieldCheck />
-            </div>
-            <strong>MLRF</strong>
-          </div>
-          <div className="login-form">
-            <span className="eyebrow">{t('login.portal')}</span>
-            <h2>{t('welcome')}</h2>
-            <p className="muted">{t('login.manage')}</p>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                void login();
-              }}
-            >
-              <label>{t('login.email')}</label>
-              <div className="input-wrap">
-                <Users size={17} />
-                <input
-                  type="email"
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <label>{t('login.password')}</label>
-              <div className="input-wrap">
-                <LockKeyhole size={17} />
-                <input
-                  type="password"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  required
-                />
-              </div>
-              <button className="btn btn-primary full" type="submit">
-                {t('signIn')} <ArrowRight size={17} />
+            <div className="landing-nav-actions">
+              <button
+                type="button"
+                className="icon-btn"
+                title={t('shell.toggleTheme')}
+                onClick={() => setDark(!dark)}
+              >
+                {dark ? <Sun size={18} /> : <Moon size={18} />}
               </button>
-            </form>
-            <div className="demo-login">
-              <div className="demo-login-title">
-                <span className="live-dot" /> {t('login.demoAccess')}{' '}
-                <span className="demo-tag">{t('login.demoTag')}</span>
-              </div>
-              <p>{t('login.chooseRole')}</p>
-              <div className="demo-portals-login">
-                <button
-                  type="button"
-                  className="portal-login-card doctor-card"
-                  onClick={() => void switchRole('subscriber')}
-                >
-                  <div className="card-top">
-                    <span className="icon">👨‍⚕️</span>
-                    <strong>{t('portalSwitcher.doctor')}</strong>
-                  </div>
-                  <p>{t('doctorPortal.subtitle')}</p>
-                </button>
-
-                <button
-                  type="button"
-                  className="portal-login-card inspector-card"
-                  onClick={() => void switchRole('inspector')}
-                >
-                  <div className="card-top">
-                    <span className="icon">🕵️‍♂️</span>
-                    <strong>{t('portalSwitcher.inspector')}</strong>
-                  </div>
-                  <p>{t('inspectorPortal.subtitle')}</p>
-                </button>
-
-                <button
-                  type="button"
-                  className="portal-login-card admin-card"
-                  onClick={() => void switchRole('super_admin')}
-                >
-                  <div className="card-top">
-                    <span className="icon">🏛️</span>
-                    <strong>{t('portalSwitcher.admin')}</strong>
-                  </div>
-                  <p>{t('login.manage')}</p>
-                </button>
-              </div>
-
-              <div style={{ marginTop: 12 }}>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 600 }}>
-                  {t('portalSwitcher.adminRole')}:
-                </div>
-                <div className="admin-subroles-list">
-                  {(['super_admin', 'finance_admin', 'practitioner_analyst', 'facility_analyst', 'claims_admin'] as Role[]).map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      className="admin-subrole-btn"
-                      onClick={() => void switchRole(r)}
-                    >
-                      {roleLabel(r)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="hint">{t('login.hint')}</div>
+              <button
+                type="button"
+                className="btn btn-outline"
+                style={{ padding: '7px 14px', fontSize: 12 }}
+                onClick={() => void i18n.changeLanguage(i18n.language === 'en' ? 'ar' : 'en')}
+              >
+                <Globe size={15} /> {i18n.language === 'en' ? 'العربية' : 'English'}
+              </button>
             </div>
           </div>
-          <div className="login-panel-foot">
-            <span>
-              <Shield size={14} /> {t('login.secure')}
-            </span>
-            <button onClick={() => void i18n.changeLanguage(i18n.language === 'en' ? 'ar' : 'en')}>
-              <Languages size={15} /> {i18n.language === 'en' ? t('arabic') : t('english')}
-            </button>
+        </header>
+
+        {/* Hero Section with Sky Gradient Band */}
+        <section className="sky-hero-band">
+          <div className="landing-hero">
+            {/* Hero Text Content (Right Column in RTL, Left in LTR) */}
+            <div className="hero-content-col">
+              <div className="hero-law-badge">
+                <ShieldCheck size={16} />
+                <span>{t('landing.aboutTitle')}</span>
+              </div>
+              <h1 className="hero-headline">{t('landing.heroTitle')}</h1>
+              <p className="hero-lead">{t('landing.heroSubtitle')}</p>
+
+              <div className="hero-features-list">
+                <div className="hero-feature-item">
+                  <span className="hero-feature-icon">⚖️</span>
+                  <div>
+                    <strong>حماية قانونية وتأمينية متكاملة</strong>
+                    <p>تغطية شاملة ضد دعاوى ومخاطر المسؤولية الطبية والأخطاء المهنية.</p>
+                  </div>
+                </div>
+                <div className="hero-feature-item">
+                  <span className="hero-feature-icon">🏛️</span>
+                  <div>
+                    <strong>اعتماد رسمي ورقمي موحد</strong>
+                    <p>شهادة رقمية موثقة ومعتمدة لدى وزارة الصحة ونقابات المهن الطبية وجهات التفتيش.</p>
+                  </div>
+                </div>
+                <div className="hero-feature-item">
+                  <span className="hero-feature-icon">🛡️</span>
+                  <div>
+                    <strong>مظلة تكافلية تشمل كافة التخصصات</strong>
+                    <p>تعويضات مقرة بموجب القانون رقم 184 لسنة 2020 لحماية الأطباء والمنشآت الصحية.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="landing-stats-row">
+                <div className="stat-box">
+                  <strong>2,500+</strong>
+                  <span>{t('login.subscribers')}</span>
+                </div>
+                <div className="stat-box">
+                  <strong>27</strong>
+                  <span>{t('login.governorates')}</span>
+                </div>
+                <div className="stat-box">
+                  <strong>100%</strong>
+                  <span>{t('login.flows')}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Floating Login & Demo Portal Switcher Card (Left Column in RTL) */}
+            <div className="hero-card-col">
+              <div className="landing-login-card">
+                <div className="login-card-header">
+                  <span className="eyebrow">{t('login.portal')}</span>
+                  <h2>{t('welcome')}</h2>
+                  <p className="muted">{t('login.manage')}</p>
+                </div>
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void login();
+                  }}
+                >
+                  <label>{t('login.email')}</label>
+                  <div className="input-wrap">
+                    <Users size={17} />
+                    <input
+                      type="email"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <label>{t('login.password')}</label>
+                  <div className="input-wrap">
+                    <LockKeyhole size={17} />
+                    <input
+                      type="password"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <button className="btn btn-primary full" type="submit">
+                    {t('signIn')} <ArrowRight size={17} />
+                  </button>
+                </form>
+
+                <div className="demo-login">
+                  <div className="demo-login-title">
+                    <span className="live-dot" /> {t('login.demoAccess')}{' '}
+                    <span className="demo-tag">{t('login.demoTag')}</span>
+                  </div>
+                  <p>{t('login.chooseRole')}</p>
+                  <div className="demo-portals-login">
+                    <button
+                      type="button"
+                      className="portal-login-card doctor-card"
+                      onClick={() => void switchRole('subscriber')}
+                    >
+                      <div className="card-top">
+                        <span className="icon">👨‍⚕️</span>
+                        <strong>{t('portalSwitcher.doctor')}</strong>
+                      </div>
+                      <p>{t('doctorPortal.subtitle')}</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="portal-login-card inspector-card"
+                      onClick={() => void switchRole('inspector')}
+                    >
+                      <div className="card-top">
+                        <span className="icon">🕵️‍♂️</span>
+                        <strong>{t('portalSwitcher.inspector')}</strong>
+                      </div>
+                      <p>{t('inspectorPortal.subtitle')}</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="portal-login-card admin-card"
+                      onClick={() => void switchRole('super_admin')}
+                    >
+                      <div className="card-top">
+                        <span className="icon">🏛️</span>
+                        <strong>{t('portalSwitcher.admin')}</strong>
+                      </div>
+                      <p>{t('login.manage')}</p>
+                    </button>
+                  </div>
+
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 600 }}>
+                      {t('portalSwitcher.adminRole')}:
+                    </div>
+                    <div className="admin-subroles-list">
+                      {(['super_admin', 'finance_admin', 'practitioner_analyst', 'facility_analyst', 'claims_admin'] as Role[]).map((r) => (
+                        <button
+                          key={r}
+                          type="button"
+                          className="admin-subrole-btn"
+                          onClick={() => void switchRole(r)}
+                        >
+                          {roleLabel(r)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="hint">{t('login.hint')}</div>
+                </div>
+
+                <div className="login-panel-foot">
+                  <span>
+                    <Shield size={14} /> {t('login.secure')}
+                  </span>
+                  <button onClick={() => void i18n.changeLanguage(i18n.language === 'en' ? 'ar' : 'en')}>
+                    <Languages size={15} /> {i18n.language === 'en' ? t('arabic') : t('english')}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        </section>
+
+        {/* Section 1: About the Fund & Law 184 of 2020 */}
+        <section className="landing-section-wrapper bg-white">
+          <div className="landing-section">
+            <div className="section-header-centered">
+              <span className="eyebrow">{t('landing.aboutTitle')}</span>
+              <h2>{t('landing.aboutTitle')}</h2>
+              <div className="header-divider" />
+            </div>
+
+            <div className="about-fund-grid">
+              <div className="panel about-card main-about">
+                <div className="about-icon-badge">
+                  <Scale size={28} />
+                </div>
+                <h3>الأساس التشريعي وقوة الإلزام القانوني</h3>
+                <p className="lead-text">{t('landing.aboutText')}</p>
+                <div className="law-highlights">
+                  <div className="highlight-item">
+                    <CheckCircle2 size={18} className="highlight-icon" />
+                    <span>توفير مظلة تعويضية قانونية فورية للمتضررين من الأخطاء المهنية الطبية.</span>
+                  </div>
+                  <div className="highlight-item">
+                    <CheckCircle2 size={18} className="highlight-icon" />
+                    <span>حماية الاستقرار الوظيفي للأطباء وأعضاء المهن الطبية والمنشآت الصحية.</span>
+                  </div>
+                  <div className="highlight-item">
+                    <CheckCircle2 size={18} className="highlight-icon" />
+                    <span>إرساء منظومة رقمية متكاملة تضمن سرعة الفصل والتعويض العادل بشفافية تامة.</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="about-pillars">
+                <div className="panel pillar-card">
+                  <div className="pillar-header">
+                    <HeartPulse size={22} />
+                    <h4>الأطباء والممارسون</h4>
+                  </div>
+                  <p>تغطية تأمينية لكافة الفئات من أطباء بشريين، أسنان، صيادلة، علاج طبيعي، وهيئات التمريض.</p>
+                </div>
+
+                <div className="panel pillar-card">
+                  <div className="pillar-header">
+                    <Building2 size={22} />
+                    <h4>المنشآت والمراكز الصحية</h4>
+                  </div>
+                  <p>حماية المستشفيات، المراكز الطبية، العيادات، معامل التحاليل، ومراكز الأشعة وفق المعايير المعتمدة.</p>
+                </div>
+
+                <div className="panel pillar-card">
+                  <div className="pillar-header">
+                    <ScanLine size={22} />
+                    <h4>الرقابة والتفتيش الرقمي</h4>
+                  </div>
+                  <p>التحقق اللحظي عبر الرمز المشفر (QR) والتفتيش الميداني للتأكد من انتظام التغطية والتراخيص.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Section 2: Presidential Appreciation */}
+        <section className="landing-section-wrapper bg-tint">
+          <div className="landing-section">
+            <div className="panel president-card">
+              <div className="president-card-content">
+                <div className="president-badge">
+                  <Award size={20} />
+                  <span>{t('landing.presidentThanksTitle')}</span>
+                </div>
+                <h2>تحية تقدير وإعزاز من «جيش مصر الأبيض» للقيادة السياسية</h2>
+                <div className="president-quote">
+                  <p className="president-text">{t('landing.presidentThanksText')}</p>
+                </div>
+                <div className="president-card-footer">
+                  <div className="republic-seal">
+                    <ShieldCheck size={26} />
+                    <div>
+                      <strong>جمهورية مصر العربية</strong>
+                      <span>صندوق التعويض عن مخاطر المهن الطبية</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Landing Page Footer */}
+        <footer className="landing-footer">
+          <div className="landing-footer-inner">
+            <div className="footer-left">
+              <strong>MLRF — {t('brandShort')}</strong>
+              <p>جمهورية مصر العربية • جميع الحقوق محفوظة © 2026</p>
+            </div>
+            <div className="footer-right">
+              <span>القانون رقم 184 لسنة 2020</span>
+              <span>بوابة الخدمات الحكومية الرقمية</span>
+            </div>
+          </div>
+        </footer>
+
         {toast && <div className="toast">{toast}</div>}
       </div>
     );

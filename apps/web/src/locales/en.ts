@@ -542,4 +542,15 @@ export const en = {
     paymentConfirmation:
       'The Fund Administration certifies that the above-mentioned member has paid the annual subscription fee of {{amount}} EGP to renew their insurance coverage for the designated period.',
   },
+  landing: {
+    heroTitle: 'National Platform for Medical Practitioners & Facilities Protection',
+    heroSubtitle:
+      'Medical Liability Risks Compensation Fund — The secure gateway for healthcare practice across the Arab Republic of Egypt.',
+    aboutTitle: 'About the Fund (Law No. 184 of 2020)',
+    aboutText:
+      'The Medical Profession Risk Compensation Fund was established under Law No. 184 of 2020 as a comprehensive legal and financial safety umbrella for medical professionals and healthcare facilities, in recognition of their dedication and sacrifices in service to the nation.',
+    presidentThanksTitle: 'Vision & Support of the Political Leadership',
+    presidentThanksText:
+      'The establishment of this Fund culminates the directives of President Abdel Fattah El-Sisi, President of the Republic, reflecting his unwavering commitment to providing the highest levels of protection and support to Egypt\'s "White Army", honoring their national duty and continuous sacrifices in safeguarding the health and well-being of all citizens.',
+  },
 };

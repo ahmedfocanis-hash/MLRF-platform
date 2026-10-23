@@ -2617,8 +2617,579 @@ tbody tr:last-child td {
 }
 
 /* ==========================================================================
-   LOGIN SCREEN — Open sky gradient visual + Paper White form panel
+   LANDING PAGE — Full Marketing Landing Page & Hero
    ========================================================================== */
+.landing-page-wrapper {
+  width: 100%;
+  min-height: 100vh;
+  overflow-y: auto;
+  background: var(--panel);
+}
+
+.landing-nav {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  padding: 16px 0;
+}
+
+.landing-nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.landing-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.landing-brand .brand-mark {
+  width: 42px;
+  height: 42px;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--color-obsidian);
+  border-radius: var(--radius-icons);
+  display: grid;
+  place-items: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.landing-brand strong {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.landing-brand span {
+  display: block;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.landing-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.landing-nav-actions .icon-btn {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.landing-nav-actions .icon-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+.landing-nav-actions .btn-outline {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.landing-nav-actions .btn-outline:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+/* Sky Hero Band */
+.sky-hero-band {
+  background: var(--gradient-sky-gradient);
+  position: relative;
+  overflow: hidden;
+  padding-top: 60px;
+}
+
+.sky-hero-band:after {
+  content: '';
+  position: absolute;
+  width: 700px;
+  height: 700px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  left: -200px;
+  bottom: -300px;
+  box-shadow: 0 0 0 100px rgba(255, 255, 255, 0.05), 0 0 0 220px rgba(255, 255, 255, 0.02);
+  pointer-events: none;
+}
+
+.landing-hero {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+  align-items: center;
+  padding: 80px 20px;
+  position: relative;
+  z-index: 2;
+}
+
+@media (max-width: 900px) {
+  .landing-hero {
+    grid-template-columns: 1fr;
+    padding: 60px 16px;
+    gap: 32px;
+  }
+}
+
+.hero-content-col {
+  color: #ffffff;
+}
+
+.hero-law-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(8px);
+  padding: 6px 14px;
+  border-radius: 30px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 20px;
+}
+
+.hero-headline {
+  font-family: var(--font-cairo), var(--font-open-runde);
+  font-size: clamp(30px, 3.6vw, 46px);
+  line-height: 1.25;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 16px;
+  letter-spacing: -0.02em;
+}
+
+.hero-lead {
+  font-size: clamp(14px, 1.6vw, 17px);
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.92);
+  margin-bottom: 28px;
+  max-width: 600px;
+}
+
+.hero-features-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.hero-feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(4px);
+  padding: 12px 16px;
+  border-radius: var(--radius-cards);
+}
+
+.hero-feature-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.hero-feature-item strong {
+  display: block;
+  font-size: 13.5px;
+  color: #ffffff;
+  margin-bottom: 2px;
+}
+
+.hero-feature-item p {
+  margin: 0;
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.5;
+}
+
+.landing-stats-row {
+  display: flex;
+  gap: 32px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.stat-box strong {
+  display: block;
+  font-size: 26px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.stat-box span {
+  display: block;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 2px;
+}
+
+/* Floating Login & Portal Switcher Card */
+.hero-card-col {
+  width: 100%;
+}
+
+.landing-login-card {
+  background: var(--color-paper-white);
+  border: 1px solid #eef2f6;
+  border-radius: var(--radius-cards);
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
+  padding: 28px 24px;
+}
+
+.login-card-header h2 {
+  font-size: 24px;
+  margin: 6px 0 4px;
+}
+
+/* Informational Sections */
+.landing-section-wrapper.bg-white {
+  background: var(--color-paper-white);
+}
+
+.landing-section-wrapper.bg-tint {
+  background: var(--color-cloud-gray);
+}
+
+.landing-section {
+  padding: 80px 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.section-header-centered {
+  text-align: center;
+  max-width: 650px;
+  margin: 0 auto 16px;
+}
+
+.section-header-centered h2 {
+  font-size: 28px;
+  font-weight: 800;
+  margin: 8px 0 12px;
+}
+
+.header-divider {
+  width: 50px;
+  height: 3px;
+  background: var(--teal);
+  margin: 0 auto;
+  border-radius: 2px;
+}
+
+/* Section 1: About the Fund Grid */
+.about-fund-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 24px;
+  align-items: stretch;
+}
+
+@media (max-width: 868px) {
+  .about-fund-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.about-card.main-about {
+  padding: 32px;
+  border-radius: var(--radius-cards);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.about-icon-badge {
+  width: 52px;
+  height: 52px;
+  background: #e0f2fe;
+  color: var(--teal);
+  border-radius: var(--radius-icons);
+  display: grid;
+  place-items: center;
+  margin-bottom: 18px;
+}
+
+.about-card h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.lead-text {
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--color-charcoal);
+  margin-bottom: 22px;
+}
+
+.law-highlights {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.highlight-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13.5px;
+  color: var(--color-obsidian);
+}
+
+.highlight-icon {
+  color: #10b981;
+  flex-shrink: 0;
+}
+
+.about-pillars {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pillar-card {
+  padding: 20px 22px;
+  border-radius: var(--radius-cards);
+}
+
+.pillar-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--teal);
+  margin-bottom: 6px;
+}
+
+.pillar-header h4 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-obsidian);
+  margin: 0;
+}
+
+.pillar-card p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--color-charcoal);
+}
+
+/* Section 2: Presidential Appreciation Card */
+.president-card {
+  border-top: 4px solid var(--teal) !important;
+  background: #f8fafc !important;
+  border-radius: var(--radius-cards);
+  padding: 40px 44px;
+  box-shadow: var(--shadow-lg);
+}
+
+.president-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #e0f2fe;
+  color: var(--teal);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.president-card h2 {
+  font-size: clamp(20px, 2.4vw, 26px);
+  font-weight: 800;
+  color: var(--color-obsidian);
+  margin-bottom: 18px;
+  line-height: 1.4;
+}
+
+.president-quote {
+  position: relative;
+  background: var(--color-paper-white);
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-cards);
+  padding: 24px 28px;
+  margin-bottom: 20px;
+}
+
+.president-text {
+  font-size: 15.5px;
+  line-height: 1.9;
+  color: var(--color-obsidian);
+  font-weight: 500;
+  margin: 0;
+}
+
+.president-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.republic-seal {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--color-obsidian);
+}
+
+.republic-seal strong {
+  display: block;
+  font-size: 14px;
+}
+
+.republic-seal span {
+  display: block;
+  font-size: 12px;
+  color: var(--color-charcoal);
+}
+
+/* Portal Login Card */
+.portal-login-card {
+  width: 100%;
+  text-align: right;
+  background: var(--color-paper-white);
+  border: 1px solid #e5e7eb;
+  border-radius: var(--radius-inputs);
+  padding: 10px 14px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+[dir="ltr"] .portal-login-card {
+  text-align: left;
+}
+
+.portal-login-card:hover {
+  border-color: var(--color-obsidian);
+  background: #f8fafc;
+  transform: translateY(-1px);
+}
+
+.portal-login-card .card-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.portal-login-card .card-top strong {
+  font-size: 13px;
+  color: var(--color-obsidian);
+}
+
+.portal-login-card p {
+  margin: 0;
+  font-size: 11px;
+  color: var(--color-charcoal);
+  line-height: 1.4;
+}
+
+/* Landing Page Footer */
+.landing-footer {
+  background: var(--color-obsidian);
+  color: #ffffff;
+  padding: 36px 20px;
+}
+
+.landing-footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.footer-left strong {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.footer-left p {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.footer-right {
+  display: flex;
+  gap: 20px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Dark mode overrides for landing page */
+[data-theme="dark"] .landing-page-wrapper {
+  background: var(--bg);
+}
+
+[data-theme="dark"] .landing-section-wrapper.bg-white {
+  background: var(--bg);
+}
+
+[data-theme="dark"] .landing-section-wrapper.bg-tint {
+  background: #111317;
+}
+
+[data-theme="dark"] .landing-login-card {
+  background: var(--panel);
+  border-color: var(--line);
+}
+
+[data-theme="dark"] .about-card.main-about,
+[data-theme="dark"] .pillar-card {
+  background: var(--panel);
+  border-color: var(--line);
+}
+
+[data-theme="dark"] .president-card {
+  background: #15181e !important;
+  border-color: var(--line) !important;
+}
+
+[data-theme="dark"] .president-quote {
+  background: var(--panel);
+  border-color: var(--line);
+}
+
+[data-theme="dark"] .portal-login-card {
+  background: var(--panel);
+  border-color: var(--line);
+}
+
+[data-theme="dark"] .portal-login-card:hover {
+  background: #1e222a;
+}
+
+/* Legacy Login Screen Support */
 .login-screen {
   min-height: 100vh;
   display: grid;
@@ -2634,88 +3205,6 @@ tbody tr:last-child td {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-}
-
-.login-visual:after {
-  content: '';
-  position: absolute;
-  width: 700px;
-  height: 700px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  right: -240px;
-  bottom: -280px;
-  box-shadow: 0 0 0 80px rgba(255, 255, 255, 0.08), 0 0 0 160px rgba(255, 255, 255, 0.04);
-}
-
-.login-brand {
-  padding: 0;
-  position: relative;
-  z-index: 1;
-}
-
-.login-brand strong {
-  color: #ffffff;
-}
-
-.login-brand span {
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.login-copy {
-  position: relative;
-  z-index: 1;
-  margin: auto 0;
-  max-width: 540px;
-  padding: 48px 0;
-}
-
-.login-copy .eyebrow {
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.login-copy h1 {
-  font-family: var(--font-open-runde);
-  font-size: clamp(34px, 4vw, 54px);
-  line-height: 1.08;
-  letter-spacing: -0.04em;
-  font-weight: 600;
-  margin: 22px 0 16px;
-  color: #ffffff;
-}
-
-.login-copy p {
-  font-size: 14px;
-  line-height: 1.7;
-  color: rgba(255, 255, 255, 0.92);
-  max-width: 420px;
-  letter-spacing: -0.01em;
-}
-
-.login-stats {
-  display: flex;
-  gap: 40px;
-  margin-top: 48px;
-}
-
-.login-stats strong {
-  font-family: var(--font-open-runde);
-  font-size: 26px;
-  letter-spacing: -0.04em;
-  color: #ffffff;
-}
-
-.login-stats span {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.8);
-  margin-top: 4px;
-}
-
-.login-foot {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.75);
-  position: relative;
-  z-index: 1;
 }
 
 .login-panel {

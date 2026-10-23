@@ -10,7 +10,7 @@ export class ApiError extends Error {
 }
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api/v1',
+  baseURL: import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? '/api/v1' : 'http://localhost:4000/api/v1'),
   withCredentials: true,
 });
 api.interceptors.request.use((config) => {

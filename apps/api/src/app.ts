@@ -4,13 +4,86 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import mongoSanitize from 'express-mongo-sanitize';
 import cookieParser from 'cookie-parser';
-import pinoHttp from 'pino-http';
-import pino from 'pino';
-import {env} from './config/env.js';
-import {errorHandler} from './middleware/errors.js';
-import {apiRouter} from './routes/index.js';
-export const app=express();
+import { env } from './config/env.js';
+import { connectMongo } from './config/db.js';
+import { errorHandler } from './middleware/errors.js';
+import { apiRouter } from './routes/index.js';
+
+export const app = express();
+
+// Trust reverse proxies and rate limiters on Vercel
+app.set('trust proxy', 1);
 app.disable('x-powered-by');
-app.use(helmet());app.use(cors({origin:env.WEB_ORIGIN,credentials:true}));app.use(rateLimit({windowMs:60_000,limit:180,standardHeaders:true,legacyHeaders:false}));app.use(express.json({limit:'1mb'}));app.use(express.urlencoded({extended:false}));app.use(cookieParser());app.use(mongoSanitize());app.use(pinoHttp({logger:pino({level:env.NODE_ENV==='production'?'info':'debug'})}));
-app.get('/api/v1/health',(_req,res)=>res.json({success:true,data:{status:'ok',service:'mlrf-api',mode:env.DEMO_MODE?'demo':'standard',timestamp:new Date().toISOString()},error:null}));
-app.use('/api/v1',apiRouter);app.use((_req,res)=>res.status(404).json({success:false,data:null,error:{code:'NOT_FOUND',message:'Route not found'}}));app.use(errorHandler);
+
+// Native request logging directly to console.log for Vercel Dashboard streaming
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    console.log(`[HTTP] ${req.method} ${req.originalUrl || req.url} ${res.statusCode} - ${duration}ms`);
+  });
+  next();
+});
+
+// Serverless DB connection verification middleware
+app.use(async (_req, _res, next) => {
+  try {
+    if (env.MONGODB_URI && (process.env.NODE_ENV === 'production' || process.env.CONNECT_MONGO === 'true')) {
+      await connectMongo();
+    }
+    next();
+  } catch (error) {
+    console.error('[DB Middleware] Connection error:', error);
+    next();
+  }
+});
+
+app.use(helmet());
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const allowed = [env.WEB_ORIGIN, env.PUBLIC_WEB_URL, 'http://localhost:5173'];
+      if (allowed.includes(origin) || origin.endsWith('.vercel.app')) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
+    credentials: true,
+  }),
+);
+app.use(
+  rateLimit({
+    windowMs: 60_000,
+    limit: 180,
+    standardHeaders: true,
+    legacyHeaders: false,
+  }),
+);
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
+app.use(mongoSanitize());
+
+app.get('/api/v1/health', (_req, res) =>
+  res.json({
+    success: true,
+    data: {
+      status: 'ok',
+      service: 'mlrf-api',
+      mode: env.DEMO_MODE ? 'demo' : 'standard',
+      timestamp: new Date().toISOString(),
+    },
+    error: null,
+  }),
+);
+
+app.use('/api/v1', apiRouter);
+app.use((_req, res) =>
+  res.status(404).json({
+    success: false,
+    data: null,
+    error: { code: 'NOT_FOUND', message: 'Route not found' },
+  }),
+);
+app.use(errorHandler);
