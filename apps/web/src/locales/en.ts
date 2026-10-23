@@ -1,4 +1,4 @@
-export type Messages<T> = {
+﻿export type Messages<T> = {
   [K in keyof T]: T[K] extends string ? string : Messages<T[K]>;
 };
 
@@ -475,5 +475,43 @@ export const en = {
     WEBHOOK_ALREADY_PROCESSED: 'Payment already has a webhook reference',
     WEBHOOK_REFERENCE_REUSED: 'Webhook reference was already used for another payment',
     REQUEST_FAILED: 'Request failed',
+  },
+  portalSwitcher: {
+    title: 'Interactive Portal Switcher',
+    doctor: '👨‍⚕️ Doctor View (Subscriber)',
+    inspector: '🕵️‍♂️ Watcher / Inspector View',
+    admin: '🏛️ Fund Admin View',
+    adminSubRole: 'Admin Role',
+    doctorDesc: 'Registration, verification, specialty selection, fee payment, and digital certificate',
+    inspectorDesc: 'Mobile field verification, QR code lookup, license validity checks, and violation reporting',
+    adminDesc: 'Executive analytics, claims ledger, bank bulk upload, and user administration',
+  },
+  doctorPortal: {
+    headerTitle: 'Doctor & Medical Facility Portal',
+    headerSubtitle: 'National Medical Liability Risk Fund • Registration & Coverage',
+    statusActive: 'Active Coverage',
+    statusPending: 'Registration Incomplete',
+    tabJourney: 'Onboarding & Contribution Steps',
+    tabCertificate: 'My Official Certificate & QR',
+  },
+  inspectorPortal: {
+    headerTitle: 'Field Verification & Compliance Portal',
+    headerSubtitle: 'Official Watcher Tool for Licensing & Liability Compliance',
+    badge: 'Official Inspector',
+    inputPlaceholder: 'Enter Certificate #, Syndicate ID, National ID, or QR Hash...',
+    verifyButton: 'Verify License Status',
+    statusValid: 'Valid / Active Coverage',
+    statusExpired: 'Expired / Did Not Renew',
+    statusInvalid: 'Unregistered / Invalid License',
+    validDesc: 'Practitioner has an active medical liability subscription and valid certificate.',
+    expiredDesc: 'Practitioner failed to renew annual contribution. Immediate renewal required.',
+    invalidDesc: 'No record found in the Egyptian Medical Liability Risk Fund database.',
+    logAction: 'Log Compliant Visit',
+    sendNotice: 'Send Renewal SMS Notice',
+    reportViolation: 'Report Compliance Violation',
+    recentLogs: 'Recent Field Actions',
+    actionLogged: 'Inspection record saved successfully',
+    noticeSent: 'Renewal SMS notice sent to practitioner',
+    violationReported: 'Non-compliance violation reported to administration',
   },
 };

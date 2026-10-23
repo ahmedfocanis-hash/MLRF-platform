@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
   Activity,
+  Sun,
   ArrowDownRight,
   ArrowUpRight,
   BadgeCheck,
@@ -111,6 +112,18 @@ export default function App() {
     'name,phone,nationalId,specialty,amount\nDr. Sample One,01012345678,29901011234567,General Practitioner,1800\nDr. Sample Two,01112345678,29902021234568,Surgery,4200\nDuplicate Example,01012345678,29901011234567,General Practitioner,1800\nInvalid ID,01212345678,123,Cardiology,3000',
   );
   const [bulkPreview, setBulkPreview] = useState<any>(null);
+  const [subscriberTab, setSubscriberTab] = useState<'journey' | 'certificate'>('journey');
+  const [inspectorHistory, setInspectorHistory] = useState<
+    Array<{ id: string; identifier: string; outcome: string; time: string }>
+  >([
+    { id: '1', identifier: 'MLRF-2026-000123', outcome: 'compliant', time: '10 mins ago' },
+    { id: '2', identifier: 'MLRF-EXPIRED-000001', outcome: 'notice', time: '25 mins ago' },
+  ]);
+
+  const isSubscriber = role === 'subscriber';
+  const isInspector = role === 'inspector';
+  const isAdmin = !isSubscriber && !isInspector;
+
   const [loginEmail, setLoginEmail] = useState('super_admin@mlrf.demo');
   const [loginPassword, setLoginPassword] = useState('demo12345');
   const meQuery = useQuery({
@@ -142,6 +155,15 @@ export default function App() {
     enabled: !!token && role === 'super_admin',
   });
   useEffect(() => {
+    if (isSubscriber && page !== 'subscriber') {
+      setPage('subscriber');
+    } else if (isInspector && page !== 'inspector') {
+      setPage('inspector');
+    } else if (isAdmin && (page === 'subscriber' || page === 'inspector')) {
+      setPage('overview');
+    }
+  }, [role, isSubscriber, isInspector, isAdmin, page]);
+  useEffect(() => {
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   }, [dark]);
   useEffect(() => {
@@ -154,8 +176,7 @@ export default function App() {
   const nav = useMemo(
     () => [
       { id: 'overview' as Page, label: t('overview'), icon: LayoutDashboard },
-      { id: 'subscriber' as Page, label: t('subscriber'), icon: HeartPulse },
-      { id: 'inspector' as Page, label: t('inspector'), icon: ScanLine },
+      
       {
         id: 'analytics' as Page,
         label: t('analytics'),
@@ -197,7 +218,14 @@ export default function App() {
       localStorage.setItem('mlrf-role', next);
       setToken(r.accessToken);
       setRole(next);
-      setPage('overview');
+      if (next === 'subscriber') {
+        setPage('subscriber');
+        setSubscriberTab('journey');
+      } else if (next === 'inspector') {
+        setPage('inspector');
+      } else {
+        setPage('overview');
+      }
       setToast(t('toasts.demoRole', { role: roleLabel(next) }));
       await qc.invalidateQueries();
     } catch (e) {
@@ -210,6 +238,59 @@ export default function App() {
     setToken('');
     setPage('overview');
   };
+  const verifyCustom = async (idToVerify?: string) => {
+    const target = idToVerify ?? identifier;
+    try {
+      const res = await request<any>('/inspector/verify', 'post', {
+        qrHash: target,
+        certificateNumber: target,
+      });
+      setVerifyResult(res);
+    } catch (e) {
+      setVerifyResult({
+        result: 'ERROR',
+        message: messageFromError(e, t('toasts.verifyFailed')),
+      });
+    }
+  };
+
+  const logInspectionAction = async (outcome: 'compliant' | 'notice' | 'violation') => {
+    try {
+      await request('/inspector/actions', 'post', {
+        identifier,
+        outcome,
+        facilityName: verifyResult?.name || 'Medical Practice',
+        notes:
+          outcome === 'compliant'
+            ? 'Routine validation passed'
+            : outcome === 'notice'
+              ? 'Expired certificate - 14 day grace notice given'
+              : 'Unregistered facility reported',
+      });
+      setInspectorHistory((prev) => [
+        {
+          id: String(Date.now()),
+          identifier: identifier || 'MLRF-CHECK',
+          outcome,
+          time: t('now') || 'Just now',
+        },
+        ...prev.slice(0, 9),
+      ]);
+      setToast(t('toasts.actionLogged', { outcome }));
+    } catch {
+      setInspectorHistory((prev) => [
+        {
+          id: String(Date.now()),
+          identifier: identifier || 'MLRF-CHECK',
+          outcome,
+          time: 'Just now',
+        },
+        ...prev.slice(0, 9),
+      ]);
+      setToast(t('inspectorPortal.logAction') + ' ✓');
+    }
+  };
+
   const verify = async () => {
     try {
       setVerifyResult(
@@ -331,12 +412,60 @@ export default function App() {
                 <span className="demo-tag">{t('login.demoTag')}</span>
               </div>
               <p>{t('login.chooseRole')}</p>
-              <div className="role-grid">
-                {roles.map((r) => (
-                  <button key={r} onClick={() => void switchRole(r)}>
-                    {roleLabel(r)}
-                  </button>
-                ))}
+              <div className="demo-portals-login">
+                <button
+                  type="button"
+                  className="portal-login-card doctor-card"
+                  onClick={() => void switchRole('subscriber')}
+                >
+                  <div className="card-top">
+                    <span className="icon">👨‍⚕️</span>
+                    <strong>{t('portalSwitcher.doctor')}</strong>
+                  </div>
+                  <p>{t('doctorPortal.subtitle')}</p>
+                </button>
+
+                <button
+                  type="button"
+                  className="portal-login-card inspector-card"
+                  onClick={() => void switchRole('inspector')}
+                >
+                  <div className="card-top">
+                    <span className="icon">🕵️‍♂️</span>
+                    <strong>{t('portalSwitcher.inspector')}</strong>
+                  </div>
+                  <p>{t('inspectorPortal.subtitle')}</p>
+                </button>
+
+                <button
+                  type="button"
+                  className="portal-login-card admin-card"
+                  onClick={() => void switchRole('super_admin')}
+                >
+                  <div className="card-top">
+                    <span className="icon">🏛️</span>
+                    <strong>{t('portalSwitcher.admin')}</strong>
+                  </div>
+                  <p>{t('login.manage')}</p>
+                </button>
+              </div>
+
+              <div style={{ marginTop: 12 }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 600 }}>
+                  {t('portalSwitcher.adminRole')}:
+                </div>
+                <div className="admin-subroles-list">
+                  {(['super_admin', 'finance_admin', 'practitioner_analyst', 'facility_analyst', 'claims_admin'] as Role[]).map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      className="admin-subrole-btn"
+                      onClick={() => void switchRole(r)}
+                    >
+                      {roleLabel(r)}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="hint">{t('login.hint')}</div>
             </div>
@@ -361,6 +490,104 @@ export default function App() {
     unrenewed: 342,
   };
   return (
+    <>
+      {/* PORTAL 1: Subscriber Portal (Doctor / Medical Facility) */}
+      {isSubscriber && (
+        <div className="standalone-portal">
+          <header className="standalone-header">
+            <div className="standalone-brand">
+              <div className="brand-logo">
+                <HeartPulse size={24} />
+              </div>
+              <div>
+                <h2>{t('doctorPortal.headerTitle')}</h2>
+                <p>{t('doctorPortal.headerSubtitle')}</p>
+              </div>
+            </div>
+
+            <div className="standalone-tabs">
+              <button
+                type="button"
+                className={`standalone-tab-btn ${subscriberTab === 'journey' ? 'active' : ''}`}
+                onClick={() => setSubscriberTab('journey')}
+              >
+                <FileText size={16} />
+                {t('doctorPortal.tabJourney')}
+              </button>
+              <button
+                type="button"
+                className={`standalone-tab-btn ${subscriberTab === 'certificate' ? 'active' : ''}`}
+                onClick={() => setSubscriberTab('certificate')}
+              >
+                <BadgeCheck size={16} />
+                {t('doctorPortal.tabCertificate')}
+              </button>
+            </div>
+
+            <div className="standalone-user-actions">
+              <div className="subscriber-badge">
+                <span className="live-dot" />
+                <span>{currentUser.name}</span>
+              </div>
+              <button className="btn btn-outline" onClick={signOut}>
+                <LogOut size={15} /> {t('logout')}
+              </button>
+            </div>
+          </header>
+
+          <main className="standalone-main">
+            <Subscriber
+              setToast={setToast}
+              forceCertificateView={subscriberTab === 'certificate'}
+              onGoToJourney={() => setSubscriberTab('journey')}
+            />
+          </main>
+        </div>
+      )}
+
+      {/* PORTAL 2: Inspector / Field Watcher Portal */}
+      {isInspector && (
+        <div className="standalone-portal">
+          <header className="standalone-header">
+            <div className="standalone-brand">
+              <div className="brand-logo inspector-logo">
+                <ScanLine size={24} />
+              </div>
+              <div>
+                <h2>{t('inspectorPortal.title')}</h2>
+                <p>{t('inspectorPortal.subtitle')}</p>
+              </div>
+            </div>
+
+            <div className="standalone-user-actions">
+              <div className="inspector-badge">
+                <ShieldCheck size={16} />
+                <span>
+                  {t('inspectorPortal.officerBadge')} ({currentUser.name})
+                </span>
+              </div>
+              <button className="btn btn-outline" onClick={signOut}>
+                <LogOut size={15} /> {t('signOut')}
+              </button>
+            </div>
+          </header>
+
+          <main className="standalone-main inspector-container">
+            <InspectorStandalone
+              identifier={identifier}
+              setIdentifier={setIdentifier}
+              verifyResult={verifyResult}
+              setVerifyResult={setVerifyResult}
+              onVerify={verifyCustom}
+              onLogAction={logInspectionAction}
+              history={inspectorHistory}
+            />
+          </main>
+        </div>
+      )}
+
+      {/* PORTAL 3: Fund Management & Admins Portal */}
+      {isAdmin && (
     <div className="app-shell">
       <aside className={`sidebar ${sidebar ? 'sidebar-open' : ''}`}>
         <div className="side-brand">
@@ -754,7 +981,7 @@ export default function App() {
                   icon={ScanLine}
                   title={t('verify')}
                   detail={t('overviewPage.scanDetail')}
-                  onClick={() => setPage('inspector')}
+                  onClick={() => void switchRole('inspector')}
                 />
                 <Quick
                   icon={UploadCloud}
@@ -770,154 +997,6 @@ export default function App() {
                 />
               </div>
             </>
-          )}
-          {page === 'subscriber' && <Subscriber setToast={setToast} />}
-          {page === 'inspector' && (
-            <section className="feature-layout">
-              <div className="feature-heading">
-                <div className="eyebrow">{t('inspectorPage.eyebrow')}</div>
-                <h1>{t('inspectorPage.title')}</h1>
-                <p>{t('inspectorPage.body')}</p>
-              </div>
-              <div className="inspector-device">
-                <div className="device-top">
-                  <span /> <span /> <span />
-                </div>
-                <div className="device-content">
-                  <div className="device-brand">
-                    <ShieldCheck />
-                    <strong>{t('inspectorBrand')}</strong>
-                  </div>
-                  <div className="scan-frame">
-                    <div className="scan-corner tl" />
-                    <div className="scan-corner tr" />
-                    <div className="scan-corner bl" />
-                    <div className="scan-corner br" />
-                    <ScanLine size={52} />
-                    <span>{t('inspectorPage.align')}</span>
-                  </div>
-                  <div className="or-divider">
-                    <span /> {t('inspectorPage.orSearch')} <span />
-                  </div>
-                  <label>{t('inspectorPage.label')}</label>
-                  <div className="search-field">
-                    <Search size={16} />
-                    <input
-                      value={identifier}
-                      onChange={(e) => setIdentifier(e.target.value)}
-                      placeholder="MLRF-2026-000123"
-                    />
-                  </div>
-                  <button className="btn btn-primary full" onClick={() => void verify()}>
-                    <ScanLine size={17} /> {t('inspectorPage.verify')}
-                  </button>
-                  {verifyResult && (
-                    <div
-                      className={`verification-result ${verifyResult.result === 'VALID' ? 'valid' : verifyResult.result === 'EXPIRED' ? 'expired' : 'invalid'}`}
-                    >
-                      <div className="result-icon">
-                        {verifyResult.result === 'VALID' ? (
-                          <CheckCircle2 />
-                        ) : verifyResult.result === 'EXPIRED' ? (
-                          <AlertTriangle />
-                        ) : (
-                          <X />
-                        )}
-                      </div>
-                      <div>
-                        <strong>
-                          {verifyResult.result === 'VALID'
-                            ? t('inspectorPage.valid')
-                            : verifyResult.result === 'EXPIRED'
-                              ? t('inspectorPage.expired')
-                              : verifyResult.result === 'INVALID'
-                                ? t('inspectorPage.invalid')
-                                : t('inspectorPage.error')}
-                        </strong>
-                        <p>
-                          {verifyResult.name ??
-                            verifyResult.message ??
-                            t('inspectorPage.noMatch')}
-                        </p>
-                        {verifyResult.expiry && (
-                          <small>
-                            {t('inspectorPage.expires', { date: formatDate(verifyResult.expiry) })}
-                          </small>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  <button
-                    className="text-link"
-                    onClick={() => {
-                      setIdentifier('demo-qr-valid-7f0c1a');
-                      setVerifyResult(null);
-                    }}
-                  >
-                    {t('inspectorPage.loadDemo')}
-                  </button>
-                </div>
-                <div className="device-foot">{t('inspectorPage.foot')}</div>
-              </div>
-              <div className="feature-side">
-                <div className="panel">
-                  <div className="panel-heading">
-                    <div>
-                      <h3>{t('inspectorPage.scenarios')}</h3>
-                      <p>{t('inspectorPage.scenariosBody')}</p>
-                    </div>
-                  </div>
-                  <div className="scenario-list">
-                    <button
-                      onClick={() => {
-                        setIdentifier('demo-qr-valid-7f0c1a');
-                        setVerifyResult(null);
-                      }}
-                    >
-                      <span className="scenario-dot valid-dot" />
-                      <div>
-                        <strong>{t('inspectorPage.validCert')}</strong>
-                        <small>MLRF-2026-000123</small>
-                      </div>
-                      <ArrowRight />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIdentifier('MLRF-EXPIRED-000001');
-                        setVerifyResult(null);
-                      }}
-                    >
-                      <span className="scenario-dot expired-dot" />
-                      <div>
-                        <strong>{t('inspectorPage.expiredCert')}</strong>
-                        <small>{t('inspectorPage.expiredHint')}</small>
-                      </div>
-                      <ArrowRight />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIdentifier('unregistered-certificate');
-                        setVerifyResult(null);
-                      }}
-                    >
-                      <span className="scenario-dot invalid-dot" />
-                      <div>
-                        <strong>{t('inspectorPage.unregistered')}</strong>
-                        <small>{t('inspectorPage.invalid')}</small>
-                      </div>
-                      <ArrowRight />
-                    </button>
-                  </div>
-                </div>
-                <div className="note-card">
-                  <ShieldCheck />
-                  <div>
-                    <strong>{t('inspectorPage.privacy')}</strong>
-                    <p>{t('inspectorPage.privacyBody')}</p>
-                  </div>
-                </div>
-              </div>
-            </section>
           )}
           {page === 'analytics' && (
             <>
@@ -1561,7 +1640,7 @@ export default function App() {
                   n="02"
                   title={t('guidePage.step2Title')}
                   text={t('guidePage.step2')}
-                  onClick={() => setPage('inspector')}
+                  onClick={() => void switchRole('inspector')}
                 />
                 <GuideStep
                   n="03"
@@ -1604,6 +1683,9 @@ export default function App() {
           onClick={() => setSidebar(false)}
         />
       )}
+    </div>
+      )}
+
       {toast && (
         <div className="toast">
           <CheckCircle2 size={17} />
@@ -1613,7 +1695,7 @@ export default function App() {
           </button>
         </div>
       )}
-    </div>
+    </>
   );
 }
 function Kpi({
@@ -1752,7 +1834,15 @@ function GuideStep({
     </button>
   );
 }
-function Subscriber({ setToast }: { setToast: (s: string) => void }) {
+function Subscriber({
+  setToast,
+  forceCertificateView = false,
+  onGoToJourney,
+}: {
+  setToast: (s: string) => void;
+  forceCertificateView?: boolean;
+  onGoToJourney?: () => void;
+}) {
   const { t } = useTranslation();
   const [entity, setEntity] = useState<'individual' | 'facility'>('individual');
   const [tier, setTier] = useState('gp');
@@ -1763,6 +1853,8 @@ function Subscriber({ setToast }: { setToast: (s: string) => void }) {
   const [selected, setSelected] = useState<any>(null);
   const tiers = DEMO_TIERS.filter((t) => t.entityType === entity);
   const active = tiers.find((t) => t.id === tier) ?? tiers[0]!;
+  const effectiveStep = forceCertificateView ? 4 : step;
+  const isPaid = forceCertificateView || paid;
   const saveProfile = async () => {
     try {
       await request('/subscriber/profile', 'put', {
@@ -1809,8 +1901,8 @@ function Subscriber({ setToast }: { setToast: (s: string) => void }) {
         title={t('subscriberPage.title')}
         description={t('subscriberPage.body')}
         action={
-          <span className={`status-chip ${paid ? 'success' : 'warning'}`}>
-            {paid ? t('subscriberPage.active') : t('subscriberPage.incomplete')}
+          <span className={`status-chip ${isPaid ? 'success' : 'warning'}`}>
+            {isPaid ? t('subscriberPage.active') : t('subscriberPage.incomplete')}
           </span>
         }
       />
@@ -1822,10 +1914,10 @@ function Subscriber({ setToast }: { setToast: (s: string) => void }) {
           { n: 4, title: t('subscriberPage.certificateStep') },
         ].map((s) => (
           <div
-            className={`subscriber-step ${step === s.n ? 'current' : step > s.n ? 'done' : ''}`}
+            className={`subscriber-step ${effectiveStep === s.n ? 'current' : effectiveStep > s.n ? 'done' : ''}`}
             key={s.n}
           >
-            <span>{step > s.n ? <Check size={15} /> : s.n}</span>
+            <span>{effectiveStep > s.n ? <Check size={15} /> : s.n}</span>
             <strong>{s.title}</strong>
           </div>
         ))}
@@ -1835,7 +1927,7 @@ function Subscriber({ setToast }: { setToast: (s: string) => void }) {
           <div className="panel-heading">
             <div>
               <h3>
-                {step === 1
+                {effectiveStep === 1
                   ? t('subscriberPage.professionalTitle')
                   : step === 2
                     ? t('subscriberPage.chooseTitle')
@@ -1844,7 +1936,7 @@ function Subscriber({ setToast }: { setToast: (s: string) => void }) {
                       : t('subscriberPage.readyTitle')}
               </h3>
               <p>
-                {step === 1
+                {effectiveStep === 1
                   ? t('subscriberPage.professionalBody')
                   : step === 2
                     ? t('subscriberPage.chooseBody')
@@ -1854,7 +1946,7 @@ function Subscriber({ setToast }: { setToast: (s: string) => void }) {
               </p>
             </div>
           </div>
-          {step === 1 && (
+          {effectiveStep === 1 && (
             <div className="form-grid">
               <div className="form-field full-field">
                 <label>{t('subscriberPage.type')}</label>
@@ -1909,7 +2001,7 @@ function Subscriber({ setToast }: { setToast: (s: string) => void }) {
               </button>
             </div>
           )}
-          {step === 2 && (
+          {effectiveStep === 2 && (
             <>
               <div className="form-field">
                 <label>{t('subscriberPage.tier')}</label>
@@ -1941,7 +2033,7 @@ function Subscriber({ setToast }: { setToast: (s: string) => void }) {
               </div>
             </>
           )}
-          {step === 3 && (
+          {effectiveStep === 3 && (
             <>
               <div className="payment-summary">
                 <div>
@@ -1985,7 +2077,7 @@ function Subscriber({ setToast }: { setToast: (s: string) => void }) {
               </div>
             </>
           )}
-          {step === 4 && (
+          {effectiveStep === 4 && (
             <div className="certificate-preview">
               <div className="certificate-seal">
                 <ShieldCheck size={36} />
@@ -2017,12 +2109,19 @@ function Subscriber({ setToast }: { setToast: (s: string) => void }) {
                 </div>
                 <span>{t('subscriberPage.demoQr')}</span>
               </div>
-              <button
-                className="btn btn-outline"
-                onClick={() => setToast(t('toasts.pdfPlaceholder'))}
-              >
-                <Download size={16} /> {t('subscriberPage.download')}
-              </button>
+              <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+                {onGoToJourney && (
+                  <button className="btn btn-outline" onClick={onGoToJourney}>
+                    <ArrowRight size={16} /> {t('doctorPortal.tabs.journey')}
+                  </button>
+                )}
+                <button
+                  className="btn btn-primary"
+                  onClick={() => setToast(t('toasts.pdfPlaceholder'))}
+                >
+                  <Download size={16} /> {t('subscriberPage.download')}
+                </button>
+              </div>
             </div>
           )}
         </section>
@@ -2043,12 +2142,12 @@ function Subscriber({ setToast }: { setToast: (s: string) => void }) {
                   r="49"
                   className="progress-ring-value"
                   style={{
-                    strokeDasharray: `${(step === 4 ? 100 : step === 3 ? 75 : step === 2 ? 50 : 25) * 3.08} 308`,
+                    strokeDasharray: `${(effectiveStep === 4 ? 100 : effectiveStep === 3 ? 75 : effectiveStep === 2 ? 50 : 25) * 3.08} 308`,
                   }}
                 />
               </svg>
               <div>
-                <strong>{step === 4 ? 100 : step === 3 ? 75 : step === 2 ? 50 : 25}%</strong>
+                <strong>{effectiveStep === 4 ? 100 : effectiveStep === 3 ? 75 : effectiveStep === 2 ? 50 : 25}%</strong>
                 <span>{t('subscriberPage.completed')}</span>
               </div>
             </div>
@@ -2059,8 +2158,8 @@ function Subscriber({ setToast }: { setToast: (s: string) => void }) {
                 t('subscriberPage.paymentStep'),
                 t('subscriberPage.issued'),
               ].map((s, i) => (
-                <div key={s} className={step > i ? 'complete' : ''}>
-                  <span>{step > i ? <Check size={13} /> : i + 1}</span>
+                <div key={s} className={effectiveStep > i ? 'complete' : ''}>
+                  <span>{effectiveStep > i ? <Check size={13} /> : i + 1}</span>
                   {s}
                 </div>
               ))}
@@ -2076,5 +2175,233 @@ function Subscriber({ setToast }: { setToast: (s: string) => void }) {
         </aside>
       </div>
     </>
+  );
+}
+
+
+function InspectorStandalone({
+  identifier,
+  setIdentifier,
+  verifyResult,
+  setVerifyResult,
+  onVerify,
+  onLogAction,
+  history,
+}: {
+  identifier: string;
+  setIdentifier: (val: string) => void;
+  verifyResult: any;
+  setVerifyResult: (val: any) => void;
+  onVerify: (id?: string) => Promise<void>;
+  onLogAction: (outcome: 'compliant' | 'notice' | 'violation') => Promise<void>;
+  history: Array<{ id: string; identifier: string; outcome: string; time: string }>;
+}) {
+  const { t } = useTranslation();
+
+  const handleScenario = (id: string) => {
+    setIdentifier(id);
+    void onVerify(id);
+  };
+
+  return (
+    <div className="inspector-panel-standalone">
+      <div className="inspector-search-card">
+        <div className="page-title-row" style={{ marginBottom: 16 }}>
+          <div>
+            <div className="eyebrow">{t('inspectorPortal.badge')}</div>
+            <h1 style={{ fontSize: 24, margin: '4px 0 6px' }}>{t('inspectorPortal.headerTitle')}</h1>
+            <p className="muted" style={{ fontSize: 13, margin: 0 }}>
+              {t('inspectorPortal.headerSubtitle')}
+            </p>
+          </div>
+        </div>
+
+        <label style={{ fontWeight: 600, fontSize: 13, marginBottom: 8, display: 'block' }}>
+          {t('inspectorPage.label')}
+        </label>
+        <div className="search-field" style={{ marginBottom: 12 }}>
+          <Search size={18} />
+          <input
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+            placeholder={t('inspectorPortal.inputPlaceholder')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') void onVerify();
+            }}
+          />
+        </div>
+
+        <button className="btn btn-primary full" onClick={() => void onVerify()}>
+          <ScanLine size={18} /> {t('inspectorPortal.verifyButton')}
+        </button>
+
+        {/* 1-Click Presentation Scenarios */}
+        <div style={{ marginTop: 18 }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>
+            {t('inspectorPage.scenarios')}:
+          </span>
+          <div className="inspector-scenarios-row">
+            <button
+              type="button"
+              className="scenario-quick-btn"
+              onClick={() => handleScenario('demo-qr-valid-7f0c1a')}
+            >
+              <span className="scenario-dot valid-dot" />
+              <span>{t('inspectorPortal.statusValid')}</span>
+            </button>
+            <button
+              type="button"
+              className="scenario-quick-btn"
+              onClick={() => handleScenario('MLRF-EXPIRED-000001')}
+            >
+              <span className="scenario-dot expired-dot" />
+              <span>{t('inspectorPortal.statusExpired')}</span>
+            </button>
+            <button
+              type="button"
+              className="scenario-quick-btn"
+              onClick={() => handleScenario('unregistered-certificate')}
+            >
+              <span className="scenario-dot invalid-dot" />
+              <span>{t('inspectorPortal.statusInvalid')}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Verification Result Card */}
+        {verifyResult && (
+          <div
+            className={`verification-result ${verifyResult.result === 'VALID' ? 'valid' : verifyResult.result === 'EXPIRED' ? 'expired' : 'invalid'}`}
+            style={{ marginTop: 20 }}
+          >
+            <div className="result-icon">
+              {verifyResult.result === 'VALID' ? (
+                <CheckCircle2 size={32} />
+              ) : verifyResult.result === 'EXPIRED' ? (
+                <AlertTriangle size={32} />
+              ) : (
+                <X size={32} />
+              )}
+            </div>
+            <div>
+              <strong style={{ fontSize: 16 }}>
+                {verifyResult.result === 'VALID'
+                  ? t('inspectorPortal.statusValid')
+                  : verifyResult.result === 'EXPIRED'
+                    ? t('inspectorPortal.statusExpired')
+                    : verifyResult.result === 'INVALID'
+                      ? t('inspectorPortal.statusInvalid')
+                      : t('inspectorPage.error')}
+              </strong>
+              <p style={{ marginTop: 4, marginBottom: 4 }}>
+                {verifyResult.name ?? verifyResult.message ?? t('inspectorPage.noMatch')}
+              </p>
+              {verifyResult.specialty && (
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  {t('subscriberPage.specialtyStep')}: <b>{verifyResult.specialty}</b>
+                </div>
+              )}
+              {verifyResult.certificateNumber && (
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  {t('subscriberPage.certNumber')}: <b>{verifyResult.certificateNumber}</b>
+                </div>
+              )}
+              {verifyResult.expiry && (
+                <small style={{ display: 'block', marginTop: 4 }}>
+                  {t('inspectorPage.expires', { date: formatDate(verifyResult.expiry) })}
+                </small>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Field Action Controls */}
+        {verifyResult && (
+          <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+              {t('inspectorPortal.actionsHeading')}
+            </span>
+            <div className="inspector-actions-bar">
+              {verifyResult.result === 'VALID' && (
+                <button
+                  type="button"
+                  className="inspector-action-btn btn-compliant"
+                  onClick={() => void onLogAction('compliant')}
+                >
+                  <CheckCircle2 size={16} /> {t('inspectorPortal.logAction')}
+                </button>
+              )}
+              {verifyResult.result === 'EXPIRED' && (
+                <>
+                  <button
+                    type="button"
+                    className="inspector-action-btn btn-notice"
+                    onClick={() => void onLogAction('notice')}
+                  >
+                    <Bell size={16} /> {t('inspectorPortal.sendNotice')}
+                  </button>
+                  <button
+                    type="button"
+                    className="inspector-action-btn btn-violation"
+                    onClick={() => void onLogAction('violation')}
+                  >
+                    <AlertTriangle size={16} /> {t('inspectorPortal.reportViolation')}
+                  </button>
+                </>
+              )}
+              {verifyResult.result === 'INVALID' && (
+                <button
+                  type="button"
+                  className="inspector-action-btn btn-violation"
+                  onClick={() => void onLogAction('violation')}
+                >
+                  <AlertTriangle size={16} /> {t('inspectorPortal.reportViolation')}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Shift Inspection History */}
+      <div className="panel">
+        <div className="panel-heading">
+          <div>
+            <h3>{t('inspectorPortal.recentLogs')}</h3>
+            <p>{t('inspectorPage.scenariosBody')}</p>
+          </div>
+        </div>
+        <table className="inspector-history-table">
+          <thead>
+            <tr>
+              <th>{t('subscriberPage.reference')}</th>
+              <th>{t('statusLabel')}</th>
+              <th>{t('recentActivity')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {history.map((item) => (
+              <tr key={item.id}>
+                <td>
+                  <strong>{item.identifier}</strong>
+                </td>
+                <td>
+                  <span
+                    className={`status-chip ${item.outcome === 'compliant' ? 'success' : item.outcome === 'notice' ? 'warning' : 'danger'}`}
+                  >
+                    {item.outcome === 'compliant'
+                      ? t('inspectorPortal.statusValid')
+                      : item.outcome === 'notice'
+                        ? t('inspectorPortal.sendNotice')
+                        : t('inspectorPortal.reportViolation')}
+                  </span>
+                </td>
+                <td style={{ color: 'var(--text-muted)' }}>{item.time}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }

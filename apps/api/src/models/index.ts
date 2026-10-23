@@ -102,7 +102,7 @@ const smsOutboxSchema = new Schema({
   status: {type: String, enum: ['queued', 'sent', 'failed'], default: 'queued', index: true}, attempts: {type: Number, default: 0}, sentAt: {type: Date, default: null}, lastError: {type: String, default: null},
 }, timestamps);
 
-function registered<T>(name: string, schema: Schema<T>) { return (mongoose.models[name] as ReturnType<typeof model<T>> | undefined) ?? model<T>(name, schema); }
+function registered(name: string, schema: any) { return (mongoose.models[name] as any) ?? model(name, schema); }
 export const RoleModel = registered('Role', roleSchema);
 export const UserModel = registered('User', userSchema);
 export const SpecialtyTierModel = registered('SpecialtyTier', specialtyTierSchema);
