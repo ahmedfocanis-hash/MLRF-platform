@@ -1433,10 +1433,62 @@ button:disabled {
   color: var(--color-surgical-blue);
 }
 
+.portal-actions,
 .standalone-user-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
+}
+
+.portal-actions .icon-btn,
+.portal-actions .notification-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-charcoal);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.portal-actions .icon-btn:hover,
+.portal-actions .notification-btn:hover {
+  background: var(--color-cloud-gray);
+  color: var(--color-obsidian);
+}
+
+.avatar-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--color-cloud-gray);
+  color: var(--color-obsidian);
+  font-family: var(--font-open-runde);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  border: 1.5px solid #e2e8f0;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.18s ease;
+}
+
+.avatar-circle:hover {
+  transform: scale(1.06);
+  border-color: var(--color-surgical-blue);
+  box-shadow: 0 2px 10px rgba(37, 151, 208, 0.25);
+}
+
+[data-theme="dark"] .avatar-circle {
+  background: #272a30;
+  color: #ffffff;
+  border-color: #3f3f46;
+}
+
+[data-theme="dark"] .portal-actions .icon-btn:hover,
+[data-theme="dark"] .portal-actions .notification-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
 }
 
 .subscriber-badge,

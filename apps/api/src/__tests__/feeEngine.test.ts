@@ -3,13 +3,13 @@ import {calculateFee} from '../services/feeEngine.js';
 
 describe('calculateFee', () => {
   it('uses the server-owned tier fee and returns a transparent breakdown', () => {
-    expect(calculateFee('gp')).toEqual({tierId: 'gp', baseFee: 1800, riskSurcharge: 0, lateRenewalPenalty: 0, total: 1800, risk: 'standard'});
+    expect(calculateFee('human_doctor_gp')).toEqual({tierId: 'human_doctor_gp', baseFee: 240, riskSurcharge: 0, lateRenewalPenalty: 0, total: 240, risk: 'standard'});
   });
-  it('charges surgery more than a general practitioner', () => {
-    expect(calculateFee('surgery').total).toBeGreaterThan(calculateFee('gp').total);
+  it('charges specialist more than a general practitioner', () => {
+    expect(calculateFee('human_doctor_specialist').total).toBeGreaterThan(calculateFee('human_doctor_gp').total);
   });
   it('adds the configured late renewal penalty', () => {
-    expect(calculateFee('gp', {lateRenewal: true}).total).toBe(1854);
+    expect(calculateFee('human_doctor_gp', {lateRenewal: true}).total).toBe(247);
   });
   it('rejects unknown tiers', () => {
     expect(() => calculateFee('not-a-tier')).toThrow('Unknown specialty tier');

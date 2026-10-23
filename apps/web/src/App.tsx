@@ -524,14 +524,50 @@ export default function App() {
               </button>
             </div>
 
-            <div className="standalone-user-actions">
+            <div className="portal-actions">
               <div className="subscriber-badge">
                 <span className="live-dot" />
                 <span>{currentUser.name}</span>
               </div>
-              <button className="btn btn-outline" onClick={signOut}>
-                <LogOut size={15} /> {t('logout')}
+              <button
+                type="button"
+                className="icon-btn"
+                title={t('shell.toggleTheme')}
+                onClick={() => setDark(!dark)}
+              >
+                {dark ? <Sun size={18} /> : <Moon size={18} />}
               </button>
+              <button
+                type="button"
+                className="icon-btn"
+                title={t('shell.switchLanguage')}
+                onClick={() => void i18n.changeLanguage(i18n.language === 'en' ? 'ar' : 'en')}
+              >
+                <Globe size={18} />
+              </button>
+              <button
+                type="button"
+                className="notification-btn"
+                title={t('shell.notifications')}
+              >
+                <Bell size={18} />
+                <i />
+              </button>
+              <div
+                role="button"
+                tabIndex={0}
+                className="avatar-circle"
+                onClick={signOut}
+                onKeyDown={(e) => e.key === 'Enter' && signOut()}
+                title={t('logout')}
+              >
+                {currentUser.name
+                  .split(' ')
+                  .map((s) => s[0])
+                  .slice(0, 2)
+                  .join('')
+                  .toUpperCase()}
+              </div>
             </div>
           </header>
 
@@ -559,16 +595,52 @@ export default function App() {
               </div>
             </div>
 
-            <div className="standalone-user-actions">
+            <div className="portal-actions">
               <div className="inspector-badge">
                 <ShieldCheck size={16} />
                 <span>
                   {t('inspectorPortal.officerBadge')} ({currentUser.name})
                 </span>
               </div>
-              <button className="btn btn-outline" onClick={signOut}>
-                <LogOut size={15} /> {t('signOut')}
+              <button
+                type="button"
+                className="icon-btn"
+                title={t('shell.toggleTheme')}
+                onClick={() => setDark(!dark)}
+              >
+                {dark ? <Sun size={18} /> : <Moon size={18} />}
               </button>
+              <button
+                type="button"
+                className="icon-btn"
+                title={t('shell.switchLanguage')}
+                onClick={() => void i18n.changeLanguage(i18n.language === 'en' ? 'ar' : 'en')}
+              >
+                <Globe size={18} />
+              </button>
+              <button
+                type="button"
+                className="notification-btn"
+                title={t('shell.notifications')}
+              >
+                <Bell size={18} />
+                <i />
+              </button>
+              <div
+                role="button"
+                tabIndex={0}
+                className="avatar-circle"
+                onClick={signOut}
+                onKeyDown={(e) => e.key === 'Enter' && signOut()}
+                title={t('logout')}
+              >
+                {currentUser.name
+                  .split(' ')
+                  .map((s) => s[0])
+                  .slice(0, 2)
+                  .join('')
+                  .toUpperCase()}
+              </div>
             </div>
           </header>
 
@@ -696,26 +768,46 @@ export default function App() {
                 ))}
               </select>
             </div>
-            <button className="icon-btn" title={t('shell.toggleTheme')} onClick={() => setDark(!dark)}>
-              {dark ? <Activity size={18} /> : <Moon size={18} />}
-            </button>
-            <button
-              className="icon-btn"
-              title={t('shell.switchLanguage')}
-              onClick={() => void i18n.changeLanguage(i18n.language === 'en' ? 'ar' : 'en')}
-            >
-              <Globe size={18} />
-            </button>
-            <button className="notification-btn" title={t('shell.notifications')}>
-              <Bell size={18} />
-              <i />
-            </button>
-            <div className="avatar small">
-              {currentUser.name
-                .split(' ')
-                .map((s) => s[0])
-                .slice(0, 2)
-                .join('')}
+            <div className="portal-actions">
+              <button
+                type="button"
+                className="icon-btn"
+                title={t('shell.toggleTheme')}
+                onClick={() => setDark(!dark)}
+              >
+                {dark ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
+              <button
+                type="button"
+                className="icon-btn"
+                title={t('shell.switchLanguage')}
+                onClick={() => void i18n.changeLanguage(i18n.language === 'en' ? 'ar' : 'en')}
+              >
+                <Globe size={18} />
+              </button>
+              <button
+                type="button"
+                className="notification-btn"
+                title={t('shell.notifications')}
+              >
+                <Bell size={18} />
+                <i />
+              </button>
+              <div
+                role="button"
+                tabIndex={0}
+                className="avatar-circle"
+                onClick={signOut}
+                onKeyDown={(e) => e.key === 'Enter' && signOut()}
+                title={t('logout')}
+              >
+                {currentUser.name
+                  .split(' ')
+                  .map((s) => s[0])
+                  .slice(0, 2)
+                  .join('')
+                  .toUpperCase()}
+              </div>
             </div>
           </div>
         </header>
@@ -1845,7 +1937,7 @@ function Subscriber({
 }) {
   const { t } = useTranslation();
   const [entity, setEntity] = useState<'individual' | 'facility'>('individual');
-  const [tier, setTier] = useState('gp');
+  const [tier, setTier] = useState('human_doctor_gp');
   const [governorate, setGovernorate] = useState('Cairo');
   const [profileId, setProfileId] = useState('29901011234567');
   const [step, setStep] = useState(1);
@@ -1955,7 +2047,7 @@ function Subscriber({
                     className={entity === 'individual' ? 'selected' : ''}
                     onClick={() => {
                       setEntity('individual');
-                      setTier('gp');
+                      setTier('human_doctor_gp');
                     }}
                   >
                     <Stethoscope size={17} /> {t('subscriberPage.individual')}
@@ -1964,7 +2056,7 @@ function Subscriber({
                     className={entity === 'facility' ? 'selected' : ''}
                     onClick={() => {
                       setEntity('facility');
-                      setTier('hospital');
+                      setTier('facility_hospital');
                     }}
                   >
                     <Building2 size={17} /> {t('subscriberPage.facility')}
@@ -2008,7 +2100,7 @@ function Subscriber({
                 <select value={tier} onChange={(e) => setTier(e.target.value)}>
                   {tiers.map((item) => (
                     <option value={item.id} key={item.id}>
-                      {specialtyLabel(item.name)} — {money(item.fee)}
+                      {specialtyLabel(item.id)} — EGP {item.fee}
                     </option>
                   ))}
                 </select>

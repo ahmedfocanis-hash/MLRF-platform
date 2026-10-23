@@ -46,7 +46,7 @@ describe('MLRF API end-to-end demo flow', () => {
     }).expect(200);
 
     const tier = await request(app).post('/api/v1/subscriber/select-tier').set('Authorization', `Bearer ${accessToken}`).send({
-      tierId: 'gp', entityType: 'individual',
+      tierId: 'human_doctor_gp', entityType: 'individual',
     }).expect(200);
     expect(tier.body.data.amount).toBeGreaterThan(0);
 

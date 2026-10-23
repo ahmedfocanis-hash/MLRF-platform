@@ -1,4 +1,4 @@
-﻿export type Messages<T> = {
+export type Messages<T> = {
   [K in keyof T]: T[K] extends string ? string : Messages<T[K]>;
 };
 
@@ -513,5 +513,18 @@ export const en = {
     actionLogged: 'Inspection record saved successfully',
     noticeSent: 'Renewal SMS notice sent to practitioner',
     violationReported: 'Non-compliance violation reported to administration',
+  },
+  tiers: {
+    human_doctor_gp: 'Human Doctors: General Practitioner',
+    human_doctor_specialist: 'Human Doctors: Other Specialties',
+    dentist_pt_gp: 'Dentists & Physiotherapists: General Practitioner',
+    dentist_pt_specialist: 'Dentists & Physiotherapists: Other Specialties',
+    pharmacist: 'Pharmacists',
+    other_medical_staff: 'Nursing, Technicians & Applied Health Sciences',
+    facility_hospital: 'Hospital (Up to 50 beds)',
+    facility_medical_center: 'Medical Center',
+    facility_radiology: 'Radiology Center',
+    facility_lab: 'Lab Center',
+    facility_pharmacy: 'Pharmacy Facility',
   },
 };

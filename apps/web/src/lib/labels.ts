@@ -65,12 +65,17 @@ export function riskLabel(risk: string) {
   return lookup('risk', risk, risk);
 }
 
-export function specialtyLabel(name: string) {
-  const aliases: Record<string, string> = { Obstetrics: 'obgyn' };
-  const key = aliases[name] ?? name;
-  const tier = DEMO_TIERS.find((item) => item.name === key || item.nameAr === key || item.id === key);
-  if (!tier) return name;
-  return i18n.language?.startsWith('ar') ? tier.nameAr : tier.name;
+export function specialtyLabel(nameOrId: string) {
+  const tier = DEMO_TIERS.find((item) => item.name === nameOrId || item.nameAr === nameOrId || item.id === nameOrId);
+  const tierKey = tier ? tier.id : nameOrId;
+  const translated = i18n.t(`tiers.${tierKey}`);
+  if (translated && translated !== `tiers.${tierKey}`) {
+    return translated;
+  }
+  if (tier) {
+    return i18n.language?.startsWith('ar') ? tier.nameAr : tier.name;
+  }
+  return nameOrId;
 }
 
 export function governorateLabel(name: string) {

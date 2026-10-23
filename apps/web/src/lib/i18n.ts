@@ -4,7 +4,7 @@ import { ar } from '../locales/ar';
 import { en } from '../locales/en';
 
 const stored = localStorage.getItem('mlrf-lang');
-const initial = stored === 'ar' ? 'ar' : 'en';
+const initial = stored === 'en' ? 'en' : 'ar';
 
 function applyDocumentLanguage(language: string) {
   const lng = language.startsWith('ar') ? 'ar' : 'en';
@@ -19,7 +19,7 @@ applyDocumentLanguage(initial);
 void i18n.use(initReactI18next).init({
   resources: { en: { translation: en }, ar: { translation: ar } },
   lng: initial,
-  fallbackLng: 'en',
+  fallbackLng: 'ar',
   nsSeparator: false,
   interpolation: { escapeValue: false },
 });

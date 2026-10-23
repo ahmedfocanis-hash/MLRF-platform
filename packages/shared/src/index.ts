@@ -21,20 +21,15 @@ export const professionalProfileSchema = z.object({nationalId:z.string().regex(/
 export const tierSchema = z.object({tierId:z.string().min(1),entityType:z.enum(['individual','facility'])});
 export type ApiEnvelope<T> = {success:boolean;data:T|null;error:{code:string;message:string;details?:unknown}|null};
 export const DEMO_TIERS = [
- {id:'gp',name:'General Practitioner',nameAr:'طبيب عام',entityType:'individual',fee:1800,risk:'standard'},
- {id:'surgery',name:'Surgery',nameAr:'جراحة',entityType:'individual',fee:4200,risk:'high'},
- {id:'obgyn',name:'Obstetrics & Gynecology',nameAr:'نساء وتوليد',entityType:'individual',fee:3900,risk:'high'},
- {id:'orthopedics',name:'Orthopedics',nameAr:'عظام',entityType:'individual',fee:3600,risk:'high'},
- {id:'cosmetic',name:'Cosmetic Surgery',nameAr:'جراحة تجميل',entityType:'individual',fee:5200,risk:'very-high'},
- {id:'cardiology',name:'Cardiology',nameAr:'قلب',entityType:'individual',fee:3000,risk:'medium'},
- {id:'pediatrics',name:'Pediatrics',nameAr:'أطفال',entityType:'individual',fee:2400,risk:'medium'},
- {id:'dentistry',name:'Dentistry',nameAr:'أسنان',entityType:'individual',fee:2100,risk:'standard'},
- {id:'pharmacist',name:'Pharmacist',nameAr:'صيدلي',entityType:'individual',fee:1500,risk:'standard'},
- {id:'nurse',name:'Nurse',nameAr:'تمريض',entityType:'individual',fee:1100,risk:'standard'},
- {id:'lab-tech',name:'Lab Technician',nameAr:'فني معمل',entityType:'individual',fee:1300,risk:'standard'},
- {id:'hospital',name:'Hospital',nameAr:'مستشفى',entityType:'facility',fee:18000,risk:'high'},
- {id:'clinic',name:'Clinic',nameAr:'عيادة',entityType:'facility',fee:5200,risk:'standard'},
- {id:'lab',name:'Laboratory',nameAr:'معمل',entityType:'facility',fee:6500,risk:'medium'},
- {id:'pharmacy',name:'Pharmacy',nameAr:'صيدلية',entityType:'facility',fee:3200,risk:'standard'},
- {id:'medical-center',name:'Medical Center',nameAr:'مركز طبي',entityType:'facility',fee:9000,risk:'high'}
+ {id:'human_doctor_gp',name:'Human Doctors: General Practitioner',nameAr:'الأطباء البشريين - ممارس عام',entityType:'individual',fee:240,risk:'standard'},
+ {id:'human_doctor_specialist',name:'Human Doctors: Other Specialties',nameAr:'الأطباء البشريين - الدرجات التخصصية الأخرى',entityType:'individual',fee:920,risk:'high'},
+ {id:'dentist_pt_gp',name:'Dentists & Physiotherapists: General Practitioner',nameAr:'أطباء الأسنان والعلاج الطبيعي - ممارس عام',entityType:'individual',fee:160,risk:'standard'},
+ {id:'dentist_pt_specialist',name:'Dentists & Physiotherapists: Other Specialties',nameAr:'أطباء الأسنان والعلاج الطبيعي - الدرجات التخصصية',entityType:'individual',fee:400,risk:'medium'},
+ {id:'pharmacist',name:'Pharmacists',nameAr:'الصيادلة',entityType:'individual',fee:240,risk:'standard'},
+ {id:'other_medical_staff',name:'Nursing, Technicians & Applied Health Sciences',nameAr:'التمريض والفنيين والفئات الطبية الأخرى',entityType:'individual',fee:100,risk:'standard'},
+ {id:'facility_hospital',name:'Hospital (Up to 50 beds)',nameAr:'مستشفى (حتى 50 سرير)',entityType:'facility',fee:24000,risk:'high'},
+ {id:'facility_medical_center',name:'Medical Center',nameAr:'مركز طبي',entityType:'facility',fee:9600,risk:'medium'},
+ {id:'facility_radiology',name:'Radiology Center',nameAr:'مركز أشعة',entityType:'facility',fee:3600,risk:'standard'},
+ {id:'facility_lab',name:'Lab Center',nameAr:'مركز تحاليل',entityType:'facility',fee:2400,risk:'standard'},
+ {id:'facility_pharmacy',name:'Pharmacy Facility',nameAr:'صيدلية (منشأة)',entityType:'facility',fee:1200,risk:'standard'}
 ] as const;
