@@ -310,6 +310,15 @@ export const en = {
     mockGateway: 'Mock bank gateway',
     reference: 'Reference',
     demoBank: 'DEMO BANK',
+    gatewayTitle: 'Egyptian Bank Payment Gateway',
+    gatewaySubtitle: 'National E-Payment Network • Verified by Visa & Meeza',
+    cardholderName: 'Cardholder Name',
+    cardNumber: 'Card Number',
+    expiryDate: 'Expiry Date',
+    cvv: 'CVV Security Code',
+    simulateSuccess: 'Simulate Success',
+    simulateFailure: 'Simulate Failure',
+    paymentDeclined: '⚠️ Payment Declined: Insufficient Funds',
     payNote: 'Use the controls below to exercise the success and failure callbacks. No real payment is collected.',
     fail: 'Simulate failure',
     success: 'Simulate successful payment',
@@ -526,5 +535,11 @@ export const en = {
     facility_radiology: 'Radiology Center',
     facility_lab: 'Lab Center',
     facility_pharmacy: 'Pharmacy Facility',
+  },
+  certificate: {
+    logoPlaceholder: '[Fund Logo]',
+    stampPlaceholder: '[Official Stamp]',
+    paymentConfirmation:
+      'The Fund Administration certifies that the above-mentioned member has paid the annual subscription fee of {{amount}} EGP to renew their insurance coverage for the designated period.',
   },
 };

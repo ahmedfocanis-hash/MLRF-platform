@@ -1805,22 +1805,37 @@ button:disabled {
   transition: stroke-dasharray 0.4s ease;
 }
 
-.progress-ring-wrap > div {
+.progress-ring-wrap > div,
+.progress-ring-text {
   position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
+  gap: 4px;
+  pointer-events: none;
 }
 
-.progress-ring-wrap strong {
+.progress-ring-wrap strong,
+.progress-ring-text strong {
   font-family: var(--font-open-runde);
-  font-size: 26px;
-  letter-spacing: -0.04em;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   color: var(--color-obsidian);
+  line-height: 1;
+  margin: 0;
 }
 
-.progress-ring-wrap span {
-  font-size: 10px;
+.progress-ring-wrap span,
+.progress-ring-text span {
+  font-size: 11px;
+  font-weight: 500;
   color: var(--color-charcoal);
-  margin-top: 2px;
+  line-height: 1.2;
+  margin: 0;
 }
 
 .progress-list {
@@ -1858,14 +1873,67 @@ button:disabled {
   color: var(--color-surgical-blue);
 }
 
-/* Certificate Preview */
+/* Certificate Preview - Static Official Document Paper */
 .certificate-preview {
+  position: relative;
   text-align: center;
-  padding: 24px;
-  border: 1px solid #eef2f6;
-  border-radius: var(--radius-cards);
-  background: var(--color-paper-white);
-  box-shadow: var(--shadow-xl);
+  padding: 36px 32px 32px;
+  background-color: #fafaf9 !important;
+  background-image: radial-gradient(#cbd5e1 1px, transparent 1px) !important;
+  background-size: 24px 24px !important;
+  border: 2px solid #d6d3d1 !important;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04) !important;
+  color: #1c1917 !important;
+}
+
+/* Subtle classic certificate inner double-frame */
+.certificate-preview::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border: 1px solid #d6d3d1 !important;
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+/* Locked Ink Text Colors */
+.certificate-preview,
+.certificate-preview h2,
+.certificate-preview h3,
+.certificate-preview p,
+.certificate-preview strong,
+.certificate-preview div,
+.certificate-preview span {
+  color: #1c1917 !important;
+}
+
+.certificate-preview .eyebrow,
+.certificate-preview > p,
+.certificate-preview .certificate-data span,
+.certificate-preview .qr-placeholder span {
+  color: #57534e !important;
+}
+
+.fund-logo-placeholder {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 16px;
+  border: 1.5px dashed #78716c !important;
+  border-radius: 12px;
+  background: #f5f5f4 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 8px;
+}
+
+.fund-logo-placeholder span {
+  font-size: 11px;
+  font-weight: 600;
+  color: #57534e !important;
+  line-height: 1.3;
 }
 
 .certificate-seal {
@@ -1874,30 +1942,46 @@ button:disabled {
   display: grid;
   place-items: center;
   margin: 0 auto 16px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #cbd5e1 !important;
   border-radius: 50%;
-  color: var(--color-surgical-blue);
-  background: #f0f7fb;
+  color: #0f766e !important;
+  background: #f0fdf4 !important;
+}
+
+.certificate-seal svg {
+  color: #0f766e !important;
 }
 
 .certificate-preview h2 {
   font-size: 24px;
   letter-spacing: -0.04em;
-  color: var(--color-obsidian);
+  color: #1c1917 !important;
   margin: 12px 0 6px;
 }
 
 .certificate-preview > p {
   font-size: 12px;
-  color: var(--color-charcoal);
+  color: #57534e !important;
   margin: 8px 0;
 }
 
 .certificate-preview h3 {
-  color: var(--color-obsidian);
+  color: #1c1917 !important;
   font-size: 18px;
   letter-spacing: -0.04em;
   margin: 12px 0;
+}
+
+.certificate-payment-note {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #1c1917 !important;
+  background: #f5f5f4 !important;
+  border: 1px solid #d6d3d1 !important;
+  border-radius: 10px;
+  padding: 12px 18px;
+  margin: 16px 0;
+  text-align: center;
 }
 
 .certificate-data {
@@ -1906,38 +1990,69 @@ button:disabled {
   gap: 12px;
   padding: 16px 0;
   margin-top: 16px;
-  border-top: 1px solid #f0f2f5;
-  border-bottom: 1px solid #f0f2f5;
+  border-top: 1px solid #d6d3d1 !important;
+  border-bottom: 1px solid #d6d3d1 !important;
 }
 
 .certificate-data span {
   display: block;
   font-size: 10px;
-  color: var(--color-slate);
+  color: #57534e !important;
 }
 
 .certificate-data strong {
   display: block;
   font-size: 12px;
   margin-top: 6px;
-  color: var(--color-obsidian);
+  color: #1c1917 !important;
 }
 
-.success-text {
-  color: #10b981 !important;
+.certificate-data strong.success-text {
+  color: #059669 !important;
 }
 
-.qr-placeholder {
+.certificate-footer {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  margin: 20px auto 0;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 2px dashed #d6d3d1 !important;
+  gap: 16px;
 }
 
-.qr-placeholder > span {
+.fund-stamp-placeholder {
+  width: 100px;
+  height: 100px;
+  border: 2px dashed #78716c !important;
+  border-radius: 50%;
+  background: #f5f5f4 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 10px;
+}
+
+.fund-stamp-placeholder span {
   font-size: 10px;
-  color: var(--color-slate);
+  font-weight: 600;
+  color: #57534e !important;
+  line-height: 1.3;
+}
+
+.certificate-footer .qr-placeholder {
+  margin: 0;
+}
+
+.certificate-preview .btn-primary {
+  background: #0f766e !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.certificate-preview .btn-primary * {
+  color: #ffffff !important;
 }
 
 .qr-grid {
@@ -2916,11 +3031,76 @@ tbody tr:last-child td {
 [data-theme="dark"] .quick-card,
 [data-theme="dark"] .subscriber-steps,
 [data-theme="dark"] .guide-step,
-[data-theme="dark"] .certificate-preview,
 [data-theme="dark"] .inspector-device {
   background: var(--panel);
   border-color: var(--line);
   color: #f9fafb;
+}
+
+/* Ensure certificate-preview permanently ignores dark mode */
+[data-theme="dark"] .certificate-preview {
+  background-color: #fafaf9 !important;
+  background-image: radial-gradient(#cbd5e1 1px, transparent 1px) !important;
+  background-size: 24px 24px !important;
+  border-color: #d6d3d1 !important;
+  color: #1c1917 !important;
+}
+
+[data-theme="dark"] .certificate-preview::before {
+  border-color: #d6d3d1 !important;
+}
+
+[data-theme="dark"] .certificate-preview,
+[data-theme="dark"] .certificate-preview h2,
+[data-theme="dark"] .certificate-preview h3,
+[data-theme="dark"] .certificate-preview p,
+[data-theme="dark"] .certificate-preview strong,
+[data-theme="dark"] .certificate-preview div,
+[data-theme="dark"] .certificate-preview span {
+  color: #1c1917 !important;
+}
+
+[data-theme="dark"] .certificate-preview .eyebrow,
+[data-theme="dark"] .certificate-preview > p,
+[data-theme="dark"] .certificate-preview .certificate-data span,
+[data-theme="dark"] .certificate-preview .qr-placeholder span,
+[data-theme="dark"] .certificate-preview .fund-logo-placeholder span,
+[data-theme="dark"] .certificate-preview .fund-stamp-placeholder span {
+  color: #57534e !important;
+}
+
+[data-theme="dark"] .certificate-preview .fund-logo-placeholder,
+[data-theme="dark"] .certificate-preview .fund-stamp-placeholder {
+  background: #f5f5f4 !important;
+  border-color: #78716c !important;
+}
+
+[data-theme="dark"] .certificate-preview .certificate-payment-note {
+  background: #f5f5f4 !important;
+  border-color: #d6d3d1 !important;
+  color: #1c1917 !important;
+}
+
+[data-theme="dark"] .certificate-preview .certificate-data {
+  border-color: #d6d3d1 !important;
+}
+
+[data-theme="dark"] .certificate-preview .certificate-data strong.success-text {
+  color: #059669 !important;
+}
+
+[data-theme="dark"] .certificate-preview .certificate-seal {
+  background: #f0fdf4 !important;
+  border-color: #cbd5e1 !important;
+  color: #0f766e !important;
+}
+
+[data-theme="dark"] .certificate-preview .certificate-seal svg {
+  color: #0f766e !important;
+}
+
+[data-theme="dark"] .certificate-preview .certificate-footer {
+  border-top-color: #d6d3d1 !important;
 }
 
 [data-theme="dark"] .btn-primary {
@@ -3224,3 +3404,477 @@ html[lang="ar"],
     right: auto;
   }
 }
+
+/* ==========================================================================
+   EGYPTIAN BANK PAYMENT GATEWAY
+   ========================================================================== */
+.gateway-card {
+  margin: 20px 0;
+  padding: 24px;
+  background: var(--color-paper-white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-cards, 18px);
+  box-shadow: var(--shadow-subtle-2);
+}
+
+[data-theme="dark"] .gateway-card {
+  background: var(--panel);
+  border-color: var(--line);
+}
+
+.gateway-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 18px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.gateway-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.gateway-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #f0fdfa;
+  color: #0f766e;
+  border: 1px solid #ccfbf1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .gateway-icon {
+  background: rgba(15, 118, 110, 0.2);
+  border-color: rgba(15, 118, 110, 0.4);
+  color: #2dd4bf;
+}
+
+.gateway-brand h4 {
+  font-family: var(--font-open-runde);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-obsidian);
+  margin: 0;
+}
+
+[data-theme="dark"] .gateway-brand h4 {
+  color: #f9fafb;
+}
+
+.gateway-brand p {
+  font-size: 12px;
+  color: var(--color-charcoal);
+  margin: 3px 0 0;
+}
+
+.gateway-security {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #0f766e;
+  background: #f0fdfa;
+  border: 1px solid #ccfbf1;
+  padding: 6px 12px;
+  border-radius: 9999px;
+}
+
+[data-theme="dark"] .gateway-security {
+  background: rgba(15, 118, 110, 0.15);
+  border-color: rgba(15, 118, 110, 0.3);
+  color: #2dd4bf;
+}
+
+/* Realistic Bank Visa Card Visual Preview */
+.visa-card-preview {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #0f766e 100%);
+  border-radius: 16px;
+  padding: 24px;
+  color: #ffffff;
+  margin-bottom: 24px;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+
+.visa-card-preview::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.visa-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+
+.visa-chip {
+  width: 42px;
+  height: 32px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #fef08a 0%, #eab308 50%, #ca8a04 100%);
+  border: 1px solid #d97706;
+  position: relative;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+.visa-chip::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(180, 83, 9, 0.5);
+}
+
+.visa-logo {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 24px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 2px;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.visa-card-number {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  margin-bottom: 20px;
+  direction: ltr;
+  text-align: left;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+[dir="rtl"] .visa-card-number {
+  direction: ltr;
+  text-align: left;
+}
+
+.visa-card-bottom {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.visa-label {
+  display: block;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.75;
+  margin-bottom: 3px;
+}
+
+.visa-val {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* Gateway Form Inputs */
+.gateway-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.gateway-form-grid .form-field input {
+  border-radius: 12px;
+  border: 1px solid var(--line);
+}
+
+.card-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.card-input-wrap input {
+  padding-right: 64px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+
+[dir="rtl"] .card-input-wrap input {
+  padding-right: 14px;
+  padding-left: 64px;
+}
+
+.card-input-wrap .visa-badge {
+  position: absolute;
+  right: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-weight: 900;
+  font-style: italic;
+  font-size: 12px;
+  color: #1e3a8a;
+  background: #f1f5f9;
+  padding: 4px 8px;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+[dir="rtl"] .card-input-wrap .visa-badge {
+  right: auto;
+  left: 12px;
+}
+
+.payment-action-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* Simulation Action Buttons */
+.btn-simulate-success {
+  background: #0f766e;
+  color: #ffffff;
+  border: 1px solid #0d9488;
+  padding: 10px 22px;
+  border-radius: var(--radius-buttons);
+  font-family: var(--font-open-runde);
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(15, 118, 110, 0.25);
+  transition: all 0.18s ease;
+}
+
+.btn-simulate-success:hover {
+  background: #115e59;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(15, 118, 110, 0.35);
+}
+
+.btn-simulate-failure {
+  background: transparent;
+  color: #ef4444;
+  border: 1.5px solid #f87171;
+  padding: 10px 20px;
+  border-radius: var(--radius-buttons);
+  font-family: var(--font-open-runde);
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.btn-simulate-failure:hover {
+  background: #fef2f2;
+  border-color: #ef4444;
+  color: #dc2626;
+  transform: translateY(-1px);
+}
+
+[data-theme="dark"] .btn-simulate-failure:hover {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+/* ==========================================================================
+   PRINTABLE CERTIFICATE STYLING
+   ========================================================================== */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 1.5cm;
+  }
+
+  body, html {
+    background: #ffffff !important;
+    color: #070709 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide navigation, headers, sidebars, buttons, and demo controls */
+  .demo-topbar,
+  .standalone-header,
+  .topbar,
+  .sidebar,
+  .standalone-tabs,
+  .subscriber-aside,
+  .subscriber-steps,
+  .panel-heading,
+  .portal-actions,
+  button,
+  .btn,
+  .toast,
+  .toast-banner,
+  .help-card,
+  .side-bottom,
+  .eyebrow-container,
+  .inspector-header,
+  .inspector-device-wrap,
+  .filter-row,
+  .kpi-grid,
+  .guide-grid {
+    display: none !important;
+  }
+
+  .standalone-portal,
+  .standalone-portal-layout,
+  .standalone-portal-main,
+  .portal-content-grid,
+  .subscriber-layout,
+  .subscriber-main,
+  .subscriber-panel,
+  .panel {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .certificate-preview {
+    display: block !important;
+    position: relative !important;
+    max-width: 620px !important;
+    margin: 30px auto !important;
+    padding: 40px !important;
+    border: 2px solid #d6d3d1 !important;
+    border-radius: 12px !important;
+    box-shadow: none !important;
+    background-color: #fafaf9 !important;
+    background-image: radial-gradient(#cbd5e1 1px, transparent 1px) !important;
+    background-size: 24px 24px !important;
+    color: #1c1917 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .certificate-preview::before {
+    content: '' !important;
+    position: absolute !important;
+    inset: 8px !important;
+    border: 1px solid #d6d3d1 !important;
+    border-radius: 8px !important;
+    pointer-events: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .certificate-seal {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    background: #f0fdf4 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f766e !important;
+  }
+
+  .certificate-preview h2,
+  .certificate-preview h3,
+  .certificate-preview p,
+  .certificate-preview strong {
+    color: #1c1917 !important;
+  }
+
+  .certificate-preview span,
+  .certificate-preview .eyebrow {
+    color: #57534e !important;
+  }
+
+  .certificate-data {
+    border-top: 1px solid #d6d3d1 !important;
+    border-bottom: 1px solid #d6d3d1 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .certificate-data strong.success-text {
+    color: #059669 !important;
+  }
+
+  .fund-logo-placeholder,
+  .fund-stamp-placeholder {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    border: 1.5px dashed #78716c !important;
+    background: #f5f5f4 !important;
+    color: #57534e !important;
+  }
+
+  .fund-logo-placeholder span,
+  .fund-stamp-placeholder span {
+    color: #57534e !important;
+  }
+
+  .certificate-payment-note {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    background: #f5f5f4 !important;
+    border: 1px solid #d6d3d1 !important;
+    color: #1c1917 !important;
+  }
+
+  .certificate-footer {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-end !important;
+    border-top: 2px dashed #d6d3d1 !important;
+    margin-top: 28px !important;
+    padding-top: 20px !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .certificate-footer .qr-placeholder {
+    margin: 0 !important;
+  }
+
+  .qr-placeholder {
+    margin-top: 24px !important;
+  }
+
+  .qr-placeholder svg {
+    display: block !important;
+    margin: 0 auto !important;
+  }
+}
+

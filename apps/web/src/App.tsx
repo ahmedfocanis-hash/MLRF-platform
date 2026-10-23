@@ -40,8 +40,12 @@ import {
   UploadCloud,
   CheckCircle2,
   AlertTriangle,
+  CreditCard,
+  Lock,
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { request } from './lib/api';
+import { exportToExcel } from './lib/exportExcel';
 import {
   actionLabel,
   cohortLabel,
@@ -1099,11 +1103,26 @@ export default function App() {
                 action={
                   <button
                     className="btn btn-outline"
-                    onClick={() =>
-                      void request('/admin/export/analytics', 'get', undefined, { format: 'xlsx' })
-                        .then(() => setToast(t('toasts.exportLogged')))
-                        .catch((e) => setToast(messageFromError(e, t('errors.REQUEST_FAILED'))))
-                    }
+                    onClick={() => {
+                      const rows = (
+                        analytics.data?.distribution ??
+                        DEMO_TIERS.slice(0, 6).map((tier, i) => ({
+                          name: tier.name,
+                          subscribers: 160 - i * 12,
+                          revenue: (160 - i * 12) * tier.fee,
+                        }))
+                      ).map((d: any) => ({
+                        [t('analyticsPage.specialty') || 'التخصص / الفئة']: specialtyLabel(d.name),
+                        [t('analyticsPage.subscribers') || 'عدد المشتركين']: d.subscribers,
+                        [t('analyticsPage.revenue') || 'إجمالي الرسوم (جنيه)']: d.revenue,
+                      }));
+                      exportToExcel(rows, `mlrf_analytics_${year}.xlsx`, 'Analytics');
+                      setToast(
+                        i18n.language === 'ar'
+                          ? 'تم استخراج وتحميل تقرير التحليلات بنجاح'
+                          : 'Analytics report exported successfully',
+                      );
+                    }}
                   >
                     <Download size={16} /> {t('analyticsPage.export')}
                   </button>
@@ -1419,7 +1438,50 @@ export default function App() {
                 eyebrow={t('claimsPage.eyebrow')}
                 title={t('claimsPage.title')}
                 description={t('claimsPage.body')}
-                action={<span className="status-chip neutral">{t('claimsPage.future')}</span>}
+                action={
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <button
+                      className="btn btn-outline"
+                      onClick={() => {
+                        const items = claimsQuery.data?.items ?? [];
+                        const rows = items.map((c: any) => ({
+                          [t('claimsPage.id') || 'رقم المطالبة']: c.id,
+                          [t('claimsPage.doctor') || 'الطبيب / الممارس']: c.doctor,
+                          [t('claimsPage.hospital') || 'المنشأة الطبية']: c.hospital,
+                          [t('claimsPage.specialty') || 'التخصص']: specialtyLabel(c.specialty),
+                          [t('claimsPage.stage') || 'المرحلة']: stageLabel(c.stage),
+                          [t('claimsPage.awarded') || 'التعويض المقضي به (جنيه)']: c.awarded,
+                          [t('claimsPage.paid') || 'المبلغ المنصرف (جنيه)']: c.paid,
+                        }));
+                        exportToExcel(
+                          rows.length
+                            ? rows
+                            : [
+                                {
+                                  [t('claimsPage.id') || 'رقم المطالبة']: 'CLM-2026-001',
+                                  [t('claimsPage.doctor') || 'الطبيب']: 'د. طارق محمود',
+                                  [t('claimsPage.hospital') || 'المنشأة']: 'مستشفى السلام الدولي',
+                                  [t('claimsPage.specialty') || 'التخصص']: 'جراحة عامة',
+                                  [t('claimsPage.stage') || 'المرحلة']: 'صرف التعويض',
+                                  [t('claimsPage.awarded') || 'التعويض']: 150000,
+                                  [t('claimsPage.paid') || 'المنصرف']: 150000,
+                                },
+                              ],
+                          'mlrf_claims_ledger.xlsx',
+                          'Claims',
+                        );
+                        setToast(
+                          i18n.language === 'ar'
+                            ? 'تم استخراج وتحميل سجل التعويضات بنجاح'
+                            : 'Claims ledger exported successfully',
+                        );
+                      }}
+                    >
+                      <Download size={16} /> {t('analyticsPage.export')}
+                    </button>
+                    <span className="status-chip neutral">{t('claimsPage.future')}</span>
+                  </div>
+                }
               />
               <div className="kpi-grid">
                 <Kpi
@@ -1526,9 +1588,37 @@ export default function App() {
                 title={t('auditPage.title')}
                 description={t('auditPage.body')}
                 action={
-                  <span className="live-indicator">
-                    <i /> {t('auditPage.live')}
-                  </span>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <button
+                      className="btn btn-outline"
+                      onClick={() => {
+                        const items = auditQuery.data?.items ?? [];
+                        const rows = items.map((a: any) => ({
+                          [t('auditPage.time') || 'الوقت']: formatDateTime(a.timestamp),
+                          [t('auditPage.user') || 'المستخدم']: a.user,
+                          [t('usersPage.role') || 'الدور']: roleLabel(a.role),
+                          [t('auditPage.action') || 'الإجراء']: actionLabel(a.action),
+                          [t('auditPage.entity') || 'الكائن']: a.entity,
+                          [t('auditPage.ip') || 'عنوان IP']: a.ip,
+                        }));
+                        exportToExcel(
+                          rows.length ? rows : [{ 'الملاحظة': 'لا توجد سجلات حالية' }],
+                          'mlrf_transactions_audit.xlsx',
+                          'Transactions',
+                        );
+                        setToast(
+                          i18n.language === 'ar'
+                            ? 'تم استخراج وتحميل سجل العمليات والمعاملات بنجاح'
+                            : 'Transactions log exported successfully',
+                        );
+                      }}
+                    >
+                      <Download size={16} /> {t('analyticsPage.export')}
+                    </button>
+                    <span className="live-indicator">
+                      <i /> {t('auditPage.live')}
+                    </span>
+                  </div>
                 }
               />
               <div className="filter-row">
@@ -1935,7 +2025,7 @@ function Subscriber({
   forceCertificateView?: boolean;
   onGoToJourney?: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [entity, setEntity] = useState<'individual' | 'facility'>('individual');
   const [tier, setTier] = useState('human_doctor_gp');
   const [governorate, setGovernorate] = useState('Cairo');
@@ -1943,10 +2033,28 @@ function Subscriber({
   const [step, setStep] = useState(1);
   const [paid, setPaid] = useState(false);
   const [selected, setSelected] = useState<any>(null);
+  const [cardName, setCardName] = useState('Dr. Demo User');
+  const [cardNumber, setCardNumber] = useState('4000 1234 5678 9010');
+  const [cardExpiry, setCardExpiry] = useState('12/28');
+  const [cardCvv, setCardCvv] = useState('123');
   const tiers = DEMO_TIERS.filter((t) => t.entityType === entity);
   const active = tiers.find((t) => t.id === tier) ?? tiers[0]!;
   const effectiveStep = forceCertificateView ? 4 : step;
   const isPaid = forceCertificateView || paid;
+  const progressVal = effectiveStep === 4 ? 100 : effectiveStep === 3 ? 75 : effectiveStep === 2 ? 50 : 25;
+  const progressFormatted =
+    i18n.language === 'ar' ? Number(progressVal).toLocaleString('ar-EG') + '٪' : `${progressVal}%`;
+
+  const handleSimulateSuccess = () => {
+    setPaid(true);
+    setStep(4);
+    setToast(t('toasts.paymentOk'));
+    void pay('success').catch(() => {});
+  };
+
+  const handleSimulateFailure = () => {
+    setToast(t('subscriberPage.paymentDeclined'));
+  };
   const saveProfile = async () => {
     try {
       await request('/subscriber/profile', 'put', {
@@ -2145,73 +2253,156 @@ function Subscriber({
                   <strong>MLRF-DEMO-2026</strong>
                 </div>
               </div>
-              <div className="demo-payment">
-                <div className="payment-card">
-                  <div className="card-chip" />
-                  <div className="card-number">•••• •••• •••• 4242</div>
-                  <div className="card-foot">
-                    <span>{t('subscriberPage.demoBank')}</span>
-                    <span>12/29</span>
+              <div className="gateway-card">
+                <div className="gateway-header">
+                  <div className="gateway-brand">
+                    <div className="gateway-icon">
+                      <CreditCard size={22} />
+                    </div>
+                    <div>
+                      <h4>{t('subscriberPage.gatewayTitle')}</h4>
+                      <p>{t('subscriberPage.gatewaySubtitle')}</p>
+                    </div>
+                  </div>
+                  <div className="gateway-security">
+                    <Lock size={13} />
+                    <span>256-bit SSL</span>
                   </div>
                 </div>
-                <p>{t('subscriberPage.payNote')}</p>
+
+                {/* Realistic Bank Visa Card Visual Preview */}
+                <div className="visa-card-preview">
+                  <div className="visa-card-top">
+                    <div className="visa-chip" />
+                    <div className="visa-logo">VISA</div>
+                  </div>
+                  <div className="visa-card-number">{cardNumber || '•••• •••• •••• ••••'}</div>
+                  <div className="visa-card-bottom">
+                    <div>
+                      <span className="visa-label">{t('subscriberPage.cardholderName')}</span>
+                      <strong className="visa-val">{cardName || 'CARDHOLDER NAME'}</strong>
+                    </div>
+                    <div>
+                      <span className="visa-label">{t('subscriberPage.expiryDate')}</span>
+                      <strong className="visa-val">{cardExpiry || 'MM/YY'}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Input Fields */}
+                <div className="gateway-form-grid">
+                  <div className="form-field full-field">
+                    <label>{t('subscriberPage.cardholderName')}</label>
+                    <input
+                      type="text"
+                      value={cardName}
+                      onChange={(e) => setCardName(e.target.value)}
+                      placeholder="Dr. Demo User"
+                    />
+                  </div>
+                  <div className="form-field full-field">
+                    <label>{t('subscriberPage.cardNumber')}</label>
+                    <div className="card-input-wrap">
+                      <input
+                        type="text"
+                        value={cardNumber}
+                        onChange={(e) => setCardNumber(e.target.value)}
+                        placeholder="4000 1234 5678 9010"
+                      />
+                      <span className="visa-badge">VISA</span>
+                    </div>
+                  </div>
+                  <div className="form-field">
+                    <label>{t('subscriberPage.expiryDate')}</label>
+                    <input
+                      type="text"
+                      value={cardExpiry}
+                      onChange={(e) => setCardExpiry(e.target.value)}
+                      placeholder="12/28"
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label>{t('subscriberPage.cvv')}</label>
+                    <input
+                      type="password"
+                      maxLength={4}
+                      value={cardCvv}
+                      onChange={(e) => setCardCvv(e.target.value)}
+                      placeholder="123"
+                    />
+                  </div>
+                </div>
               </div>
-              <div className="button-row">
+
+              <div className="button-row payment-action-row">
                 <button className="btn btn-outline" onClick={() => setStep(2)}>
                   {t('subscriberPage.back')}
                 </button>
-                <button className="btn btn-danger" onClick={() => void pay('failure')}>
-                  {t('subscriberPage.fail')}
-                </button>
-                <button className="btn btn-primary" onClick={() => void pay('success')}>
-                  {t('subscriberPage.success')} <ArrowRight size={16} />
-                </button>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <button
+                    className="btn btn-simulate-failure"
+                    onClick={handleSimulateFailure}
+                  >
+                    <AlertTriangle size={16} /> {t('subscriberPage.simulateFailure')}
+                  </button>
+                  <button
+                    className="btn btn-simulate-success"
+                    onClick={handleSimulateSuccess}
+                  >
+                    <CheckCircle2 size={16} /> {t('subscriberPage.simulateSuccess')}
+                  </button>
+                </div>
               </div>
             </>
           )}
           {effectiveStep === 4 && (
-            <div className="certificate-preview">
+            <div className="certificate-preview" dir="rtl">
+              <div className="fund-logo-placeholder">
+                <span>{t('certificate.logoPlaceholder', { lng: 'ar' })}</span>
+              </div>
               <div className="certificate-seal">
                 <ShieldCheck size={36} />
               </div>
-              <div className="eyebrow">{t('brandShort')}</div>
-              <h2>{t('subscriberPage.certTitle')}</h2>
-              <p>{t('subscriberPage.certifies')}</p>
-              <h3>{t('subscriberPage.demoSubscriber')}</h3>
-              <p>{t('subscriberPage.registered')}</p>
+              <div className="eyebrow">{t('brandShort', { lng: 'ar' })}</div>
+              <h2>{t('subscriberPage.certTitle', { lng: 'ar' })}</h2>
+              <p>{t('subscriberPage.certifies', { lng: 'ar' })}</p>
+              <h3>{t('subscriberPage.demoSubscriber', { lng: 'ar' })}</h3>
+              <p>{t('subscriberPage.registered', { lng: 'ar' })}</p>
+              <p className="certificate-payment-note">
+                {t('certificate.paymentConfirmation', {
+                  lng: 'ar',
+                  amount: Number(selected?.fee ?? selected?.amount ?? active.fee).toLocaleString('ar-EG'),
+                })}
+              </p>
               <div className="certificate-data">
                 <div>
-                  <span>{t('subscriberPage.certNumber')}</span>
+                  <span>{t('subscriberPage.certNumber', { lng: 'ar' })}</span>
                   <strong>MLRF-2026-000123</strong>
                 </div>
                 <div>
-                  <span>{t('subscriberPage.coverageStatus')}</span>
-                  <strong className="success-text">{t('subscriberPage.valid')}</strong>
+                  <span>{t('subscriberPage.coverageStatus', { lng: 'ar' })}</span>
+                  <strong className="success-text">{t('subscriberPage.valid', { lng: 'ar' })}</strong>
                 </div>
                 <div>
-                  <span>{t('subscriberPage.period')}</span>
-                  <strong>{t('subscriberPage.oneYear')}</strong>
+                  <span>{t('subscriberPage.period', { lng: 'ar' })}</span>
+                  <strong>{t('subscriberPage.oneYear', { lng: 'ar' })}</strong>
                 </div>
               </div>
-              <div className="qr-placeholder">
-                <div className="qr-grid">
-                  {Array.from({ length: 64 }, (_, i) => (
-                    <i key={i} style={{ opacity: (i * 7 + (i % 3)) % 5 < 2 ? 1 : 0.15 }} />
-                  ))}
+              <div className="certificate-footer">
+                <div className="fund-stamp-placeholder">
+                  <span>{t('certificate.stampPlaceholder', { lng: 'ar' })}</span>
                 </div>
-                <span>{t('subscriberPage.demoQr')}</span>
+                <div className="qr-placeholder">
+                  <QRCodeSVG value="https://fund.gov.eg/verify/MLRF-2026-000123" size={110} />
+                  <span>{t('subscriberPage.demoQr', { lng: 'ar' })}</span>
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
-                {onGoToJourney && (
-                  <button className="btn btn-outline" onClick={onGoToJourney}>
-                    <ArrowRight size={16} /> {t('doctorPortal.tabs.journey')}
-                  </button>
-                )}
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: 24 }}>
                 <button
                   className="btn btn-primary"
-                  onClick={() => setToast(t('toasts.pdfPlaceholder'))}
+                  onClick={() => window.print()}
                 >
-                  <Download size={16} /> {t('subscriberPage.download')}
+                  <Download size={16} /> {t('subscriberPage.download', { lng: 'ar' })}
                 </button>
               </div>
             </div>
@@ -2234,12 +2425,12 @@ function Subscriber({
                   r="49"
                   className="progress-ring-value"
                   style={{
-                    strokeDasharray: `${(effectiveStep === 4 ? 100 : effectiveStep === 3 ? 75 : effectiveStep === 2 ? 50 : 25) * 3.08} 308`,
+                    strokeDasharray: `${progressVal * 3.08} 308`,
                   }}
                 />
               </svg>
-              <div>
-                <strong>{effectiveStep === 4 ? 100 : effectiveStep === 3 ? 75 : effectiveStep === 2 ? 50 : 25}%</strong>
+              <div className="progress-ring-text">
+                <strong>{progressFormatted}</strong>
                 <span>{t('subscriberPage.completed')}</span>
               </div>
             </div>

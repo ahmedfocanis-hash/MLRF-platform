@@ -308,6 +308,15 @@ export const ar: Messages<typeof en> = {
     mockGateway: 'بوابة التحصيل الإلكتروني المعتمدة',
     reference: 'رقم المعاملة البنكية',
     demoBank: 'منظومة السداد الإلكتروني الوطنية',
+    gatewayTitle: 'بوابة الدفع الإلكتروني للبنوك المصرية',
+    gatewaySubtitle: 'الشبكة القومية للمدفوعات الإلكترونية • معتمد من فيزا وميزة',
+    cardholderName: 'اسم حامل البطاقة',
+    cardNumber: 'رقم البطاقة',
+    expiryDate: 'تاريخ الانتهاء',
+    cvv: 'الرقم السري CVV',
+    simulateSuccess: 'محاكاة نجاح الدفع',
+    simulateFailure: 'محاكاة تعثر الدفع',
+    paymentDeclined: '⚠️ فشلت عملية الدفع: رصيد غير كافٍ',
     payNote: 'سداد الاشتراك السنوي عبر قنوات التحصيل الإلكتروني الرسمية.',
     fail: 'محاكاة تعثر السداد',
     success: 'تأكيد السداد وإصدار الوثيقة',
@@ -524,5 +533,11 @@ export const ar: Messages<typeof en> = {
     facility_radiology: 'مركز أشعة',
     facility_lab: 'مركز تحاليل',
     facility_pharmacy: 'صيدلية (منشأة)',
+  },
+  certificate: {
+    logoPlaceholder: '[مكان شعار الصندوق]',
+    stampPlaceholder: '[ختم الصندوق المعتمد]',
+    paymentConfirmation:
+      'تشهد إدارة الصندوق بأن العضو المذكور أعلاه قد قام بسداد رسم الاشتراك السنوي وقدره {{amount}} جنيه مصري، لتجديد التغطية التأمينية عن الفترة المقررة قانوناً.',
   },
 };
