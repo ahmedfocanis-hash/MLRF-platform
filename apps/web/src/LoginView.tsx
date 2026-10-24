@@ -19,6 +19,7 @@ interface LoginViewProps {
   onLogin: (email: string, password: string) => Promise<void>;
   onSwitchRole: (role: Role) => Promise<void>;
   onBackToHome: () => void;
+  onNavigateToRegister?: () => void;
   dark: boolean;
   onToggleDark: () => void;
   roleLabel: (role: Role) => string;
@@ -28,6 +29,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
   onLogin,
   onSwitchRole,
   onBackToHome,
+  onNavigateToRegister,
   dark,
   onToggleDark,
   roleLabel,
@@ -163,6 +165,26 @@ export const LoginView: React.FC<LoginViewProps> = ({
               {t('signIn')}{' '}
               {isRtl ? <ArrowLeft size={17} /> : <ArrowRight size={17} />}
             </button>
+            {onNavigateToRegister && (
+              <div style={{ marginTop: 14, textAlign: 'center', fontSize: 13, color: 'var(--text-muted)' }}>
+                <span>{t('register.hasNoAccount', { defaultValue: 'طبيب جديد؟ ليس لديك حساب؟' })} </span>
+                <button
+                  type="button"
+                  onClick={onNavigateToRegister}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    color: 'var(--teal)',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    textDecoration: 'underline',
+                  }}
+                >
+                  {t('register.submit', { defaultValue: 'إنشاء حساب جديد' })}
+                </button>
+              </div>
+            )}
           </form>
 
           {/* Demo Login & Instant Role Switcher */}

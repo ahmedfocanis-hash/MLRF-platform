@@ -45,9 +45,11 @@ import {
   AlertTriangle,
   CreditCard,
   Lock,
+  UserPlus,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { LoginView } from './LoginView';
+import { RegisterView } from './RegisterView';
 import { request } from './lib/api';
 import { exportToExcel } from './lib/exportExcel';
 import {
@@ -139,6 +141,9 @@ export default function App() {
       if (pathname === '/login' || hash === '#/login' || hash === '#login') {
         return '/login';
       }
+      if (pathname === '/register' || hash === '#/register' || hash === '#register') {
+        return '/register';
+      }
     }
     return '/';
   };
@@ -150,6 +155,8 @@ export default function App() {
       const hash = window.location.hash;
       if (pathname === '/login' || hash === '#/login' || hash === '#login') {
         setCurrentPath('/login');
+      } else if (pathname === '/register' || hash === '#/register' || hash === '#register') {
+        setCurrentPath('/register');
       } else {
         setCurrentPath('/');
       }
@@ -378,6 +385,27 @@ export default function App() {
     }
   };
   if (!token || !currentUser) {
+    if (currentPath === '/register') {
+      return (
+        <>
+          <RegisterView
+            onRegisterSuccess={async (email, password) => {
+              try {
+                await login(email, password);
+              } catch {
+                navigateTo('/login');
+              }
+            }}
+            onNavigateToLogin={() => navigateTo('/login')}
+            onBackToHome={() => navigateTo('/')}
+            dark={dark}
+            onToggleDark={() => setDark(!dark)}
+          />
+          {toast && <div className="toast">{toast}</div>}
+        </>
+      );
+    }
+
     if (currentPath === '/login') {
       return (
         <>
@@ -385,6 +413,7 @@ export default function App() {
             onLogin={login}
             onSwitchRole={switchRole}
             onBackToHome={() => navigateTo('/')}
+            onNavigateToRegister={() => navigateTo('/register')}
             dark={dark}
             onToggleDark={() => setDark(!dark)}
             roleLabel={roleLabel}
@@ -409,6 +438,14 @@ export default function App() {
               </div>
             </div>
             <div className="landing-nav-actions">
+              <button
+                type="button"
+                className="nav-register-btn"
+                onClick={() => navigateTo('/register')}
+              >
+                <UserPlus size={16} />
+                <span>{t('landing.registerAction', { defaultValue: 'إنشاء حساب' })}</span>
+              </button>
               <button
                 type="button"
                 className="nav-login-btn"
