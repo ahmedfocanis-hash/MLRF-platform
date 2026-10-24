@@ -82,7 +82,7 @@ export async function generateCertificatePdf(data) {
         margin: 36,
         info: {
             Title: 'وثيقة تغطية مخاطر المسؤولية الطبية',
-            Author: 'صندوق مخاطر المسؤولية الطبية - جمهورية مصر العربية',
+            Author: 'الصندوق الحكومي للتأمين ضد الأخطار الناجمة عن الاخطاء الطبية - جمهورية مصر العربية',
             Subject: `شهادة تغطية معتمدة رقم ${certNumber}`,
             Keywords: 'MLRF, Medical Liability, Egypt, Certificate',
         },
@@ -112,8 +112,8 @@ export async function generateCertificatePdf(data) {
     // Official State & Fund Header
     doc.font('Amiri-Bold').fontSize(16).fillColor('#0f3e46');
     doc.text(formatArabic('جمهورية مصر العربية'), 36, 40, { align: 'center', width: pageWidth - 72 });
-    doc.font('Amiri-Bold').fontSize(14).fillColor('#0d9488');
-    doc.text(formatArabic('صندوق مخاطر المسؤولية الطبية — MLRF'), 36, 65, { align: 'center', width: pageWidth - 72 });
+    doc.font('Amiri-Bold').fontSize(13.5).fillColor('#0d9488');
+    doc.text(formatArabic('الصندوق الحكومي للتأمين ضد الأخطار الناجمة عن الاخطاء الطبية'), 36, 65, { align: 'center', width: pageWidth - 72 });
     doc.font('Amiri').fontSize(9.5).fillColor('#4b5563');
     doc.text(formatArabic('صادر طبقاً لأحكام قانون تنظيم المسئولية الطبية وسلامة المريض رقم 13 لسنة 2025 ولائحته التنفيذية'), 36, 88, { align: 'center', width: pageWidth - 72 });
     // Divider
@@ -131,8 +131,8 @@ export async function generateCertificatePdf(data) {
         width: pageWidth - 100,
     });
     // Certification statement
-    doc.font('Amiri').fontSize(11).fillColor('#1f2937');
-    doc.text(formatArabic('تشهد إدارة الصندوق بأن العضو المذكور أدناه مسجل ومقيد رسمياً ومسدد لاشتراكات صندوق مخاطر المسؤولية الطبية:'), 40, 172, { align: 'center', width: pageWidth - 80 });
+    doc.font('Amiri').fontSize(10).fillColor('#1f2937');
+    doc.text(formatArabic('تشهد إدارة الصندوق بأن العضو المذكور أدناه مسجل ومقيد رسمياً ومسدد لاشتراكات الصندوق الحكومي للتأمين ضد الأخطار الناجمة عن الاخطاء الطبية:'), 36, 172, { align: 'center', width: pageWidth - 72 });
     // Status mapping
     const upperStatus = String(status || '').toUpperCase();
     let statusText = 'سارية ومطابقة — سداد معتمد رسمياً';
@@ -184,7 +184,7 @@ export async function generateCertificatePdf(data) {
         align: 'right',
     });
     doc.font('Amiri').fontSize(9.5).fillColor('#475569');
-    const attestationText = 'تفيد هذه الوثيقة باستيفاء العضو لكافة اشتراطات القيد والتسجيل وسداد الاشتراكات المقررة قانوناً طبقاً لأحكام القانون رقم (13) لسنة 2025 وقرار رئيس مجلس الوزراء رقم (303) لسنة 2025. توفر هذه الوثيقة تغطية قانونية وتأمينية رسمية ضد مخاطر وأضرار الأخطاء المهنية الطبية تحت إشراف وإدارة مجلس إدارة صندوق مخاطر المسؤولية الطبية، وتعتد بها لجان التفتيش والعلاج الحر وجهات التحقيق القضائي والإداري.';
+    const attestationText = 'تفيد هذه الوثيقة باستيفاء العضو لكافة اشتراطات القيد والتسجيل وسداد الاشتراكات المقررة قانوناً طبقاً لأحكام القانون رقم (13) لسنة 2025 وقرار رئيس مجلس الوزراء رقم (303) لسنة 2025. توفر هذه الوثيقة تغطية قانونية وتأمينية رسمية ضد مخاطر وأضرار الأخطاء المهنية الطبية تحت إشراف وإدارة مجلس إدارة الصندوق الحكومي للتأمين ضد الأخطار الناجمة عن الاخطاء الطبية، وتعتد بها لجان التفتيش والعلاج الحر وجهات التحقيق القضائي والإداري.';
     const attLines = wrapAndFormatArabic(doc, attestationText, pageWidth - 110);
     let attY = attestationTop + 32;
     for (const line of attLines) {
@@ -226,11 +226,11 @@ export async function generateCertificatePdf(data) {
     // Bottom Official Seals and Signatures
     const footerTop = 684;
     // Right column: Fund Executive Seal
-    doc.font('Amiri-Bold').fontSize(11).fillColor('#0f3e46');
-    doc.text(formatArabic('خاتم اعتماد الصندوق الرسمي'), pageWidth - 240, footerTop, { width: 190, align: 'center' });
-    doc.font('Amiri').fontSize(9).fillColor('#64748b');
-    doc.text(formatArabic('صندوق مخاطر المسؤولية الطبية'), pageWidth - 240, footerTop + 20, { width: 190, align: 'center' });
-    doc.text(formatArabic('جمهورية مصر العربية'), pageWidth - 240, footerTop + 36, { width: 190, align: 'center' });
+    doc.font('Amiri-Bold').fontSize(10.5).fillColor('#0f3e46');
+    doc.text(formatArabic('خاتم اعتماد الصندوق الرسمي'), pageWidth - 250, footerTop, { width: 210, align: 'center' });
+    doc.font('Amiri').fontSize(8).fillColor('#64748b');
+    doc.text(formatArabic('الصندوق الحكومي للتأمين ضد الأخطار الناجمة عن الاخطاء الطبية'), pageWidth - 250, footerTop + 20, { width: 210, align: 'center' });
+    doc.text(formatArabic('جمهورية مصر العربية'), pageWidth - 250, footerTop + 36, { width: 210, align: 'center' });
     // Center: Official Stamp circle
     doc.save();
     doc.lineWidth(1.5).strokeColor('#0d9488');

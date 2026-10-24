@@ -619,7 +619,7 @@ export default function App() {
                     <ShieldCheck size={26} />
                     <div>
                       <strong>جمهورية مصر العربية</strong>
-                      <span>صندوق التعويض عن مخاطر المهن الطبية</span>
+                      <span>الصندوق الحكومي للتأمين ضد الأخطار الناجمة عن الاخطاء الطبية</span>
                     </div>
                   </div>
                 </div>
