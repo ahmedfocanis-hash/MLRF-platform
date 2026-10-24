@@ -47,7 +47,7 @@ export async function issueCertificate(
 /**
  * Applies a payment outcome using Turso / libSQL.
  */
-export async function settleMongoPayment(paymentId: string, outcome: PaymentOutcome, webhookReference?: string) {
+export async function settlePayment(paymentId: string, outcome: PaymentOutcome, webhookReference?: string) {
   if (!paymentId || typeof paymentId !== 'string' || !paymentId.trim()) {
     throw new AppError(400, 'PAYMENT_ID_INVALID', 'Payment ID is invalid');
   }
@@ -130,7 +130,7 @@ export async function settleMongoPayment(paymentId: string, outcome: PaymentOutc
   return { payment, certificate, user, duplicate: false };
 }
 
-export const settleTursoPayment = settleMongoPayment;
+export const settleTursoPayment = settlePayment;
 
 export function isValidWebhookSignature(body: unknown, signature: string) {
   const expected = crypto.createHmac('sha256', env.PAYMENT_WEBHOOK_SECRET).update(JSON.stringify(body)).digest();

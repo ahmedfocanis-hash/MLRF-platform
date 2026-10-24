@@ -2,10 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import mongoSanitize from 'express-mongo-sanitize';
 import cookieParser from 'cookie-parser';
 import { env } from './config/env.js';
-import { initDb } from './config/db.js';
+import { initDatabase } from './config/db.js';
 import { errorHandler } from './middleware/errors.js';
 import { apiRouter } from './routes/index.js';
 export const app = express();
@@ -24,8 +23,8 @@ app.use((req, res, next) => {
 // Serverless DB connection verification middleware
 app.use(async (_req, _res, next) => {
     try {
-        if (process.env.TURSO_DATABASE_URL || process.env.NODE_ENV === 'production' || process.env.CONNECT_TURSO === 'true' || process.env.CONNECT_MONGO === 'true') {
-            await initDb();
+        if (process.env.TURSO_DATABASE_URL || process.env.NODE_ENV === 'production' || process.env.CONNECT_TURSO === 'true') {
+            await initDatabase();
         }
         next();
     }
@@ -56,7 +55,6 @@ app.use(rateLimit({
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(mongoSanitize());
 app.get('/api/v1/health', (_req, res) => res.json({
     success: true,
     data: {

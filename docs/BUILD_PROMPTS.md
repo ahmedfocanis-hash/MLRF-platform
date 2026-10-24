@@ -15,11 +15,11 @@ A sequenced prompt pack: one global-rules prompt plus 24 feature prompts, coveri
 
 You are building a demo/prototype of the **Medical Liability Risk Fund platform**: a subscriber portal (doctors, pharmacists, nurses, facilities), a field inspector mobile view, and an executive admin dashboard. The code must be demo-fast but production-shaped.
 
-**Stack:** MongoDB + Mongoose, Express, React (Vite), Node 20, TypeScript strict everywhere, npm workspaces monorepo (`apps/api`, `apps/web`, `packages/shared`).
+**Stack:** Turso (libSQL over HTTPS), Express, React (Vite), Node 20, TypeScript strict everywhere, npm workspaces monorepo (`apps/api`, `apps/web`, `packages/shared`).
 
 **Architecture rules**
 
-- API layering: `routes -> controllers -> services -> repositories`. Controllers only parse/validate and respond. Business logic lives in services. Only repositories touch Mongoose.
+- API layering: `routes -> controllers -> services -> repositories`. Controllers only parse/validate and respond. Business logic lives in services. Only repositories touch Turso.
 - Zod schemas live in `packages/shared` and are used for request validation on the API and forms on the web.
 - Response envelope: `{ success, data, error: { code, message, details } }`. Errors via `AppError` subclasses and one central handler. Base path `/api/v1`.
 - Web: feature-based folders (`features/auth`, `features/payments`, ...), TanStack Query for server state, React Hook Form + Zod for forms, small Zustand store only for auth/UI state.
@@ -44,8 +44,8 @@ For every task: state your plan briefly, implement, add tests for logic-heavy pa
 
 - npm workspaces with `apps/api` (Express + TS), `apps/web` (Vite + React + TS) and `packages/shared` (zod schemas, enums, types, constants). Shared tsconfig base (strict), path aliases, Vitest in every package.
 - Tooling: ESLint flat config, Prettier, Husky + lint-staged, commitlint, `npm run check` (lint + typecheck + test).
-- API skeleton: `app.ts` separate from `server.ts`, zod-validated env config, pino logger with request IDs, helmet, cors, rate limiting, `express-mongo-sanitize`, `asyncHandler`, `AppError` classes, central error handler, `GET /api/v1/health`.
-- `docker-compose.yml` with MongoDB as a single-node replica set; `.env.example`.
+- API skeleton: `app.ts` separate from `server.ts`, zod-validated env config, pino logger with request IDs, helmet, cors, rate limiting, `asyncHandler`, `AppError` classes, central error handler, `GET /api/v1/health`.
+- Turso (libSQL over HTTPS) connection and schema migration via `@libsql/client`; `.env.example`.
 
 **Done when:** `npm run dev` starts API and web together, health returns the standard envelope, and `npm run check` passes.
 
@@ -65,7 +65,7 @@ For every task: state your plan briefly, implement, add tests for logic-heavy pa
 
 **Build**
 
-- Mongoose models and repositories following the ERD: `Role`, `User`, `SpecialtyTier`, `SubscriberProfile` (with `entityType` individual/facility), `Subscription`, `Payment`, `Certificate`, `BulkBatch`, `Claim`, `AuditLog`. Add `SmsOutbox` for the mock SMS gateway.
+- Turso (libSQL) relational models and repositories following the ERD: `Role`, `User`, `SpecialtyTier`, `SubscriberProfile` (with `entityType` individual/facility), `Subscription`, `Payment`, `Certificate`, `BulkBatch`, `Claim`, `AuditLog`. Add `SmsOutbox` for the mock SMS gateway.
 - Indexes: unique `nationalId`, `certNumber`, `qrHash`; compound indexes that support the analytics queries (fiscalYear, tier, governorate, renewalStatus).
 - Constants: the 27 Egyptian governorates (AR/EN).
 - Deterministic seed (`npm run seed`, `seed:reset`) using faker with a fixed seed: 5 admin roles + demo users per role + one inspector, about 20 specialty tiers with EGP fees (GP, Surgery, Obstetrics, Orthopedics, Cosmetic Surgery, Cardiology, Pediatrics, Dentistry, Pharmacist, Nurse, Lab Technician; Hospital, Clinic, Lab, Pharmacy, Medical Center), about 2,500 subscribers across 3 fiscal years with realistic Arabic names, renewal/churn patterns with a few deliberately weak governorates and specialties, about 120 claims with full timelines, and about 300 audit entries.
@@ -262,7 +262,7 @@ For every task: state your plan briefly, implement, add tests for logic-heavy pa
 
 **Build**
 
-- Unit tests: fee engine, OTP, tokens, parsers, permission map. Integration (Supertest + mongodb-memory-server) for Flows A, B and C. Playwright end-to-end for the three flows plus the role switcher.
+- Unit tests: fee engine, OTP, tokens, parsers, permission map. Integration (Supertest + Turso libSQL in-memory/remote) for Flows A, B and C. Playwright end-to-end for the three flows plus the role switcher.
 - Coverage threshold on services; GitHub Actions running `npm run check` and e2e.
 
 ### Prompt 24: Demo hardening and handover
@@ -271,8 +271,8 @@ For every task: state your plan briefly, implement, add tests for logic-heavy pa
 
 - 'Reset demo data' action (DEMO\_MODE only) and named seed scenarios.
 - `/dev/demo-guide` presenter page: checklist following the spec's script (Year 1 vs Year 2 toggle, live QR scan to green screen, bulk upload to SMS to completion, role switching).
-- Full `docker-compose` stack, README, env documentation, health checks.
-- Security pass: helmet, rate limits, mongo sanitisation, secrets, dependency audit. Final cleanup of dead code and TODOs.
+- Full Vercel + Turso libSQL stack, README, env documentation, health checks.
+- Security pass: helmet, rate limits, input sanitisation, secrets, dependency audit. Final cleanup of dead code and TODOs.
 
 ---
 

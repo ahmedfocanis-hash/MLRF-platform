@@ -1,13 +1,13 @@
 import argon2 from 'argon2';
 import { DEMO_TIERS, GOVERNORATES, ROLE_PERMISSIONS } from '@mlrf/shared';
-import { initDb } from './config/db.js';
+import { initDatabase } from './config/db.js';
 import { RoleModel, UserModel, SpecialtyTierModel, SubscriberProfileModel, SubscriptionModel, PaymentModel, CertificateModel, ClaimModel, AuditLogModel, SmsOutboxModel, BulkBatchModel, CompletionTokenModel } from './models/index.js';
 const fiscalYear = 2026;
 const seededAdminRoles = ['super_admin', 'finance_admin', 'practitioner_analyst', 'facility_analyst', 'claims_admin'];
 const adminNames = { super_admin: 'Super Admin', finance_admin: 'Finance Admin', practitioner_analyst: 'Practitioner Analyst', facility_analyst: 'Facility Analyst', claims_admin: 'Claims Admin', inspector: 'Ahmed Inspector' };
 const specialties = [...DEMO_TIERS];
 async function main() {
-    await initDb();
+    await initDatabase();
     try {
         if (process.argv.includes('--reset')) {
             await Promise.all([RoleModel, UserModel, SpecialtyTierModel, SubscriberProfileModel, SubscriptionModel, PaymentModel, CertificateModel, ClaimModel, AuditLogModel, SmsOutboxModel, BulkBatchModel, CompletionTokenModel].map(model => model.deleteMany({})));

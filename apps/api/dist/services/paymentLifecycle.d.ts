@@ -3,7 +3,7 @@ export declare function issueCertificate(userId: string | any, subscriptionId: s
 /**
  * Applies a payment outcome using Turso / libSQL.
  */
-export declare function settleMongoPayment(paymentId: string, outcome: PaymentOutcome, webhookReference?: string): Promise<{
+export declare function settlePayment(paymentId: string, outcome: PaymentOutcome, webhookReference?: string): Promise<{
     payment: any;
     duplicate: boolean;
     certificate?: never;
@@ -14,5 +14,5 @@ export declare function settleMongoPayment(paymentId: string, outcome: PaymentOu
     user: any;
     duplicate: boolean;
 }>;
-export declare const settleTursoPayment: typeof settleMongoPayment;
+export declare const settleTursoPayment: typeof settlePayment;
 export declare function isValidWebhookSignature(body: unknown, signature: string): boolean;

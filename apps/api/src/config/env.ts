@@ -1,4 +1,16 @@
 import 'dotenv/config';
 import { z } from 'zod';
-const schema=z.object({NODE_ENV:z.enum(['development','test','production']).default('development'),PORT:z.coerce.number().int().positive().default(4000),WEB_ORIGIN:z.string().url().default('http://localhost:5173'),MONGODB_URI:z.string().optional(),TURSO_DATABASE_URL:z.string().optional(),TURSO_AUTH_TOKEN:z.string().optional(),JWT_ACCESS_SECRET:z.string().min(16).default('development-access-secret-change-this'),JWT_REFRESH_SECRET:z.string().min(16).default('development-refresh-secret-change-this'),PAYMENT_WEBHOOK_SECRET:z.string().min(8).default('demo-webhook-secret-change-me'),PUBLIC_WEB_URL:z.string().url().default('http://localhost:5173'),DEMO_MODE:z.string().default('true').transform(v=>v==='true'),UPLOAD_DIR:z.string().default('./uploads')});
-export const env=schema.parse(process.env);
+const schema = z.object({
+  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  PORT: z.coerce.number().int().positive().default(4000),
+  WEB_ORIGIN: z.string().url().default('http://localhost:5173'),
+  TURSO_DATABASE_URL: z.string().optional(),
+  TURSO_AUTH_TOKEN: z.string().optional(),
+  JWT_ACCESS_SECRET: z.string().min(16).default('development-access-secret-change-this'),
+  JWT_REFRESH_SECRET: z.string().min(16).default('development-refresh-secret-change-this'),
+  PAYMENT_WEBHOOK_SECRET: z.string().min(8).default('demo-webhook-secret-change-me'),
+  PUBLIC_WEB_URL: z.string().url().default('http://localhost:5173'),
+  DEMO_MODE: z.string().default('true').transform((v) => v === 'true'),
+  UPLOAD_DIR: z.string().default('./uploads'),
+});
+export const env = schema.parse(process.env);

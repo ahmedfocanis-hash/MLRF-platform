@@ -1,8 +1,8 @@
 import crypto from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { initDb } from '../config/db.js';
+import { initDatabase } from '../config/db.js';
 import { UserModel, SubscriptionModel, PaymentModel, CertificateModel, AuditLogModel } from '../models/index.js';
-import { settleMongoPayment } from '../services/paymentLifecycle.js';
+import { settlePayment } from '../services/paymentLifecycle.js';
 const isTestDbEnabled = Boolean(process.env.TURSO_DATABASE_URL || process.env.TEST_TURSO);
 const integration = describe.skipIf(!isTestDbEnabled);
 integration('Turso payment lifecycle integration', () => {
@@ -11,7 +11,7 @@ integration('Turso payment lifecycle integration', () => {
     let paymentId = '';
     let hasFixture = false;
     beforeAll(async () => {
-        await initDb();
+        await initDatabase();
     });
     async function cleanPreviousFixture() {
         if (!hasFixture)
@@ -58,8 +58,9 @@ integration('Turso payment lifecycle integration', () => {
         await cleanPreviousFixture();
     });
     it('settles success atomically and repeated success does not duplicate the certificate', async () => {
-        const first = await settleMongoPayment(paymentId, 'success', 'evt-integration-success');
-        const second = await settleMongoPayment(paymentId, 'success', 'evt-integration-success');
+        const webhookRef = `evt-integration-success-${crypto.randomUUID()}`;
+        const first = await settlePayment(paymentId, 'success', webhookRef);
+        const second = await settlePayment(paymentId, 'success', webhookRef);
         expect(first.payment.status).toBe('paid');
         expect(second.duplicate).toBe(true);
         expect(await CertificateModel.countDocuments({ subscriptionId })).toBe(1);
@@ -67,8 +68,9 @@ integration('Turso payment lifecycle integration', () => {
         expect((await UserModel.findById(userId))?.status).toBe('active');
     });
     it('rolls back every settlement write when the payment amount does not match', async () => {
+        const mismatchRef = `evt-integration-mismatch-${crypto.randomUUID()}`;
         await PaymentModel.updateOne({ _id: paymentId }, { $set: { amount: 1 } });
-        await expect(settleMongoPayment(paymentId, 'success', 'evt-integration-mismatch')).rejects.toMatchObject({ code: 'PAYMENT_AMOUNT_MISMATCH' });
+        await expect(settlePayment(paymentId, 'success', mismatchRef)).rejects.toMatchObject({ code: 'PAYMENT_AMOUNT_MISMATCH' });
         expect((await PaymentModel.findById(paymentId))?.status).toBe('pending');
         expect((await SubscriptionModel.findById(subscriptionId))?.status).toBe('pending_payment');
         expect((await UserModel.findById(userId))?.status).toBe('pending_verification');

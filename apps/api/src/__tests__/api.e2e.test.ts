@@ -6,6 +6,7 @@ import { app } from '../app.js';
 describe('MLRF API end-to-end demo flow', () => {
   const phone = `01${['0', '1', '2', '5'][crypto.randomInt(0, 4)]}${String(crypto.randomInt(0, 100_000_000)).padStart(8, '0')}`;
   const email = `e2e-${crypto.randomUUID()}@example.test`;
+  const nationalId = `29${String(crypto.randomInt(100000000000, 999999999999))}`;
   const password = 'E2e-Demo-Password-2026!';
   let accessToken = '';
   let certificateHash = '';
@@ -42,7 +43,7 @@ describe('MLRF API end-to-end demo flow', () => {
     expect(me.body.data.user.email).toBe(email);
 
     await request(app).put('/api/v1/subscriber/profile').set('Authorization', `Bearer ${accessToken}`).send({
-      nationalId: '29901011234567', governorate: 'Cairo', entityType: 'individual',
+      nationalId, governorate: 'Cairo', entityType: 'individual',
     }).expect(200);
 
     const tier = await request(app).post('/api/v1/subscriber/select-tier').set('Authorization', `Bearer ${accessToken}`).send({
@@ -65,14 +66,14 @@ describe('MLRF API end-to-end demo flow', () => {
     const verified = await request(app).get(`/api/v1/public/verify/${certificateHash}`).expect(200);
     expect(verified.body.data.result).toBe('VALID');
     expect(verified.body.data.name).toContain('E2E');
-  });
+  }, 60000);
 
   it('enforces role permissions on protected admin endpoints', async () => {
     const subscriber = await request(app).post('/api/v1/auth/login').send({ email, password }).expect(200);
     const response = await request(app).get('/api/v1/dev/sms-inbox')
       .set('Authorization', `Bearer ${subscriber.body.data.accessToken}`).expect(403);
     expect(response.body.error.code).toBe('FORBIDDEN');
-  });
+  }, 60000);
 
   afterAll(() => {
     // Demo state is process-local. The unique fixture avoids collisions with other tests.

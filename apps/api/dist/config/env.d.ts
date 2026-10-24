@@ -9,7 +9,6 @@ export declare const env: {
     PUBLIC_WEB_URL: string;
     DEMO_MODE: boolean;
     UPLOAD_DIR: string;
-    MONGODB_URI?: string | undefined;
     TURSO_DATABASE_URL?: string | undefined;
     TURSO_AUTH_TOKEN?: string | undefined;
 };

@@ -9,14 +9,14 @@ import { env } from '../config/env.js';
 import argon2 from 'argon2';
 import * as XLSX from 'xlsx';
 import { UserModel, SubscriberProfileModel, SpecialtyTierModel, SubscriptionModel, AuditLogModel, PaymentModel, CertificateModel, BulkBatchModel, SmsOutboxModel, CompletionTokenModel } from '../models/index.js';
-import { settleMongoPayment, isValidWebhookSignature } from '../services/paymentLifecycle.js';
+import { settlePayment, isValidWebhookSignature } from '../services/paymentLifecycle.js';
 import { generateCompletionToken, hashCompletionToken, isWellFormedCompletionToken, completionTokenExpiry } from '../services/completionTokens.js';
 import { users, payments, claims, batches, audit, certificates, recordAudit, feeFor, resetDemo } from '../services/demoStore.js';
 import { LocalDiskStorageProvider, detectDocumentMime } from '../providers/storage.js';
 export const apiRouter = Router();
 const loginSchema = z.object({ email: z.string().email(), password: z.string().min(1) });
 const publicUser = (u) => ({ id: String(u.id ?? u._id), name: u.name, email: u.email, phone: u.phone, role: u.role, status: u.status, governorate: u.governorate ?? 'Cairo', entityType: u.entityType ?? 'individual' });
-const mongoReady = () => Boolean(process.env.TURSO_DATABASE_URL || process.env.NODE_ENV === 'production' || process.env.CONNECT_MONGO === 'true' || process.env.CONNECT_TURSO === 'true');
+const dbReady = () => Boolean(process.env.TURSO_DATABASE_URL || process.env.NODE_ENV === 'production' || process.env.CONNECT_TURSO === 'true');
 const bankUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
 function parseBankRows(buffer, filename) {
     const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: false });
@@ -29,9 +29,9 @@ function parseBankRows(buffer, filename) {
     const raw = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false });
     return raw.map(row => { const normalized = Object.fromEntries(Object.entries(row).map(([k, v]) => [k.trim().toLowerCase().replace(/[\s_-]+/g, ''), v])); return { name: String(normalized.name ?? normalized.fullname ?? '').trim(), phone: String(normalized.phone ?? normalized.mobile ?? '').trim(), nationalId: String(normalized.nationalid ?? normalized.nationalidnumber ?? '').trim(), specialty: String(normalized.specialty ?? normalized.tier ?? '').trim(), amount: Number(String(normalized.amount ?? normalized.fee ?? '').replace(/,/g, '')) }; });
 }
-async function persistAudit(userLabel, role, action, entityType, entityId) { if (!mongoReady())
+async function persistAudit(userLabel, role, action, entityType, entityId) { if (!dbReady())
     return; await AuditLogModel.create({ userLabel, role, action, entityType, entityId: entityId ?? null, ipAddress: '127.0.0.1', userAgent: 'MLRF API' }); }
-apiRouter.post('/auth/register', asyncHandler(async (req, res) => { const input = registerSchema.parse(req.body); if (mongoReady()) {
+apiRouter.post('/auth/register', asyncHandler(async (req, res) => { const input = registerSchema.parse(req.body); if (dbReady()) {
     const email = input.email.toLowerCase();
     if (await UserModel.exists({ $or: [{ email }, { phone: input.phone }] }))
         throw new AppError(409, 'ACCOUNT_EXISTS', 'An account with this email or phone already exists');
@@ -42,7 +42,7 @@ apiRouter.post('/auth/register', asyncHandler(async (req, res) => { const input 
 } if (users.some(u => u.email === input.email))
     throw new AppError(409, 'EMAIL_EXISTS', 'An account with this email already exists'); const user = { id: crypto.randomUUID(), name: input.name, email: input.email, phone: input.phone, role: 'subscriber', status: 'pending_verification', governorate: 'Cairo', entityType: 'individual' }; users.push(user); recordAudit(user.email, user.role, 'REGISTER', 'user'); ok(res, { user: publicUser(user), demoOtp: env.DEMO_MODE ? '123456' : undefined }, 201); }));
 apiRouter.post('/auth/verify-otp', asyncHandler(async (req, res) => { const { phone, code } = z.object({ phone: z.string(), code: z.string().length(6) }).parse(req.body); if (code !== '123456')
-    throw new AppError(400, 'OTP_INVALID', 'Incorrect verification code'); if (mongoReady()) {
+    throw new AppError(400, 'OTP_INVALID', 'Incorrect verification code'); if (dbReady()) {
     const user = await UserModel.findOneAndUpdate({ phone }, { $set: { phoneVerifiedAt: new Date(), status: 'incomplete' } }, { new: true });
     if (!user)
         throw new AppError(404, 'USER_NOT_FOUND', 'No account matches this phone');
@@ -52,7 +52,7 @@ apiRouter.post('/auth/verify-otp', asyncHandler(async (req, res) => { const { ph
 } const user = users.find(u => u.phone === phone); if (!user)
     throw new AppError(404, 'USER_NOT_FOUND', 'No account matches this phone'); user.status = 'incomplete'; recordAudit(user.email, user.role, 'OTP_VERIFIED', 'user'); ok(res, { verified: true, user: publicUser(user) }); }));
 apiRouter.post('/auth/resend-otp', (_req, res) => ok(res, { sent: true, expiresInSeconds: 300, demoOtp: env.DEMO_MODE ? '123456' : undefined }));
-apiRouter.post('/auth/login', asyncHandler(async (req, res) => { const { email, password } = loginSchema.parse(req.body); if (mongoReady()) {
+apiRouter.post('/auth/login', asyncHandler(async (req, res) => { const { email, password } = loginSchema.parse(req.body); if (dbReady()) {
     const user = await UserModel.findOne({ email: email.toLowerCase() }).select('+passwordHash');
     if (!user || !(await argon2.verify(user.passwordHash, password)))
         throw new AppError(401, 'INVALID_CREDENTIALS', 'Email or password is incorrect');
@@ -69,7 +69,7 @@ apiRouter.post('/auth/refresh', (_req, res) => { throw new AppError(401, 'REFRES
 apiRouter.post('/auth/logout', (req, res) => { res.clearCookie('mlrf_refresh', { path: '/api/v1/auth' }); ok(res, { loggedOut: true }); });
 apiRouter.get('/auth/me', requireAuth, (req, res) => ok(res, { user: req.user }));
 apiRouter.post('/auth/demo/switch-role', asyncHandler(async (req, res) => { if (!env.DEMO_MODE)
-    throw new AppError(404, 'NOT_FOUND', 'Route not found'); const role = z.enum(ROLES).parse(req.body.role); if (mongoReady()) {
+    throw new AppError(404, 'NOT_FOUND', 'Route not found'); const role = z.enum(ROLES).parse(req.body.role); if (dbReady()) {
     const user = await UserModel.findOne({ role }).sort({ createdAt: 1 });
     if (!user)
         throw new AppError(404, 'ROLE_USER_NOT_FOUND', 'No demo user for this role');
@@ -79,7 +79,7 @@ apiRouter.post('/auth/demo/switch-role', asyncHandler(async (req, res) => { if (
 } const user = users.find(u => u.role === role); if (!user)
     throw new AppError(404, 'ROLE_USER_NOT_FOUND', 'No demo user for this role'); recordAudit(user.email, user.role, 'DEMO_ROLE_SWITCH', 'session'); ok(res, { accessToken: signAccess({ id: user.id, name: user.name, role: user.role, email: user.email }), user: publicUser(user) }); }));
 apiRouter.get('/specialty-tiers', (_req, res) => ok(res, DEMO_TIERS));
-apiRouter.get('/subscriber/dashboard', requireAuth, asyncHandler(async (req, res) => { if (mongoReady()) {
+apiRouter.get('/subscriber/dashboard', requireAuth, asyncHandler(async (req, res) => { if (dbReady()) {
     const user = await UserModel.findById(req.user?.id);
     if (!user)
         throw new AppError(404, 'USER_NOT_FOUND', 'User not found');
@@ -89,7 +89,7 @@ apiRouter.get('/subscriber/dashboard', requireAuth, asyncHandler(async (req, res
     ok(res, { progress, nextStep: progress < 50 ? 'professional-info' : progress < 75 ? 'specialty-selection' : progress < 100 ? 'payment' : 'certificate', status: user.status, user: publicUser({ ...user.toObject(), governorate: profile?.governorate, entityType: profile?.entityType }), subscription });
     return;
 } const user = users.find(u => u.id === req.user?.id); const progress = user?.status === 'active' ? 100 : user?.tierId ? 75 : user?.governorate !== 'Cairo' ? 50 : 25; ok(res, { progress, nextStep: progress < 50 ? 'professional-info' : progress < 75 ? 'specialty-selection' : progress < 100 ? 'payment' : 'certificate', status: user?.status ?? 'incomplete', user: user ? publicUser(user) : null, certificate: certificates.find((c) => c.userId === user?.id) ?? null }); }));
-apiRouter.put('/subscriber/profile', requireAuth, asyncHandler(async (req, res) => { const input = professionalProfileSchema.parse(req.body); if (mongoReady()) {
+apiRouter.put('/subscriber/profile', requireAuth, asyncHandler(async (req, res) => { const input = professionalProfileSchema.parse(req.body); if (dbReady()) {
     const user = await UserModel.findById(req.user?.id);
     if (!user)
         throw new AppError(404, 'USER_NOT_FOUND', 'User not found');
@@ -105,7 +105,7 @@ apiRouter.put('/subscriber/profile', requireAuth, asyncHandler(async (req, res) 
     return;
 } const user = users.find(u => u.id === req.user?.id); if (!user)
     throw new AppError(404, 'USER_NOT_FOUND', 'User not found'); Object.assign(user, { governorate: input.governorate, entityType: input.entityType, status: 'incomplete' }); recordAudit(user.email, user.role, 'PROFILE_UPDATED', 'subscriber-profile'); ok(res, { user: publicUser(user), progress: 50 }); }));
-apiRouter.post('/subscriber/select-tier', requireAuth, asyncHandler(async (req, res) => { const { tierId, entityType } = tierSchema.parse(req.body); if (mongoReady()) {
+apiRouter.post('/subscriber/select-tier', requireAuth, asyncHandler(async (req, res) => { const { tierId, entityType } = tierSchema.parse(req.body); if (dbReady()) {
     const [user, tierRecord] = await Promise.all([UserModel.findById(req.user?.id), SpecialtyTierModel.findOne({ code: tierId, entityType, active: true })]);
     if (!user)
         throw new AppError(404, 'USER_NOT_FOUND', 'User not found');
@@ -148,7 +148,7 @@ apiRouter.post('/subscriber/documents', requireAuth, documentUpload, asyncHandle
     ok(res, { uploaded: true, document: stored, storage: 'local-disk', note: 'Demo storage; configure private object storage and malware scanning before production' }, 201);
 }));
 apiRouter.post('/payments/initiate', requireAuth, asyncHandler(async (req, res) => {
-    if (mongoReady()) {
+    if (dbReady()) {
         const user = await UserModel.findById(req.user?.id);
         if (!user)
             throw new AppError(404, 'USER_NOT_FOUND', 'User not found');
@@ -171,13 +171,13 @@ apiRouter.post('/payments/initiate', requireAuth, asyncHandler(async (req, res) 
 }));
 apiRouter.post('/payments/:id/simulate', requireAuth, asyncHandler(async (req, res) => {
     const outcome = z.enum(['success', 'failure']).parse(req.body.outcome);
-    if (mongoReady()) {
+    if (dbReady()) {
         const payment = await PaymentModel.findById(req.params.id);
         if (!payment)
             throw new AppError(404, 'PAYMENT_NOT_FOUND', 'Payment not found');
         if (String(payment.userId) !== req.user?.id && !ROLE_PERMISSIONS[req.user.role]?.includes('payments:read'))
             throw new AppError(403, 'FORBIDDEN', 'You cannot simulate this payment');
-        const result = await settleMongoPayment(String(payment._id), outcome);
+        const result = await settlePayment(String(payment._id), outcome);
         const cert = result.certificate ?? await CertificateModel.findOne({ subscriptionId: payment.subscriptionId }).select('+qrHash');
         ok(res, { payment: { id: String(result.payment._id), amount: result.payment.amount, status: result.payment.status }, user: result.user ? publicUser(result.user) : null, certificate: cert ? { id: String(cert._id), number: cert.certNumber, qrHash: cert.qrHash, expiry: cert.expiresAt, verificationUrl: `${env.PUBLIC_WEB_URL}/verify/${cert.qrHash}` } : null, duplicate: result.duplicate });
         return;
@@ -207,8 +207,8 @@ apiRouter.post('/webhooks/payments', asyncHandler(async (req, res) => {
     if (!isValidWebhookSignature(req.body, signature))
         throw new AppError(401, 'BAD_SIGNATURE', 'Webhook signature invalid');
     const payload = z.object({ paymentId: z.string().min(1), outcome: z.enum(['success', 'failure']), webhookReference: z.string().min(1).max(200) }).parse(req.body);
-    if (mongoReady()) {
-        const result = await settleMongoPayment(payload.paymentId, payload.outcome, payload.webhookReference);
+    if (dbReady()) {
+        const result = await settlePayment(payload.paymentId, payload.outcome, payload.webhookReference);
         ok(res, { accepted: true, duplicate: result.duplicate, paymentId: String(result.payment._id), status: result.payment.status });
         return;
     }
@@ -237,12 +237,12 @@ apiRouter.post('/webhooks/payments', asyncHandler(async (req, res) => {
     recordAudit('payment-gateway', 'finance_admin', `PAYMENT_${payload.outcome.toUpperCase()}`, payment.id);
     ok(res, { accepted: true, duplicate: false, paymentId: payment.id, status: payment.status });
 }));
-apiRouter.get('/certificates/me', requireAuth, asyncHandler(async (req, res) => { if (mongoReady()) {
+apiRouter.get('/certificates/me', requireAuth, asyncHandler(async (req, res) => { if (dbReady()) {
     const docs = await CertificateModel.find({ userId: req.user?.id }).select('+qrHash').sort({ createdAt: -1 });
     ok(res, docs.map((c) => ({ id: String(c._id), number: c.certNumber, qrHash: c.qrHash, issuedAt: c.issuedAt, expiry: c.expiresAt, status: c.status, verificationUrl: `${env.PUBLIC_WEB_URL}/verify/${c.qrHash}` })));
     return;
 } ok(res, certificates.filter((c) => c.userId === req.user?.id).map(c => ({ ...c, verificationUrl: `${env.PUBLIC_WEB_URL}/verify/${c.qrHash}` }))); }));
-apiRouter.get('/certificates/:id/pdf', requireAuth, asyncHandler(async (req, res) => { if (mongoReady()) {
+apiRouter.get('/certificates/:id/pdf', requireAuth, asyncHandler(async (req, res) => { if (dbReady()) {
     const cert = await CertificateModel.findOne({ _id: req.params.id, userId: req.user?.id }).select('+qrHash');
     if (!cert)
         throw new AppError(404, 'CERTIFICATE_NOT_FOUND', 'Certificate not found');
@@ -250,7 +250,7 @@ apiRouter.get('/certificates/:id/pdf', requireAuth, asyncHandler(async (req, res
     return;
 } const cert = certificates.find((c) => c.id === req.params.id && c.userId === req.user?.id); if (!cert)
     throw new AppError(404, 'CERTIFICATE_NOT_FOUND', 'Certificate not found'); ok(res, { certificate: cert, download: 'PDF rendering is a demo placeholder; see README for production Puppeteer adapter' }); }));
-apiRouter.get('/public/verify/:qrHash', asyncHandler(async (req, res) => { if (mongoReady()) {
+apiRouter.get('/public/verify/:qrHash', asyncHandler(async (req, res) => { if (dbReady()) {
     const cert = await CertificateModel.findOne({ qrHash: req.params.qrHash }).select('+qrHash').populate('userId', 'name').populate({ path: 'subscriptionId', populate: { path: 'tierId', select: 'name nameAr' } });
     if (!cert || cert.status !== 'valid') {
         ok(res, { result: 'INVALID' });
@@ -283,7 +283,7 @@ async function processBankBatch(req, res, rowsInput, filename) {
         const key = `${r.nationalId}:2026`;
         let duplicate = seen.has(key);
         seen.add(key);
-        if (mongoReady()) {
+        if (dbReady()) {
             if (/^\d{14}$/.test(r.nationalId) && await SubscriberProfileModel.exists({ nationalId: r.nationalId }))
                 duplicate = true;
             if (await UserModel.exists({ phone: r.phone }))
@@ -298,10 +298,10 @@ async function processBankBatch(req, res, rowsInput, filename) {
     if (dryRun)
         return ok(res, { dryRun: true, filename, rows: preview, summary });
     const created = preview.filter(r => r.status === 'created');
-    if (mongoReady()) {
+    if (dbReady()) {
         const admin = await UserModel.findById(req.user.id);
         if (!admin)
-            throw new AppError(401, 'USER_NOT_FOUND', 'Authenticated administrator was not found in MongoDB');
+            throw new AppError(401, 'USER_NOT_FOUND', 'Authenticated administrator was not found in database');
         const batch = await BulkBatchModel.create({ createdBy: admin._id, filename: filename.slice(0, 180), fiscalYear: 2026, status: 'committed', totalRows: summary.total, createdCount: summary.created, duplicateCount: summary.duplicate, invalidCount: summary.invalid, committedAt: new Date() });
         const createdUsers = [];
         const completionLinks = [];
@@ -367,9 +367,9 @@ catch (e) {
         throw e;
     throw new AppError(400, 'SHEET_PARSE_FAILED', 'Could not parse the uploaded spreadsheet');
 } return processBankBatch(req, res, rows, req.file.originalname); }));
-apiRouter.get('/admin/bulk-batches', requireAuth, requirePermission('bulk:upload'), asyncHandler(async (_req, res) => { if (mongoReady())
+apiRouter.get('/admin/bulk-batches', requireAuth, requirePermission('bulk:upload'), asyncHandler(async (_req, res) => { if (dbReady())
     return ok(res, await BulkBatchModel.find().sort({ createdAt: -1 }).limit(100).lean()); return ok(res, batches.map(({ rows: _rows, ...b }) => b)); }));
-apiRouter.get('/admin/bulk-batches/:id', requireAuth, requirePermission('bulk:upload'), asyncHandler(async (req, res) => { if (mongoReady()) {
+apiRouter.get('/admin/bulk-batches/:id', requireAuth, requirePermission('bulk:upload'), asyncHandler(async (req, res) => { if (dbReady()) {
     const b = await BulkBatchModel.findById(req.params.id).lean();
     if (!b)
         throw new AppError(404, 'BATCH_NOT_FOUND', 'Batch not found');
@@ -377,7 +377,7 @@ apiRouter.get('/admin/bulk-batches/:id', requireAuth, requirePermission('bulk:up
 } const b = batches.find(x => x.id === req.params.id); if (!b)
     throw new AppError(404, 'BATCH_NOT_FOUND', 'Batch not found'); return ok(res, b); }));
 apiRouter.post('/complete/:token', asyncHandler(async (req, res) => { const token = String(req.params.token ?? ''); if (!isWellFormedCompletionToken(token) && !(env.DEMO_MODE && token.startsWith('demo-token-')))
-    throw new AppError(400, 'TOKEN_INVALID', 'Completion link is invalid or expired'); if (mongoReady()) {
+    throw new AppError(400, 'TOKEN_INVALID', 'Completion link is invalid or expired'); if (dbReady()) {
     const now = new Date();
     const record = await CompletionTokenModel.findOneAndUpdate({ tokenHash: hashCompletionToken(token), usedAt: null, expiresAt: { $gt: now } }, { $set: { usedAt: now } }, { new: true }).select('+tokenHash');
     if (!record)
@@ -409,7 +409,7 @@ apiRouter.post('/complete/:token', asyncHandler(async (req, res) => { const toke
     return ok(res, { user: publicUser(user), certificate });
 } const user = users.find(u => u.id === token.slice('demo-token-'.length) && token.startsWith('demo-token-') && u.status === 'pending_completion'); if (!user)
     throw new AppError(400, 'TOKEN_INVALID', 'Completion link is invalid, expired, or already used'); user.status = 'active'; const cert = { id: crypto.randomUUID(), number: `MLRF-2026-${String(certificates.length + 123).padStart(6, '0')}`, qrHash: crypto.randomBytes(16).toString('hex'), userId: user.id, issuedAt: new Date().toISOString(), expiry: new Date(Date.now() + 365 * 86400000).toISOString(), status: 'valid' }; certificates.push(cert); recordAudit(user.email, user.role, 'BANK_PROFILE_COMPLETED', user.id); return ok(res, { user: publicUser(user), certificate: cert }); }));
-apiRouter.get('/dev/sms-inbox', requireAuth, requirePermission('bulk:upload'), asyncHandler(async (req, res) => { if (mongoReady())
+apiRouter.get('/dev/sms-inbox', requireAuth, requirePermission('bulk:upload'), asyncHandler(async (req, res) => { if (dbReady())
     return ok(res, { messages: await SmsOutboxModel.find().sort({ createdAt: -1 }).limit(100).select('phone body status createdAt sentAt').lean() }); return ok(res, { messages: users.filter(u => u.status === 'pending_completion').map(u => ({ to: u.phone, body: `Complete your MLRF profile: ${env.PUBLIC_WEB_URL}/complete/demo-token-${u.id}`, createdAt: new Date().toISOString() })) }); }));
 apiRouter.get('/admin/analytics', requireAuth, asyncHandler(async (req, res) => { const role = req.user.role; if (!ROLE_PERMISSIONS[role]?.some(p => p.startsWith('analytics:')))
     throw new AppError(403, 'FORBIDDEN', 'Analytics permission required'); const active = users.filter(u => u.status === 'active').length; const revenue = payments.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0); const governorates = ['Cairo', 'Giza', 'Alexandria', 'Dakahlia', 'Asyut', 'Luxor', 'Aswan']; const specialties = DEMO_TIERS.filter(t => t.entityType === 'individual').slice(0, 7); ok(res, { filters: { fiscalYear: req.query.fiscalYear ?? '2026', scenario: req.query.scenario ?? 'year2_3' }, kpis: { activeSubscribers: active + 2481, totalRevenue: revenue + 6245000, yoyRenewalRate: 78.4, unrenewed: 342 }, cohorts: [{ name: 'Year 1 signups', signups: 920, renewals: 0, newSignups: 920 }, { name: 'Year 2 renewals', signups: 0, renewals: 714, newSignups: 0 }, { name: 'Year 2 new signups', signups: 530, renewals: 0, newSignups: 530 }], distribution: specialties.map((t, i) => ({ name: t.name, subscribers: 110 + i * 27, revenue: (110 + i * 27) * t.fee })), heatmap: governorates.map((g, i) => ({ governorate: g, values: specialties.map((t, j) => ({ specialty: t.name, rate: Math.max(42, 91 - (i * 5 + j * 3) % 47) })) })), facilities: { hospitals: 142, pharmacies: 480, clinics: 723, laboratories: 186 }, scenario: req.query.scenario ?? 'year2_3' }); }));

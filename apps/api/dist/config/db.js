@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { createClient } from '@libsql/client';
 const url = process.env.TURSO_DATABASE_URL;
 const authToken = process.env.TURSO_AUTH_TOKEN;
@@ -14,7 +15,7 @@ export const db = createClient(config);
 /**
  * Ensures required Turso/libSQL relational tables are provisioned.
  */
-export async function initDb() {
+export async function initDatabase() {
     await db.batch([
         `CREATE TABLE IF NOT EXISTS roles (
       name TEXT PRIMARY KEY,
@@ -172,9 +173,6 @@ export async function initDb() {
     );`
     ], 'write');
 }
-/** Backward compatibility helper for legacy connectMongo calls */
-export async function connectMongo() {
-    return db;
-}
+export const initDb = initDatabase;
 export default db;
 //# sourceMappingURL=db.js.map
