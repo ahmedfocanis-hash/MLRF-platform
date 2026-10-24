@@ -130,9 +130,18 @@ apiRouter.put('/subscriber/profile', requireAuth, asyncHandler(async (req, res) 
         throw new AppError(400, 'IDENTIFIER_REQUIRED', 'Provide a national ID or syndicate ID');
     if (input.entityType === 'facility' && !input.facilityLicense)
         throw new AppError(400, 'IDENTIFIER_REQUIRED', 'Provide a facility license');
-    const profile = await SubscriberProfileModel.findOneAndUpdate({ userId: user._id }, { $set: { userId: user._id, entityType: input.entityType, nationalId: input.nationalId, syndicateId: input.syndicateId, facilityLicense: input.facilityLicense, governorate: input.governorate, completionPercent: 50 } }, { upsert: true, new: true, runValidators: true });
-    user.status = 'incomplete';
-    await user.save();
+    let profile;
+    try {
+        profile = await SubscriberProfileModel.findOneAndUpdate({ userId: user._id }, { $set: { userId: user._id, entityType: input.entityType, nationalId: input.nationalId, syndicateId: input.syndicateId, facilityLicense: input.facilityLicense, governorate: input.governorate, completionPercent: 50 } }, { upsert: true, new: true, runValidators: true });
+        user.status = 'incomplete';
+        await user.save();
+    }
+    catch (err) {
+        if (err?.message && typeof err.message === 'string' && err.message.includes('UNIQUE constraint failed')) {
+            return res.status(400).json({ error: { code: 400, message: "A profile with this National ID already exists." } });
+        }
+        throw err;
+    }
     await persistAudit(user.email, user.role, 'PROFILE_UPDATED', 'subscriber-profile', String(profile._id));
     ok(res, { user: publicUser({ ...user.toObject(), governorate: profile.governorate, entityType: profile.entityType }), progress: 50 });
     return;

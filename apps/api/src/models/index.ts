@@ -413,7 +413,16 @@ export const SubscriberProfileModel = {
     const now = new Date().toISOString();
     await db.execute({
       sql: `INSERT INTO subscriber_profiles (id, userId, entityType, nationalId, syndicateId, facilityLicense, governorate, address, completionPercent, createdAt, updatedAt)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT (userId) DO UPDATE SET
+              entityType = excluded.entityType,
+              nationalId = excluded.nationalId,
+              syndicateId = excluded.syndicateId,
+              facilityLicense = excluded.facilityLicense,
+              governorate = excluded.governorate,
+              address = excluded.address,
+              completionPercent = excluded.completionPercent,
+              updatedAt = excluded.updatedAt`,
       args: sanitizeSqlArgs([
         id,
         String(data.userId),
@@ -432,19 +441,57 @@ export const SubscriberProfileModel = {
   },
 
   async findOneAndUpdate(filter: any, update: any, opts: any = {}): Promise<any> {
-    const userId = String(filter.userId);
-    const existing = await this.findOne({ userId });
+    const userId = String(filter.userId || filter._id || filter.id);
     const setObj = update.$set || update;
     const now = new Date().toISOString();
 
-    if (!existing) {
-      if (opts.upsert) {
-        return this.create({ userId, ...setObj });
+    if (opts.upsert) {
+      const id = setObj.id || setObj._id || crypto.randomUUID();
+      const entityType = setObj.entityType ?? 'individual';
+      const nationalId = setObj.nationalId !== undefined ? (setObj.nationalId || null) : null;
+      const syndicateId = setObj.syndicateId !== undefined ? (setObj.syndicateId || null) : null;
+      const facilityLicense = setObj.facilityLicense !== undefined ? (setObj.facilityLicense || null) : null;
+      const governorate = setObj.governorate ?? 'Cairo';
+      const address = setObj.address !== undefined ? (setObj.address || null) : null;
+      const completionPercent = setObj.completionPercent !== undefined ? setObj.completionPercent : 25;
+
+      const allowedFields = ['entityType', 'nationalId', 'syndicateId', 'facilityLicense', 'governorate', 'address', 'completionPercent'];
+      const updateFields: string[] = [];
+      for (const field of allowedFields) {
+        if (setObj[field] !== undefined) {
+          updateFields.push(`${field} = excluded.${field}`);
+        }
       }
+      updateFields.push('updatedAt = excluded.updatedAt');
+
+      await db.execute({
+        sql: `INSERT INTO subscriber_profiles (id, userId, entityType, nationalId, syndicateId, facilityLicense, governorate, address, completionPercent, createdAt, updatedAt)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              ON CONFLICT (userId) DO UPDATE SET ${updateFields.join(', ')}`,
+        args: sanitizeSqlArgs([
+          id,
+          userId,
+          entityType,
+          nationalId,
+          syndicateId,
+          facilityLicense,
+          governorate,
+          address,
+          completionPercent,
+          now,
+          now,
+        ]),
+      });
+
+      return this.findOne({ userId });
+    }
+
+    const existing = await this.findOne({ userId });
+    if (!existing) {
       return null;
     }
 
-    const keys = Object.keys(setObj);
+    const keys = Object.keys(setObj).filter((k) => k !== 'id' && k !== '_id' && k !== 'userId');
     if (keys.length) {
       const setSql = keys.map((k) => `${k} = ?`).join(', ');
       const args = keys.map((k) => setObj[k]);
