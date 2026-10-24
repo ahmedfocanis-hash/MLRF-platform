@@ -1,0 +1,70 @@
+import { type Role } from '@mlrf/shared';
+export type DemoUser = {
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+    role: Role;
+    status: string;
+    governorate: string;
+    entityType: 'individual' | 'facility';
+    tierId?: string;
+    fee?: number;
+    certificateNumber?: string;
+    expiry?: string;
+};
+export type AuditEntry = {
+    id: string;
+    timestamp: string;
+    user: string;
+    role: string;
+    action: string;
+    ip: string;
+    entity: string;
+};
+export declare const users: DemoUser[];
+export declare const payments: {
+    id: string;
+    userId: string;
+    amount: number;
+    status: string;
+    channel: string;
+    createdAt: string;
+    batchId?: string;
+}[];
+export declare const claims: {
+    id: string;
+    doctor: string;
+    hospital: string;
+    specialty: string;
+    stage: string;
+    awarded: number;
+    paid: number;
+    beneficiary: string;
+    daysInStage: number;
+    createdAt: string;
+}[];
+export declare const batches: {
+    id: string;
+    filename: string;
+    createdAt: string;
+    total: number;
+    created: number;
+    duplicate: number;
+    invalid: number;
+    status: string;
+    rows: unknown[];
+}[];
+export declare const audit: AuditEntry[];
+export declare const certificates: {
+    id: string;
+    number: string;
+    qrHash: string;
+    userId: string;
+    issuedAt: string;
+    expiry: string;
+    status: 'valid' | 'revoked';
+}[];
+export declare function recordAudit(user: string, role: string, action: string, entity?: string, ip?: string): void;
+export declare function feeFor(tierId: string): 400 | 100 | 240 | 920 | 160 | 24000 | 9600 | 3600 | 2400 | 1200;
+export declare function resetDemo(): void;
