@@ -22,15 +22,102 @@ async function main() {
       await SpecialtyTierModel.updateOne({code:tier.id}, {$set:{code:tier.id,name:tier.name,nameAr:tier.nameAr,entityType:tier.entityType,fee:tier.fee,risk:tier.risk,active:true}}, {upsert:true});
     }
 
-    const passwordHash = await hashPassword('Demo123!');
+    const passwordHash = await hashPassword('demo12345');
     const usersByIndex = new Map<number, string>();
     const adminUsers = [
       ...seededAdminRoles.map((role,i)=>({name:adminNames[role]!,email:`${role}@mlrf.demo`,phone:`010${String(i+1).padStart(8,'0')}`,role})),
-      {name:adminNames.inspector!,email:'inspector@mlrf.demo',phone:'01012345678',role:'inspector' as const},
+      {name:adminNames.inspector!,email:'inspector@mlrf.demo',phone:'01099999999',role:'inspector' as const},
     ];
     for (const admin of adminUsers) {
       await UserModel.updateOne({email:admin.email}, {$set:{...admin,passwordHash,status:'active'}}, {upsert:true});
     }
+
+    // Universal Demo Doctor
+    const demoDoctor = await UserModel.findOneAndUpdate(
+      { email: 'subscriber@mlrf.demo' },
+      {
+        $set: {
+          name: 'د. أحمد محمد محمود',
+          email: 'subscriber@mlrf.demo',
+          phone: '01012345678',
+          passwordHash,
+          role: 'subscriber',
+          status: 'active',
+          phoneVerifiedAt: new Date(Date.UTC(fiscalYear, 0, 1)),
+        },
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+    const doctorUserId = String(demoDoctor._id ?? demoDoctor.id);
+
+    await SubscriberProfileModel.findOneAndUpdate(
+      { userId: doctorUserId },
+      {
+        $set: {
+          userId: doctorUserId,
+          nationalId: '29901011234567',
+          syndicateId: '123456',
+          entityType: 'individual',
+          governorate: 'Cairo',
+          completionPercent: 100,
+        },
+      },
+      { upsert: true, new: true }
+    );
+
+    const gpTier = await SpecialtyTierModel.findOne({ code: 'human_doctor_gp' });
+    const gpTierId = String(gpTier?._id ?? gpTier?.id ?? 'human_doctor_gp');
+
+    const doctorSub = await SubscriptionModel.findOneAndUpdate(
+      { userId: doctorUserId, fiscalYear },
+      {
+        $set: {
+          userId: doctorUserId,
+          tierId: gpTierId,
+          fiscalYear,
+          renewalStatus: 'new',
+          status: 'active',
+          amountDue: 240,
+          startsAt: new Date(Date.UTC(fiscalYear, 0, 1)),
+          expiresAt: new Date(Date.UTC(fiscalYear + 1, 0, 1)),
+        },
+      },
+      { upsert: true, new: true }
+    );
+    const doctorSubId = String(doctorSub._id ?? doctorSub.id);
+
+    await PaymentModel.updateOne(
+      { gatewayReference: 'seed-payment-doctor-subscriber' },
+      {
+        $set: {
+          userId: doctorUserId,
+          subscriptionId: doctorSubId,
+          amount: 240,
+          currency: 'EGP',
+          channel: 'gateway',
+          status: 'paid',
+          gatewayReference: 'seed-payment-doctor-subscriber',
+          paidAt: new Date(Date.UTC(fiscalYear, 0, 1)),
+        },
+      },
+      { upsert: true }
+    );
+
+    await CertificateModel.updateOne(
+      { certNumber: 'MLRF-2026-000123' },
+      {
+        $set: {
+          userId: doctorUserId,
+          subscriptionId: doctorSubId,
+          certNumber: 'MLRF-2026-000123',
+          qrHash: 'demo-qr-valid-7f0c1a',
+          issuedAt: new Date(Date.UTC(fiscalYear, 0, 1)),
+          expiresAt: new Date(Date.UTC(fiscalYear + 1, 0, 1)),
+          status: 'valid',
+        },
+      },
+      { upsert: true }
+    );
 
     const names = ['Dr. Mariam Hassan','Dr. Omar Ali','Dr. Nour Ibrahim','Dr. Youssef Mahmoud','Dr. Salma Fathy','Dr. Karim Adel'];
     for (let i=0;i<2500;i++) {

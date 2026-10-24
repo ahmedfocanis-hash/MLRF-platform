@@ -37,7 +37,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
   roleLabel,
 }) => {
   const { t, i18n } = useTranslation();
-  const [email, setEmail] = useState('super_admin@mlrf.demo');
+  const [email, setEmail] = useState('subscriber@mlrf.demo');
   const [password, setPassword] = useState('demo12345');
   const [isSubmitting, setIsSubmitting] = useState(false);
 

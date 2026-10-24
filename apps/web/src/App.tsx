@@ -236,7 +236,7 @@ export default function App() {
     ],
     [t],
   );
-  const login = async (email = 'super_admin@mlrf.demo', password = 'demo12345') => {
+  const login = async (email = 'subscriber@mlrf.demo', password = 'demo12345') => {
     try {
       const r = await request<{ accessToken: string; user: User }>('/auth/login', 'post', {
         email,
@@ -739,6 +739,7 @@ export default function App() {
               setToast={setToast}
               forceCertificateView={subscriberTab === 'certificate'}
               onGoToJourney={() => setSubscriberTab('journey')}
+              currentUser={currentUser}
             />
           </main>
         </div>
@@ -2179,10 +2180,12 @@ function Subscriber({
   setToast,
   forceCertificateView = false,
   onGoToJourney: _onGoToJourney,
+  currentUser,
 }: {
   setToast: (s: string) => void;
   forceCertificateView?: boolean;
   onGoToJourney?: () => void;
+  currentUser?: User | null;
 }) {
   const { t, i18n } = useTranslation();
   const [entity, setEntity] = useState<'individual' | 'facility'>('individual');
@@ -2192,7 +2195,7 @@ function Subscriber({
   const [step, setStep] = useState(1);
   const [paid, setPaid] = useState(false);
   const [selected, setSelected] = useState<any>(null);
-  const [cardName, setCardName] = useState('Dr. Demo User');
+  const [cardName, setCardName] = useState('د. أحمد محمد محمود');
   const [cardNumber, setCardNumber] = useState('4000 1234 5678 9010');
   const [cardExpiry, setCardExpiry] = useState('12/28');
   const [cardCvv, setCardCvv] = useState('123');
@@ -2525,7 +2528,7 @@ function Subscriber({
               <div className="eyebrow">{t('brandShort', { lng: 'ar' })}</div>
               <h2>{t('subscriberPage.certTitle', { lng: 'ar' })}</h2>
               <p>{t('subscriberPage.certifies', { lng: 'ar' })}</p>
-              <h3>{t('subscriberPage.demoSubscriber', { lng: 'ar' })}</h3>
+              <h3>{currentUser?.name || 'د. أحمد محمد محمود'}</h3>
               <p>{t('subscriberPage.registered', { lng: 'ar' })}</p>
               <p className="certificate-payment-note">
                 {t('certificate.paymentConfirmation', {
@@ -2554,7 +2557,7 @@ function Subscriber({
                 <div className="qr-placeholder">
                   <QRCodeSVG
                     value={
-                      typeof window !== 'undefined' && window.location.origin.includes('vercel.app')
+                      typeof window !== 'undefined' && window.location.origin && window.location.origin.startsWith('http')
                         ? `${window.location.origin}/api/v1/certificates/MLRF-2026-000123/pdf`
                         : 'https://mlrf-platform-ykit.vercel.app/api/v1/certificates/MLRF-2026-000123/pdf'
                     }
@@ -2568,7 +2571,7 @@ function Subscriber({
                   className="btn btn-primary"
                   onClick={() => {
                     const pdfUrl =
-                      typeof window !== 'undefined' && window.location.origin.includes('vercel.app')
+                      typeof window !== 'undefined' && window.location.origin && window.location.origin.startsWith('http')
                         ? `${window.location.origin}/api/v1/certificates/MLRF-2026-000123/pdf`
                         : 'https://mlrf-platform-ykit.vercel.app/api/v1/certificates/MLRF-2026-000123/pdf';
                     window.open(pdfUrl, '_blank');
