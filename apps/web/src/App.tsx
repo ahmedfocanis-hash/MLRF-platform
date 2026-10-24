@@ -49,6 +49,7 @@ import {
 import { QRCodeSVG } from 'qrcode.react';
 import { LoginView } from './LoginView';
 import { RegisterView } from './RegisterView';
+import { BrandLogo } from './components/BrandLogo';
 import { request } from './lib/api';
 import { exportToExcel } from './lib/exportExcel';
 import {
@@ -427,7 +428,7 @@ export default function App() {
           <div className="landing-nav-inner">
             <div className="landing-brand">
               <div className="brand-mark">
-                <ShieldCheck size={28} />
+                <BrandLogo className="w-7 h-7" />
               </div>
               <div>
                 <strong>MLRF</strong>
@@ -672,7 +673,7 @@ export default function App() {
           <header className="standalone-header">
             <div className="standalone-brand">
               <div className="brand-logo">
-                <HeartPulse size={24} />
+                <BrandLogo className="w-6 h-6" />
               </div>
               <div>
                 <h2>{t('doctorPortal.headerTitle')}</h2>
@@ -832,7 +833,7 @@ export default function App() {
           <aside className={`sidebar ${sidebar ? 'sidebar-open' : ''}`}>
             <div className="side-brand">
               <div className="brand-mark">
-                <ShieldCheck size={23} />
+                <BrandLogo className="w-6 h-6" />
               </div>
               <div>
                 <strong>MLRF</strong>
@@ -2532,11 +2533,20 @@ function Subscriber({
           )}
           {effectiveStep === 4 && (
             <div className="certificate-preview" dir="rtl">
-              <div className="fund-logo-placeholder">
-                <span>{t('certificate.logoPlaceholder', { lng: 'ar' })}</span>
+              <div
+                className="fund-logo-placeholder"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                }}
+              >
+                <BrandLogo className="w-8 h-8" />
+                <span>{t('brandShort', { lng: 'ar' })}</span>
               </div>
               <div className="certificate-seal">
-                <ShieldCheck size={36} />
+                <BrandLogo className="w-9 h-9" />
               </div>
               <div className="eyebrow">{t('brandShort', { lng: 'ar' })}</div>
               <h2>{t('subscriberPage.certTitle', { lng: 'ar' })}</h2>

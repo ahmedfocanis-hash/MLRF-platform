@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  ShieldCheck,
   User,
   Mail,
   Phone,
@@ -18,6 +17,7 @@ import {
   UserPlus,
 } from 'lucide-react';
 import { request } from './lib/api';
+import { BrandLogo } from './components/BrandLogo';
 
 interface RegisterViewProps {
   onRegisterSuccess: (email: string, password: string) => Promise<void>;
@@ -112,7 +112,7 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
         <div className="landing-nav-inner">
           <div className="landing-brand" style={{ cursor: 'pointer' }} onClick={onBackToHome}>
             <div className="brand-mark">
-              <ShieldCheck size={28} />
+              <BrandLogo className="w-7 h-7" />
             </div>
             <div>
               <strong>MLRF</strong>

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  ShieldCheck,
   Users,
   LockKeyhole,
   ArrowRight,
@@ -16,6 +15,7 @@ import {
   UserPlus,
 } from 'lucide-react';
 import { type Role } from '@mlrf/shared';
+import { BrandLogo } from './components/BrandLogo';
 
 interface LoginViewProps {
   onLogin: (email: string, password: string) => Promise<void>;
@@ -70,7 +70,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
         <div className="landing-nav-inner">
           <div className="landing-brand" style={{ cursor: 'pointer' }} onClick={onBackToHome}>
             <div className="brand-mark">
-              <ShieldCheck size={28} />
+              <BrandLogo className="w-7 h-7" />
             </div>
             <div>
               <strong>MLRF</strong>
