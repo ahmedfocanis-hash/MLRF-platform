@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { db } from '../config/db.js';
+import { db, sanitizeSqlArgs } from '../config/db.js';
 /** Persistence boundary for audit data using raw SQL queries via Turso client. */
 export const auditRepository = {
     async create(entry) {
@@ -8,7 +8,7 @@ export const auditRepository = {
         await db.execute({
             sql: `INSERT INTO audit_logs (id, userId, userLabel, role, action, entityType, entityId, ipAddress, userAgent, metadata, createdAt)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            args: [
+            args: sanitizeSqlArgs([
                 id,
                 entry.userId ?? null,
                 entry.userLabel,
@@ -20,7 +20,7 @@ export const auditRepository = {
                 entry.userAgent ?? '',
                 entry.metadata ? JSON.stringify(entry.metadata) : null,
                 createdAt,
-            ],
+            ]),
         });
         return {
             _id: id,
@@ -49,7 +49,7 @@ export const auditRepository = {
         args.push(safeLimit);
         const result = await db.execute({
             sql: `SELECT * FROM audit_logs ${whereClause} ORDER BY createdAt DESC, id DESC LIMIT ?`,
-            args,
+            args: sanitizeSqlArgs(args),
         });
         return result.rows.map((row) => ({
             _id: row.id,

@@ -7,7 +7,58 @@ const config = {
     url,
     authToken,
 };
+function sanitizeSqlValue(val) {
+    if (val === undefined)
+        return null;
+    if (typeof val === 'boolean')
+        return val ? 1 : 0;
+    if (typeof val === 'object') {
+        if (val === null)
+            return null;
+        if (val instanceof Date)
+            return val.toISOString();
+        if ((typeof Buffer !== 'undefined' && Buffer.isBuffer(val)) ||
+            val instanceof Uint8Array ||
+            val instanceof ArrayBuffer) {
+            return val;
+        }
+        return JSON.stringify(val);
+    }
+    return val;
+}
+export function sanitizeSqlArgs(args) {
+    if (!args)
+        return [];
+    if (Array.isArray(args)) {
+        return args.map(sanitizeSqlValue);
+    }
+    if (typeof args === 'object') {
+        const sanitized = {};
+        for (const key of Object.keys(args)) {
+            sanitized[key] = sanitizeSqlValue(args[key]);
+        }
+        return sanitized;
+    }
+    return args;
+}
 export const db = createClient(config);
+const originalExecute = db.execute.bind(db);
+db.execute = function (stmt, ...rest) {
+    let sanitizedArgs = undefined;
+    if (stmt && typeof stmt === 'object') {
+        if (stmt.args !== undefined) {
+            stmt.args = sanitizeSqlArgs(stmt.args);
+        }
+        sanitizedArgs = stmt.args;
+    }
+    else if (rest.length > 0) {
+        rest[0] = sanitizeSqlArgs(rest[0]);
+        sanitizedArgs = rest[0];
+    }
+    console.log('[TURSO EXECUTE]', typeof stmt === 'string' ? stmt : stmt.sql);
+    console.log('[TURSO ARGS]', sanitizedArgs);
+    return originalExecute(stmt, ...rest);
+};
 let dbInitialized = false;
 let initPromise = null;
 /**

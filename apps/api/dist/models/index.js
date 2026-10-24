@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
-import { db } from '../config/db.js';
+import { db, sanitizeSqlArgs } from '../config/db.js';
+export { sanitizeSqlArgs };
 function wrapRow(tableName, row) {
     if (!row)
         return null;
@@ -25,18 +26,11 @@ function wrapRow(tableName, row) {
             if (!keys.length)
                 return wrapped;
             const setClause = keys.map((k) => `${k} = ?`).join(', ');
-            const args = keys.map((k) => {
-                const val = updates[k];
-                if (val instanceof Date)
-                    return val.toISOString();
-                if (typeof val === 'object' && val !== null)
-                    return JSON.stringify(val);
-                return val;
-            });
+            const args = keys.map((k) => updates[k]);
             args.push(id);
             await db.execute({
                 sql: `UPDATE ${tableName} SET ${setClause} WHERE id = ?`,
-                args,
+                args: sanitizeSqlArgs(args),
             });
             return wrapped;
         },
@@ -115,7 +109,7 @@ export const RoleModel = {
             sql: `INSERT INTO roles (name, permissionsJson, createdAt, updatedAt)
             VALUES (?, ?, ?, ?)
             ON CONFLICT(name) DO UPDATE SET permissionsJson = excluded.permissionsJson, updatedAt = excluded.updatedAt`,
-            args: [name, permissionsJson, now, now],
+            args: sanitizeSqlArgs([name, permissionsJson, now, now]),
         });
     },
     async deleteMany(_filter = {}) {
@@ -145,7 +139,7 @@ export const UserModel = {
                 return false;
             const res = await db.execute({
                 sql: `SELECT 1 FROM users WHERE ${conditions.join(' OR ')} LIMIT 1`,
-                args,
+                args: sanitizeSqlArgs(args),
             });
             return res.rows.length > 0;
         }
@@ -167,7 +161,7 @@ export const UserModel = {
             return false;
         const res = await db.execute({
             sql: `SELECT 1 FROM users WHERE ${conditions.join(' AND ')} LIMIT 1`,
-            args,
+            args: sanitizeSqlArgs(args),
         });
         return res.rows.length > 0;
     },
@@ -178,7 +172,7 @@ export const UserModel = {
         await db.execute({
             sql: `INSERT INTO users (id, name, email, phone, passwordHash, role, status, phoneVerifiedAt, emailVerifiedAt, refreshTokenHash, lastLoginAt, createdAt, updatedAt)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            args: [
+            args: sanitizeSqlArgs([
                 id,
                 data.name,
                 email,
@@ -192,7 +186,7 @@ export const UserModel = {
                 data.lastLoginAt ? new Date(data.lastLoginAt).toISOString() : null,
                 data.createdAt ? new Date(data.createdAt).toISOString() : now,
                 data.updatedAt ? new Date(data.updatedAt).toISOString() : now,
-            ],
+            ]),
         });
         return wrapRow('users', {
             id,
@@ -237,7 +231,7 @@ export const UserModel = {
             const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
             const res = await db.execute({
                 sql: `SELECT * FROM users ${where} ORDER BY createdAt ASC LIMIT 1`,
-                args,
+                args: sanitizeSqlArgs(args),
             });
             return wrapRow('users', res.rows[0] ?? null);
         });
@@ -247,7 +241,7 @@ export const UserModel = {
         return createQuery(async (_ctx) => {
             const res = await db.execute({
                 sql: `SELECT * FROM users WHERE id = ? LIMIT 1`,
-                args: [targetId],
+                args: sanitizeSqlArgs([targetId]),
             });
             return wrapRow('users', res.rows[0] ?? null);
         });
@@ -258,7 +252,7 @@ export const UserModel = {
         const id = filter._id || filter.id;
         const existingRes = await db.execute({
             sql: `SELECT * FROM users WHERE ${id ? 'id = ?' : email ? 'email = ?' : 'phone = ?'} LIMIT 1`,
-            args: [id || email || phone],
+            args: sanitizeSqlArgs([id || email || phone]),
         });
         const setObj = update.$set || update;
         const now = new Date().toISOString();
@@ -279,7 +273,7 @@ export const UserModel = {
                 await db.execute({
                     sql: `INSERT INTO users (id, name, email, phone, passwordHash, role, status, createdAt, updatedAt)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    args: [
+                    args: sanitizeSqlArgs([
                         userObj.id,
                         userObj.name,
                         userObj.email,
@@ -289,7 +283,7 @@ export const UserModel = {
                         userObj.status,
                         now,
                         now,
-                    ],
+                    ]),
                 });
                 return wrapRow('users', userObj);
             }
@@ -299,19 +293,16 @@ export const UserModel = {
         const keys = Object.keys(setObj);
         if (keys.length) {
             const setSql = keys.map((k) => `${k} = ?`).join(', ');
-            const args = keys.map((k) => {
-                const v = setObj[k];
-                return v instanceof Date ? v.toISOString() : v;
-            });
+            const args = keys.map((k) => setObj[k]);
             args.push(row.id);
             await db.execute({
                 sql: `UPDATE users SET ${setSql}, updatedAt = '${now}' WHERE id = ?`,
-                args,
+                args: sanitizeSqlArgs(args),
             });
         }
         const updatedRes = await db.execute({
             sql: `SELECT * FROM users WHERE id = ? LIMIT 1`,
-            args: [row.id],
+            args: sanitizeSqlArgs([row.id]),
         });
         return wrapRow('users', updatedRes.rows[0]);
     },
@@ -321,7 +312,7 @@ export const UserModel = {
     async deleteOne(filter) {
         const id = filter._id || filter.id;
         if (id) {
-            await db.execute({ sql: `DELETE FROM users WHERE id = ?`, args: [String(id)] });
+            await db.execute({ sql: `DELETE FROM users WHERE id = ?`, args: sanitizeSqlArgs([String(id)]) });
         }
     },
     async deleteMany(filter) {
@@ -333,7 +324,7 @@ export const UserModel = {
             const ids = filter.userId.$in.map(String);
             if (ids.length) {
                 const placeholders = ids.map(() => '?').join(',');
-                await db.execute({ sql: `DELETE FROM users WHERE id IN (${placeholders})`, args: ids });
+                await db.execute({ sql: `DELETE FROM users WHERE id IN (${placeholders})`, args: sanitizeSqlArgs(ids) });
             }
         }
     },
@@ -358,7 +349,7 @@ export const SubscriberProfileModel = {
             return false;
         const res = await db.execute({
             sql: `SELECT 1 FROM subscriber_profiles WHERE ${conditions.join(' AND ')} LIMIT 1`,
-            args,
+            args: sanitizeSqlArgs(args),
         });
         return res.rows.length > 0;
     },
@@ -377,7 +368,7 @@ export const SubscriberProfileModel = {
             const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
             const res = await db.execute({
                 sql: `SELECT * FROM subscriber_profiles ${where} LIMIT 1`,
-                args,
+                args: sanitizeSqlArgs(args),
             });
             return wrapRow('subscriber_profiles', res.rows[0] ?? null);
         });
@@ -388,7 +379,7 @@ export const SubscriberProfileModel = {
         await db.execute({
             sql: `INSERT INTO subscriber_profiles (id, userId, entityType, nationalId, syndicateId, facilityLicense, governorate, address, completionPercent, createdAt, updatedAt)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            args: [
+            args: sanitizeSqlArgs([
                 id,
                 String(data.userId),
                 data.entityType,
@@ -400,7 +391,7 @@ export const SubscriberProfileModel = {
                 data.completionPercent ?? 25,
                 now,
                 now,
-            ],
+            ]),
         });
         return wrapRow('subscriber_profiles', { id, ...data, createdAt: now, updatedAt: now });
     },
@@ -422,7 +413,7 @@ export const SubscriberProfileModel = {
             args.push(existing.id);
             await db.execute({
                 sql: `UPDATE subscriber_profiles SET ${setSql}, updatedAt = '${now}' WHERE id = ?`,
-                args,
+                args: sanitizeSqlArgs(args),
             });
         }
         return this.findOne({ userId });
@@ -439,7 +430,7 @@ export const SubscriberProfileModel = {
             const ids = filter.userId.$in.map(String);
             if (ids.length) {
                 const placeholders = ids.map(() => '?').join(',');
-                await db.execute({ sql: `DELETE FROM subscriber_profiles WHERE userId IN (${placeholders})`, args: ids });
+                await db.execute({ sql: `DELETE FROM subscriber_profiles WHERE userId IN (${placeholders})`, args: sanitizeSqlArgs(ids) });
             }
         }
     },
@@ -472,7 +463,7 @@ export const SpecialtyTierModel = {
             const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
             const res = await db.execute({
                 sql: `SELECT * FROM specialty_tiers ${where} LIMIT 1`,
-                args,
+                args: sanitizeSqlArgs(args),
             });
             return wrapRow('specialty_tiers', res.rows[0] ?? null);
         });
@@ -488,7 +479,7 @@ export const SpecialtyTierModel = {
                 await db.execute({
                     sql: `INSERT INTO specialty_tiers (id, code, name, nameAr, entityType, fee, risk, active, createdAt, updatedAt)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    args: [
+                    args: sanitizeSqlArgs([
                         id,
                         code,
                         setObj.name,
@@ -499,7 +490,7 @@ export const SpecialtyTierModel = {
                         setObj.active ? 1 : 0,
                         now,
                         now,
-                    ],
+                    ]),
                 });
                 return { id, code, ...setObj };
             }
@@ -512,7 +503,7 @@ export const SpecialtyTierModel = {
             args.push(existing.id);
             await db.execute({
                 sql: `UPDATE specialty_tiers SET ${setSql}, updatedAt = '${now}' WHERE id = ?`,
-                args,
+                args: sanitizeSqlArgs(args),
             });
         }
         return this.findOne({ code });
@@ -556,7 +547,7 @@ export const SubscriptionModel = {
            ORDER BY s.${ctx.sortField} ${ctx.sortOrder}
            LIMIT 1`
                 : `SELECT s.* FROM subscriptions s ${where} ORDER BY s.${ctx.sortField} ${ctx.sortOrder} LIMIT 1`;
-            const res = await db.execute({ sql, args });
+            const res = await db.execute({ sql, args: sanitizeSqlArgs(args) });
             if (!res.rows.length)
                 return null;
             const row = res.rows[0];
@@ -580,7 +571,7 @@ export const SubscriptionModel = {
         return createQuery(async (_ctx) => {
             const res = await db.execute({
                 sql: `SELECT * FROM subscriptions WHERE id = ? LIMIT 1`,
-                args: [targetId],
+                args: sanitizeSqlArgs([targetId]),
             });
             return wrapRow('subscriptions', res.rows[0] ?? null);
         });
@@ -591,7 +582,7 @@ export const SubscriptionModel = {
         await db.execute({
             sql: `INSERT INTO subscriptions (id, userId, tierId, fiscalYear, renewalStatus, status, amountDue, startsAt, expiresAt, createdAt, updatedAt)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            args: [
+            args: sanitizeSqlArgs([
                 id,
                 String(data.userId),
                 String(data.tierId),
@@ -603,7 +594,7 @@ export const SubscriptionModel = {
                 data.expiresAt ? new Date(data.expiresAt).toISOString() : null,
                 now,
                 now,
-            ],
+            ]),
         });
         return wrapRow('subscriptions', { id, ...data, createdAt: now, updatedAt: now });
     },
@@ -624,12 +615,12 @@ export const SubscriptionModel = {
             const setSql = keys.map((k) => `${k} = ?`).join(', ');
             const args = keys.map((k) => {
                 const v = setObj[k];
-                return v instanceof Date ? v.toISOString() : k === 'userId' || k === 'tierId' ? String(v) : v;
+                return k === 'userId' || k === 'tierId' ? String(v) : v;
             });
             args.push(existing.id);
             await db.execute({
                 sql: `UPDATE subscriptions SET ${setSql}, updatedAt = '${now}' WHERE id = ?`,
-                args,
+                args: sanitizeSqlArgs(args),
             });
         }
         return this.findOne({ userId, fiscalYear });
@@ -640,14 +631,11 @@ export const SubscriptionModel = {
         const keys = Object.keys(setObj);
         if (keys.length) {
             const setSql = keys.map((k) => `${k} = ?`).join(', ');
-            const args = keys.map((k) => {
-                const v = setObj[k];
-                return v instanceof Date ? v.toISOString() : v;
-            });
+            const args = keys.map((k) => setObj[k]);
             args.push(id);
             await db.execute({
                 sql: `UPDATE subscriptions SET ${setSql}, updatedAt = '${now}' WHERE id = ?`,
-                args,
+                args: sanitizeSqlArgs(args),
             });
         }
         return this.findById(id);
@@ -661,7 +649,7 @@ export const SubscriptionModel = {
             const ids = filter.userId.$in.map(String);
             if (ids.length) {
                 const placeholders = ids.map(() => '?').join(',');
-                await db.execute({ sql: `DELETE FROM subscriptions WHERE userId IN (${placeholders})`, args: ids });
+                await db.execute({ sql: `DELETE FROM subscriptions WHERE userId IN (${placeholders})`, args: sanitizeSqlArgs(ids) });
             }
         }
     },
@@ -677,7 +665,7 @@ export const PaymentModel = {
         await db.execute({
             sql: `INSERT INTO payments (id, userId, subscriptionId, amount, currency, channel, status, gatewayReference, webhookReference, bulkBatchId, paidAt, createdAt, updatedAt)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            args: [
+            args: sanitizeSqlArgs([
                 id,
                 String(data.userId),
                 String(data.subscriptionId),
@@ -691,7 +679,7 @@ export const PaymentModel = {
                 data.paidAt ? new Date(data.paidAt).toISOString() : null,
                 now,
                 now,
-            ],
+            ]),
         });
         return wrapRow('payments', { id, ...data, createdAt: now, updatedAt: now });
     },
@@ -700,7 +688,7 @@ export const PaymentModel = {
         return createQuery(async (_ctx) => {
             const res = await db.execute({
                 sql: `SELECT * FROM payments WHERE id = ? LIMIT 1`,
-                args: [targetId],
+                args: sanitizeSqlArgs([targetId]),
             });
             return wrapRow('payments', res.rows[0] ?? null);
         });
@@ -724,7 +712,7 @@ export const PaymentModel = {
             const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
             const res = await db.execute({
                 sql: `SELECT * FROM payments ${where} LIMIT 1`,
-                args,
+                args: sanitizeSqlArgs(args),
             });
             return wrapRow('payments', res.rows[0] ?? null);
         });
@@ -744,12 +732,12 @@ export const PaymentModel = {
             const setSql = keys.map((k) => `${k} = ?`).join(', ');
             const args = keys.map((k) => {
                 const v = setObj[k];
-                return v instanceof Date ? v.toISOString() : k === 'userId' || k === 'subscriptionId' ? String(v) : v;
+                return k === 'userId' || k === 'subscriptionId' ? String(v) : v;
             });
             args.push(existing.id);
             await db.execute({
                 sql: `UPDATE payments SET ${setSql}, updatedAt = '${now}' WHERE id = ?`,
-                args,
+                args: sanitizeSqlArgs(args),
             });
         }
         return this.findOne(filter);
@@ -763,7 +751,7 @@ export const PaymentModel = {
             const ids = filter.userId.$in.map(String);
             if (ids.length) {
                 const placeholders = ids.map(() => '?').join(',');
-                await db.execute({ sql: `DELETE FROM payments WHERE userId IN (${placeholders})`, args: ids });
+                await db.execute({ sql: `DELETE FROM payments WHERE userId IN (${placeholders})`, args: sanitizeSqlArgs(ids) });
             }
         }
     },
@@ -783,7 +771,7 @@ export const CertificateModel = {
         const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
         const res = await db.execute({
             sql: `SELECT COUNT(*) as c FROM certificates ${where}`,
-            args,
+            args: sanitizeSqlArgs(args),
         });
         return Number(res.rows[0]?.c ?? 0);
     },
@@ -796,19 +784,19 @@ export const CertificateModel = {
             await db.execute({
                 sql: `INSERT INTO certificates (id, userId, subscriptionId, certNumber, qrHash, issuedAt, expiresAt, status, revokedAt, createdAt, updatedAt)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                args: [
+                args: sanitizeSqlArgs([
                     id,
                     String(item.userId),
                     String(item.subscriptionId),
                     item.certNumber,
                     item.qrHash,
-                    new Date(item.issuedAt).toISOString(),
-                    new Date(item.expiresAt).toISOString(),
+                    item.issuedAt ? new Date(item.issuedAt).toISOString() : null,
+                    item.expiresAt ? new Date(item.expiresAt).toISOString() : null,
                     item.status ?? 'valid',
                     item.revokedAt ? new Date(item.revokedAt).toISOString() : null,
                     now,
                     now,
-                ],
+                ]),
             });
             created.push(wrapRow('certificates', { id, ...item, createdAt: now, updatedAt: now }));
         }
@@ -825,7 +813,7 @@ export const CertificateModel = {
             const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
             const res = await db.execute({
                 sql: `SELECT * FROM certificates ${where} ORDER BY ${ctx.sortField} ${ctx.sortOrder}`,
-                args,
+                args: sanitizeSqlArgs(args),
             });
             return res.rows.map((r) => wrapRow('certificates', r));
         });
@@ -853,7 +841,7 @@ export const CertificateModel = {
             const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
             const res = await db.execute({
                 sql: `SELECT * FROM certificates ${where} LIMIT 1`,
-                args,
+                args: sanitizeSqlArgs(args),
             });
             if (!res.rows.length)
                 return null;
@@ -863,14 +851,14 @@ export const CertificateModel = {
             if (populates.some((p) => p.path === 'userId' || p === 'userId')) {
                 const uRes = await db.execute({
                     sql: `SELECT id, name FROM users WHERE id = ? LIMIT 1`,
-                    args: [cert.userId],
+                    args: sanitizeSqlArgs([cert.userId]),
                 });
                 cert.userId = uRes.rows[0] ? { _id: uRes.rows[0].id, id: uRes.rows[0].id, name: uRes.rows[0].name } : null;
             }
             if (populates.some((p) => p.path === 'subscriptionId' || p === 'subscriptionId')) {
                 const sRes = await db.execute({
                     sql: `SELECT s.*, t.name as tierName, t.nameAr as tierNameAr FROM subscriptions s LEFT JOIN specialty_tiers t ON s.tierId = t.id OR s.tierId = t.code WHERE s.id = ? LIMIT 1`,
-                    args: [cert.subscriptionId],
+                    args: sanitizeSqlArgs([cert.subscriptionId]),
                 });
                 if (sRes.rows[0]) {
                     const sRow = sRes.rows[0];
@@ -899,12 +887,12 @@ export const CertificateModel = {
             const setSql = keys.map((k) => `${k} = ?`).join(', ');
             const args = keys.map((k) => {
                 const v = setObj[k];
-                return v instanceof Date ? v.toISOString() : k === 'userId' || k === 'subscriptionId' ? String(v) : v;
+                return k === 'userId' || k === 'subscriptionId' ? String(v) : v;
             });
             args.push(existing.id);
             await db.execute({
                 sql: `UPDATE certificates SET ${setSql}, updatedAt = '${now}' WHERE id = ?`,
-                args,
+                args: sanitizeSqlArgs(args),
             });
         }
         return this.findOne(filter);
@@ -918,7 +906,7 @@ export const CertificateModel = {
             const ids = filter.userId.$in.map(String);
             if (ids.length) {
                 const placeholders = ids.map(() => '?').join(',');
-                await db.execute({ sql: `DELETE FROM certificates WHERE userId IN (${placeholders})`, args: ids });
+                await db.execute({ sql: `DELETE FROM certificates WHERE userId IN (${placeholders})`, args: sanitizeSqlArgs(ids) });
             }
         }
     },
@@ -930,7 +918,7 @@ export const BulkBatchModel = {
         await db.execute({
             sql: `INSERT INTO bulk_batches (id, createdBy, filename, fiscalYear, status, totalRows, createdCount, duplicateCount, invalidCount, committedAt, createdAt, updatedAt)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            args: [
+            args: sanitizeSqlArgs([
                 id,
                 String(data.createdBy),
                 data.filename,
@@ -943,7 +931,7 @@ export const BulkBatchModel = {
                 data.committedAt ? new Date(data.committedAt).toISOString() : null,
                 now,
                 now,
-            ],
+            ]),
         });
         return wrapRow('bulk_batches', { id, ...data, createdAt: now, updatedAt: now });
     },
@@ -951,7 +939,7 @@ export const BulkBatchModel = {
         return createQuery(async (ctx) => {
             const res = await db.execute({
                 sql: `SELECT * FROM bulk_batches ORDER BY createdAt DESC LIMIT ?`,
-                args: [ctx.limitCount ?? 100],
+                args: sanitizeSqlArgs([ctx.limitCount ?? 100]),
             });
             return res.rows.map((r) => wrapRow('bulk_batches', r));
         });
@@ -961,7 +949,7 @@ export const BulkBatchModel = {
         return createQuery(async (_ctx) => {
             const res = await db.execute({
                 sql: `SELECT * FROM bulk_batches WHERE id = ? LIMIT 1`,
-                args: [targetId],
+                args: sanitizeSqlArgs([targetId]),
             });
             return wrapRow('bulk_batches', res.rows[0] ?? null);
         });
@@ -981,7 +969,7 @@ export const ClaimModel = {
         const now = new Date().toISOString();
         const existing = await db.execute({
             sql: `SELECT * FROM claims WHERE claimNumber = ? LIMIT 1`,
-            args: [claimNumber],
+            args: sanitizeSqlArgs([claimNumber]),
         });
         if (!existing.rows.length) {
             if (opts.upsert) {
@@ -989,7 +977,7 @@ export const ClaimModel = {
                 await db.execute({
                     sql: `INSERT INTO claims (id, claimNumber, subscriberId, facilityName, specialty, governorate, stage, incidentAt, filedAt, verdictAt, payoutAt, awardedAmount, paidAmount, beneficiary, notes, createdAt, updatedAt)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    args: [
+                    args: sanitizeSqlArgs([
                         id,
                         claimNumber,
                         String(setObj.subscriberId),
@@ -997,7 +985,7 @@ export const ClaimModel = {
                         setObj.specialty,
                         setObj.governorate,
                         setObj.stage,
-                        new Date(setObj.incidentAt).toISOString(),
+                        setObj.incidentAt ? new Date(setObj.incidentAt).toISOString() : null,
                         setObj.filedAt ? new Date(setObj.filedAt).toISOString() : null,
                         setObj.verdictAt ? new Date(setObj.verdictAt).toISOString() : null,
                         setObj.payoutAt ? new Date(setObj.payoutAt).toISOString() : null,
@@ -1007,7 +995,7 @@ export const ClaimModel = {
                         setObj.notes ?? null,
                         now,
                         now,
-                    ],
+                    ]),
                 });
                 return { id, claimNumber, ...setObj };
             }
@@ -1019,12 +1007,12 @@ export const ClaimModel = {
             const setSql = keys.map((k) => `${k} = ?`).join(', ');
             const args = keys.map((k) => {
                 const v = setObj[k];
-                return v instanceof Date ? v.toISOString() : k === 'subscriberId' ? String(v) : v;
+                return k === 'subscriberId' ? String(v) : v;
             });
             args.push(row.id);
             await db.execute({
                 sql: `UPDATE claims SET ${setSql}, updatedAt = '${now}' WHERE id = ?`,
-                args,
+                args: sanitizeSqlArgs(args),
             });
         }
         return { id: row.id, claimNumber, ...setObj };
@@ -1048,7 +1036,7 @@ export const AuditLogModel = {
         const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
         const res = await db.execute({
             sql: `SELECT COUNT(*) as c FROM audit_logs ${where}`,
-            args,
+            args: sanitizeSqlArgs(args),
         });
         return Number(res.rows[0]?.c ?? 0);
     },
@@ -1058,7 +1046,7 @@ export const AuditLogModel = {
         if (entityId) {
             const existing = await db.execute({
                 sql: `SELECT id FROM audit_logs WHERE entityId = ? LIMIT 1`,
-                args: [entityId],
+                args: sanitizeSqlArgs([entityId]),
             });
             if (!existing.rows.length && opts.upsert) {
                 return this.create({ ...setObj, entityId });
@@ -1075,7 +1063,7 @@ export const AuditLogModel = {
             await db.execute({
                 sql: `INSERT INTO audit_logs (id, userId, userLabel, role, action, entityType, entityId, ipAddress, userAgent, metadata, createdAt)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                args: [
+                args: sanitizeSqlArgs([
                     id,
                     item.userId ? String(item.userId) : null,
                     item.userLabel,
@@ -1085,13 +1073,9 @@ export const AuditLogModel = {
                     item.entityId ? String(item.entityId) : null,
                     item.ipAddress,
                     item.userAgent ?? '',
-                    item.metadata
-                        ? typeof item.metadata === 'string'
-                            ? item.metadata
-                            : JSON.stringify(item.metadata)
-                        : null,
+                    item.metadata,
                     now,
-                ],
+                ]),
             });
             created.push(wrapRow('audit_logs', { id, ...item, createdAt: now }));
         }
@@ -1118,7 +1102,7 @@ export const AuditLogModel = {
             args.push(ctx.limitCount ?? 50);
             const res = await db.execute({
                 sql: `SELECT * FROM audit_logs ${where} ORDER BY createdAt DESC, id DESC LIMIT ?`,
-                args,
+                args: sanitizeSqlArgs(args),
             });
             return res.rows.map((r) => wrapRow('audit_logs', r));
         });
@@ -1132,7 +1116,7 @@ export const AuditLogModel = {
             const ids = filter.userId.$in.map(String);
             if (ids.length) {
                 const placeholders = ids.map(() => '?').join(',');
-                await db.execute({ sql: `DELETE FROM audit_logs WHERE userId IN (${placeholders})`, args: ids });
+                await db.execute({ sql: `DELETE FROM audit_logs WHERE userId IN (${placeholders})`, args: sanitizeSqlArgs(ids) });
             }
         }
     },
@@ -1144,7 +1128,7 @@ export const SmsOutboxModel = {
         await db.execute({
             sql: `INSERT INTO sms_outbox (id, userId, phone, body, status, attempts, sentAt, lastError, createdAt, updatedAt)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            args: [
+            args: sanitizeSqlArgs([
                 id,
                 data.userId ? String(data.userId) : null,
                 data.phone,
@@ -1155,7 +1139,7 @@ export const SmsOutboxModel = {
                 data.lastError ?? null,
                 now,
                 now,
-            ],
+            ]),
         });
         return wrapRow('sms_outbox', { id, ...data, createdAt: now, updatedAt: now });
     },
@@ -1163,7 +1147,7 @@ export const SmsOutboxModel = {
         return createQuery(async (ctx) => {
             const res = await db.execute({
                 sql: `SELECT id, phone, body, status, createdAt, sentAt FROM sms_outbox ORDER BY createdAt DESC LIMIT ?`,
-                args: [ctx.limitCount ?? 100],
+                args: sanitizeSqlArgs([ctx.limitCount ?? 100]),
             });
             return res.rows.map((r) => wrapRow('sms_outbox', r));
         });
@@ -1177,7 +1161,7 @@ export const SmsOutboxModel = {
             const ids = filter.userId.$in.map(String);
             if (ids.length) {
                 const placeholders = ids.map(() => '?').join(',');
-                await db.execute({ sql: `DELETE FROM sms_outbox WHERE userId IN (${placeholders})`, args: ids });
+                await db.execute({ sql: `DELETE FROM sms_outbox WHERE userId IN (${placeholders})`, args: sanitizeSqlArgs(ids) });
             }
         }
     },
@@ -1189,15 +1173,15 @@ export const CompletionTokenModel = {
         await db.execute({
             sql: `INSERT INTO completion_tokens (id, userId, tokenHash, expiresAt, usedAt, createdAt, updatedAt)
             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            args: [
+            args: sanitizeSqlArgs([
                 id,
                 String(data.userId),
                 data.tokenHash,
-                new Date(data.expiresAt).toISOString(),
+                data.expiresAt ? new Date(data.expiresAt).toISOString() : null,
                 data.usedAt ? new Date(data.usedAt).toISOString() : null,
                 now,
                 now,
-            ],
+            ]),
         });
         return wrapRow('completion_tokens', { id, ...data, createdAt: now, updatedAt: now });
     },
@@ -1209,14 +1193,14 @@ export const CompletionTokenModel = {
             const nowIso = new Date().toISOString();
             const existing = await db.execute({
                 sql: `SELECT * FROM completion_tokens WHERE tokenHash = ? AND usedAt IS NULL AND expiresAt > ? LIMIT 1`,
-                args: [tokenHash, nowIso],
+                args: sanitizeSqlArgs([tokenHash, nowIso]),
             });
             if (!existing.rows.length)
                 return null;
             const row = existing.rows[0];
             await db.execute({
                 sql: `UPDATE completion_tokens SET usedAt = ?, updatedAt = ? WHERE id = ?`,
-                args: [usedAt, usedAt, row.id],
+                args: sanitizeSqlArgs([usedAt, usedAt, row.id]),
             });
             return wrapRow('completion_tokens', { ...row, usedAt, updatedAt: usedAt });
         });
@@ -1228,7 +1212,7 @@ export const CompletionTokenModel = {
         if (id) {
             await db.execute({
                 sql: `UPDATE completion_tokens SET usedAt = ?, updatedAt = ? WHERE id = ?`,
-                args: [setObj.usedAt ? new Date(setObj.usedAt).toISOString() : null, now, String(id)],
+                args: sanitizeSqlArgs([setObj.usedAt ? new Date(setObj.usedAt).toISOString() : null, now, String(id)]),
             });
         }
     },
@@ -1241,7 +1225,7 @@ export const CompletionTokenModel = {
             const ids = filter.userId.$in.map(String);
             if (ids.length) {
                 const placeholders = ids.map(() => '?').join(',');
-                await db.execute({ sql: `DELETE FROM completion_tokens WHERE userId IN (${placeholders})`, args: ids });
+                await db.execute({ sql: `DELETE FROM completion_tokens WHERE userId IN (${placeholders})`, args: sanitizeSqlArgs(ids) });
             }
         }
     },

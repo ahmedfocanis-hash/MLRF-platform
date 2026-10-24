@@ -10,26 +10,33 @@ const config: { url: string; authToken?: string } = {
   authToken,
 };
 
+function sanitizeSqlValue(val: any): any {
+  if (val === undefined) return null;
+  if (typeof val === 'boolean') return val ? 1 : 0;
+  if (typeof val === 'object') {
+    if (val === null) return null;
+    if (val instanceof Date) return val.toISOString();
+    if (
+      (typeof Buffer !== 'undefined' && Buffer.isBuffer(val)) ||
+      val instanceof Uint8Array ||
+      val instanceof ArrayBuffer
+    ) {
+      return val;
+    }
+    return JSON.stringify(val);
+  }
+  return val;
+}
+
 export function sanitizeSqlArgs(args: any): any {
   if (!args) return [];
   if (Array.isArray(args)) {
-    return args.map((val) => {
-      if (val === undefined) return null;
-      if (val instanceof Date) return val.toISOString();
-      if (val !== null && typeof val === 'object') {
-        return JSON.stringify(val);
-      }
-      return val;
-    });
+    return args.map(sanitizeSqlValue);
   }
   if (typeof args === 'object') {
     const sanitized: Record<string, any> = {};
     for (const key of Object.keys(args)) {
-      const val = args[key];
-      if (val === undefined) sanitized[key] = null;
-      else if (val instanceof Date) sanitized[key] = val.toISOString();
-      else if (val !== null && typeof val === 'object') sanitized[key] = JSON.stringify(val);
-      else sanitized[key] = val;
+      sanitized[key] = sanitizeSqlValue(args[key]);
     }
     return sanitized;
   }
@@ -39,12 +46,22 @@ export function sanitizeSqlArgs(args: any): any {
 export const db: Client = createClient(config);
 
 const originalExecute = db.execute.bind(db);
-db.execute = function (stmt: any) {
-  if (stmt && typeof stmt === 'object' && stmt.args) {
-    stmt.args = sanitizeSqlArgs(stmt.args);
+db.execute = function (stmt: any, ...rest: any[]) {
+  let sanitizedArgs: any = undefined;
+  if (stmt && typeof stmt === 'object') {
+    if (stmt.args !== undefined) {
+      stmt.args = sanitizeSqlArgs(stmt.args);
+    }
+    sanitizedArgs = stmt.args;
+  } else if (rest.length > 0) {
+    rest[0] = sanitizeSqlArgs(rest[0]);
+    sanitizedArgs = rest[0];
   }
-  return originalExecute(stmt);
-};
+  console.log('[TURSO EXECUTE]', typeof stmt === 'string' ? stmt : stmt.sql);
+  console.log('[TURSO ARGS]', sanitizedArgs);
+  return originalExecute(stmt, ...rest);
+} as any;
+
 
 let dbInitialized = false;
 let initPromise: Promise<void> | null = null;

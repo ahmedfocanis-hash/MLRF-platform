@@ -1,3 +1,5 @@
+import { sanitizeSqlArgs } from '../config/db.js';
+export { sanitizeSqlArgs };
 export type UserRecord = {
     id: string;
     name: string;
