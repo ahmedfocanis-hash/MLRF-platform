@@ -1,11 +1,11 @@
 import crypto from 'node:crypto';
-import { db } from '../config/db.js';
+import { db, sanitizeSqlArgs } from '../config/db.js';
 
 export const subscriptionRepository = {
   async findForUserAndYear(userId: string, fiscalYear: number) {
     const result = await db.execute({
       sql: `SELECT * FROM subscriptions WHERE userId = ? AND fiscalYear = ? LIMIT 1`,
-      args: [userId, fiscalYear],
+      args: sanitizeSqlArgs([userId, fiscalYear]),
     });
     if (!result.rows.length) return null;
     const row = result.rows[0] as any;
@@ -21,7 +21,7 @@ export const subscriptionRepository = {
     await db.execute({
       sql: `INSERT INTO subscriptions (id, userId, tierId, fiscalYear, renewalStatus, status, amountDue, startsAt, expiresAt, createdAt, updatedAt)
             VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?)`,
-      args: [id, input.userId, input.tierId, input.fiscalYear, 'new', 'pending_payment', input.amountDue, now, now],
+      args: sanitizeSqlArgs([id, input.userId, input.tierId, input.fiscalYear, 'new', 'pending_payment', input.amountDue, now, now]),
     });
     return {
       _id: id,
@@ -40,11 +40,11 @@ export const subscriptionRepository = {
     const now = new Date().toISOString();
     await db.execute({
       sql: `UPDATE subscriptions SET status = 'active', startsAt = ?, expiresAt = ?, updatedAt = ? WHERE id = ?`,
-      args: [startsAt.toISOString(), expiresAt.toISOString(), now, id],
+      args: sanitizeSqlArgs([startsAt.toISOString(), expiresAt.toISOString(), now, id]),
     });
     const result = await db.execute({
       sql: `SELECT * FROM subscriptions WHERE id = ? LIMIT 1`,
-      args: [id],
+      args: sanitizeSqlArgs([id]),
     });
     if (!result.rows.length) return null;
     const row = result.rows[0] as any;

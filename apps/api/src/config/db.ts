@@ -10,7 +10,41 @@ const config: { url: string; authToken?: string } = {
   authToken,
 };
 
+export function sanitizeSqlArgs(args: any): any {
+  if (!args) return [];
+  if (Array.isArray(args)) {
+    return args.map((val) => {
+      if (val === undefined) return null;
+      if (val instanceof Date) return val.toISOString();
+      if (val !== null && typeof val === 'object') {
+        return JSON.stringify(val);
+      }
+      return val;
+    });
+  }
+  if (typeof args === 'object') {
+    const sanitized: Record<string, any> = {};
+    for (const key of Object.keys(args)) {
+      const val = args[key];
+      if (val === undefined) sanitized[key] = null;
+      else if (val instanceof Date) sanitized[key] = val.toISOString();
+      else if (val !== null && typeof val === 'object') sanitized[key] = JSON.stringify(val);
+      else sanitized[key] = val;
+    }
+    return sanitized;
+  }
+  return args;
+}
+
 export const db: Client = createClient(config);
+
+const originalExecute = db.execute.bind(db);
+db.execute = function (stmt: any) {
+  if (stmt && typeof stmt === 'object' && stmt.args) {
+    stmt.args = sanitizeSqlArgs(stmt.args);
+  }
+  return originalExecute(stmt);
+};
 
 let dbInitialized = false;
 let initPromise: Promise<void> | null = null;
