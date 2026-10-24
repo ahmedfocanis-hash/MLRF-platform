@@ -945,6 +945,14 @@ export const CertificateModel = {
         conditions.push('subscriptionId = ?');
         args.push(String(filter.subscriptionId));
       }
+      if (filter.certNumber) {
+        conditions.push('certNumber = ?');
+        args.push(String(filter.certNumber));
+      }
+      if (filter.identifier) {
+        conditions.push('(id = ? OR certNumber = ? OR qrHash = ?)');
+        args.push(String(filter.identifier), String(filter.identifier), String(filter.identifier));
+      }
       if (filter.qrHash) {
         conditions.push('qrHash = ?');
         args.push(filter.qrHash);

@@ -2518,14 +2518,27 @@ function Subscriber({
                   <span>{t('certificate.stampPlaceholder', { lng: 'ar' })}</span>
                 </div>
                 <div className="qr-placeholder">
-                  <QRCodeSVG value="https://fund.gov.eg/verify/MLRF-2026-000123" size={110} />
+                  <QRCodeSVG
+                    value={
+                      typeof window !== 'undefined' && window.location.origin.includes('vercel.app')
+                        ? `${window.location.origin}/api/v1/certificates/MLRF-2026-000123/pdf`
+                        : 'https://mlrf-platform-ykit.vercel.app/api/v1/certificates/MLRF-2026-000123/pdf'
+                    }
+                    size={110}
+                  />
                   <span>{t('subscriberPage.demoQr', { lng: 'ar' })}</span>
                 </div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'center', marginTop: 24 }}>
                 <button
                   className="btn btn-primary"
-                  onClick={() => window.print()}
+                  onClick={() => {
+                    const pdfUrl =
+                      typeof window !== 'undefined' && window.location.origin.includes('vercel.app')
+                        ? `${window.location.origin}/api/v1/certificates/MLRF-2026-000123/pdf`
+                        : 'https://mlrf-platform-ykit.vercel.app/api/v1/certificates/MLRF-2026-000123/pdf';
+                    window.open(pdfUrl, '_blank');
+                  }}
                 >
                   <Download size={16} /> {t('subscriberPage.download', { lng: 'ar' })}
                 </button>

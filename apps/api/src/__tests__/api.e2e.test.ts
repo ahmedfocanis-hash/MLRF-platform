@@ -66,6 +66,20 @@ describe('MLRF API end-to-end demo flow', () => {
     const verified = await request(app).get(`/api/v1/public/verify/${certificateHash}`).expect(200);
     expect(verified.body.data.result).toBe('VALID');
     expect(verified.body.data.name).toContain('E2E');
+
+    const pdfResponse = await request(app)
+      .get(`/api/v1/certificates/${certificates.body.data[0].number}/pdf`)
+      .expect(200);
+    expect(pdfResponse.headers['content-type']).toContain('application/pdf');
+    expect(pdfResponse.headers['content-disposition']).toContain('inline');
+    expect(pdfResponse.body.subarray(0, 5).toString('ascii')).toBe('%PDF-');
+
+    const demoPdf = await request(app)
+      .get('/api/v1/certificates/MLRF-2026-000123/pdf')
+      .expect(200);
+    expect(demoPdf.headers['content-type']).toContain('application/pdf');
+    expect(demoPdf.headers['content-disposition']).toContain('inline');
+    expect(demoPdf.body.subarray(0, 5).toString('ascii')).toBe('%PDF-');
   }, 60000);
 
   it('enforces role permissions on protected admin endpoints', async () => {
