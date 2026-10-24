@@ -285,7 +285,7 @@ apiRouter.get('/certificates/me', requireAuth, asyncHandler(async (req, res) => 
     ok(res, docs.map((c) => ({ id: String(c._id), number: c.certNumber, qrHash: c.qrHash, issuedAt: c.issuedAt, expiry: c.expiresAt, status: c.status, verificationUrl: `${env.PUBLIC_WEB_URL}/verify/${c.qrHash}`, pdfUrl: `https://${host}/api/v1/certificates/${c.certNumber}/pdf`, qrPayload: `https://${host}/api/v1/certificates/${c.certNumber}/pdf` })));
     return;
 } ok(res, certificates.filter((c) => c.userId === req.user?.id).map(c => ({ ...c, verificationUrl: `${env.PUBLIC_WEB_URL}/verify/${c.qrHash}`, pdfUrl: `https://${host}/api/v1/certificates/${c.number}/pdf`, qrPayload: `https://${host}/api/v1/certificates/${c.number}/pdf` }))); }));
-apiRouter.get('/certificates/:id/pdf', asyncHandler(async (req, res) => { const identifier = String(req.params.id || ''); let cert = null; let userName = 'Dr. Demo User'; let tierName = 'General Practitioner (GP)'; if (dbReady()) {
+apiRouter.get('/certificates/:id/pdf', asyncHandler(async (req, res) => { const identifier = String(req.params.id || ''); let cert = null; let userName = 'د. أحمد محمد محمود'; let tierName = 'الأطباء البشريين - ممارس عام'; if (dbReady()) {
     try {
         cert = await CertificateModel.findOne({ identifier }).populate('userId', 'name').populate('subscriptionId');
         if (!cert) {
@@ -307,7 +307,7 @@ apiRouter.get('/certificates/:id/pdf', asyncHandler(async (req, res) => { const 
         const u = users.find(u => u.id === cert.userId);
         if (u) {
             userName = u.name;
-            tierName = DEMO_TIERS.find(t => t.id === u.tierId)?.name || tierName;
+            tierName = DEMO_TIERS.find(t => t.id === u.tierId)?.nameAr || DEMO_TIERS.find(t => t.id === u.tierId)?.name || tierName;
         }
     }
 } if (!cert && (identifier === 'MLRF-2026-000123' || identifier.startsWith('MLRF-') || identifier.startsWith('demo-') || env.DEMO_MODE)) {
@@ -316,9 +316,9 @@ apiRouter.get('/certificates/:id/pdf', asyncHandler(async (req, res) => { const 
     throw new AppError(404, 'CERTIFICATE_NOT_FOUND', 'Certificate not found');
 } if (cert.userId && typeof cert.userId === 'object' && cert.userId.name) {
     userName = cert.userId.name;
-} if (cert.subscriptionId && typeof cert.subscriptionId === 'object' && cert.subscriptionId.tierId?.name) {
-    tierName = cert.subscriptionId.tierId.name;
-} const certNumber = String(cert.certNumber || cert.number || identifier); const issuedAtStr = cert.issuedAt ? new Date(cert.issuedAt).toISOString().split('T')[0] : '2026-01-01'; const expiresAtStr = (cert.expiresAt || cert.expiry) ? new Date(cert.expiresAt || cert.expiry).toISOString().split('T')[0] : '2027-01-01'; const statusStr = (cert.status || 'valid').toUpperCase(); const host = req.get('host') || 'mlrf-platform-ykit.vercel.app'; const verificationUrl = `https://${host}/api/v1/certificates/${certNumber}/pdf`; const pdfBuffer = generateCertificatePdf({ certNumber, holderName: userName, specialty: tierName, issuedAt: issuedAtStr, expiresAt: expiresAtStr, status: statusStr, verificationUrl }); res.setHeader('Content-Type', 'application/pdf'); res.setHeader('Content-Disposition', 'inline; filename="certificate.pdf"'); res.setHeader('Content-Length', pdfBuffer.length); res.send(pdfBuffer); }));
+} if (cert.subscriptionId && typeof cert.subscriptionId === 'object') {
+    tierName = cert.subscriptionId.tierId?.nameAr || cert.subscriptionId.tierId?.name || tierName;
+} const certNumber = String(cert.certNumber || cert.number || identifier); const issuedAtStr = cert.issuedAt ? new Date(cert.issuedAt).toISOString().split('T')[0] : '2026-01-01'; const expiresAtStr = (cert.expiresAt || cert.expiry) ? new Date(cert.expiresAt || cert.expiry).toISOString().split('T')[0] : '2027-01-01'; const statusStr = (cert.status || 'valid').toUpperCase(); const host = req.get('host') || 'mlrf-platform-ykit.vercel.app'; const verificationUrl = `https://${host}/api/v1/certificates/${certNumber}/pdf`; const pdfBuffer = await generateCertificatePdf({ certNumber, holderName: userName, specialty: tierName, issuedAt: issuedAtStr, expiresAt: expiresAtStr, status: statusStr, verificationUrl }); res.setHeader('Content-Type', 'application/pdf'); res.setHeader('Content-Disposition', 'inline; filename="certificate.pdf"'); res.setHeader('Content-Length', pdfBuffer.length); res.send(pdfBuffer); }));
 apiRouter.get('/public/verify/:qrHash', asyncHandler(async (req, res) => { if (dbReady()) {
     const cert = await CertificateModel.findOne({ qrHash: req.params.qrHash }).select('+qrHash').populate('userId', 'name').populate({ path: 'subscriptionId', populate: { path: 'tierId', select: 'name nameAr' } });
     if (!cert || cert.status !== 'valid') {

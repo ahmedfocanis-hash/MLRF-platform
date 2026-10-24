@@ -12,6 +12,8 @@ import {
   Sun,
   Globe,
   Home,
+  User,
+  UserPlus,
 } from 'lucide-react';
 import { type Role } from '@mlrf/shared';
 
@@ -88,6 +90,24 @@ export const LoginView: React.FC<LoginViewProps> = ({
             >
               <Home size={15} />
               <span>{t('landing.backToHome')}</span>
+            </button>
+            {onNavigateToRegister && (
+              <button
+                type="button"
+                className="nav-register-btn"
+                onClick={onNavigateToRegister}
+              >
+                <UserPlus size={16} />
+                <span>{t('landing.registerAction', { defaultValue: 'إنشاء حساب' })}</span>
+              </button>
+            )}
+            <button
+              type="button"
+              className="nav-login-btn"
+              style={{ cursor: 'default' }}
+            >
+              <User size={16} />
+              <span>{t('landing.loginAction', { defaultValue: 'تسجيل الدخول' })}</span>
             </button>
             <button
               type="button"

@@ -15,6 +15,7 @@ import {
   Home,
   AlertCircle,
   Stethoscope,
+  UserPlus,
 } from 'lucide-react';
 import { request } from './lib/api';
 
@@ -34,11 +35,11 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
   onToggleDark,
 }) => {
   const { t, i18n } = useTranslation();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [name, setName] = useState('د. أحمد محمد محمود');
+  const [email, setEmail] = useState('subscriber@mlrf.demo');
+  const [phone, setPhone] = useState('01012345678');
+  const [password, setPassword] = useState('demo12345');
+  const [confirmPassword, setConfirmPassword] = useState('demo12345');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
 
@@ -76,7 +77,25 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
         password,
       };
 
-      await request('/auth/register', 'post', payload);
+      try {
+        await request('/auth/register', 'post', payload);
+      } catch (regErr: any) {
+        // If the demo account already exists, proceed to log in directly
+        const code = regErr?.code || regErr?.error?.code;
+        const status = regErr?.status || regErr?.response?.status;
+        const msg = String(regErr?.message || regErr?.error?.message || '');
+        if (
+          code === 'ACCOUNT_EXISTS' ||
+          code === 'EMAIL_EXISTS' ||
+          status === 409 ||
+          msg.includes('already exists')
+        ) {
+          // Proceed to login
+        } else {
+          throw regErr;
+        }
+      }
+
       await onRegisterSuccess(payload.email, payload.password);
     } catch (err: any) {
       const msg = err?.message || err?.error?.message || t('errors.REQUEST_FAILED');
@@ -113,6 +132,22 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
             >
               <Home size={15} />
               <span>{t('landing.backToHome')}</span>
+            </button>
+            <button
+              type="button"
+              className="nav-register-btn"
+              style={{ cursor: 'default' }}
+            >
+              <UserPlus size={16} />
+              <span>{t('landing.registerAction', { defaultValue: 'إنشاء حساب' })}</span>
+            </button>
+            <button
+              type="button"
+              className="nav-login-btn"
+              onClick={onNavigateToLogin}
+            >
+              <User size={16} />
+              <span>{t('landing.loginAction', { defaultValue: 'تسجيل الدخول' })}</span>
             </button>
             <button
               type="button"

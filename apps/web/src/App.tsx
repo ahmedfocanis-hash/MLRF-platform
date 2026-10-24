@@ -32,7 +32,6 @@ import {
   Users,
   WalletCards,
   X,
-  Languages,
   ScanLine,
   RefreshCw,
   Clock3,
@@ -172,8 +171,6 @@ export default function App() {
     }
   };
 
-  const [loginEmail, setLoginEmail] = useState('super_admin@mlrf.demo');
-  const [loginPassword, setLoginPassword] = useState('demo12345');
   const meQuery = useQuery({
     queryKey: ['me', token],
     queryFn: () => request<{ user: User }>('/auth/me').then((r) => r.user),
@@ -239,7 +236,7 @@ export default function App() {
     ],
     [t],
   );
-  const login = async (email = loginEmail, password = loginPassword) => {
+  const login = async (email = 'super_admin@mlrf.demo', password = 'demo12345') => {
     try {
       const r = await request<{ accessToken: string; user: User }>('/auth/login', 'post', {
         email,

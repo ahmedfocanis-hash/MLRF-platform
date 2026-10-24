@@ -7,4 +7,5 @@ export interface CertificatePdfData {
     status?: string | undefined;
     verificationUrl?: string | undefined;
 }
-export declare function generateCertificatePdf(data: CertificatePdfData): Buffer;
+export declare function formatArabic(text: string): string;
+export declare function generateCertificatePdf(data: CertificatePdfData): Promise<Buffer>;
