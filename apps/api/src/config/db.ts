@@ -1,29 +1,30 @@
 import 'dotenv/config';
-import { createClient, type Client } from '@libsql/client';
+import { createClient, type Client } from '@libsql/client/web';
+import { env } from './env.js';
 
-const url = process.env.TURSO_DATABASE_URL;
-const authToken = process.env.TURSO_AUTH_TOKEN;
-
-if (!url) {
-  console.warn('[Turso] Warning: TURSO_DATABASE_URL environment variable is not defined.');
-}
+const url = env.TURSO_DATABASE_URL;
+const authToken = env.TURSO_AUTH_TOKEN;
 
 const config: { url: string; authToken?: string } = {
-  url: url || 'file:local.db',
+  url,
+  authToken,
 };
-if (authToken) {
-  config.authToken = authToken;
-}
 
 export const db: Client = createClient(config);
+
+let dbInitialized = false;
+let initPromise: Promise<void> | null = null;
 
 /**
  * Ensures required Turso/libSQL relational tables are provisioned.
  */
 export async function initDatabase(): Promise<void> {
-  await db.batch([
-    `CREATE TABLE IF NOT EXISTS roles (
-      name TEXT PRIMARY KEY,
+  if (dbInitialized) return;
+  if (!initPromise) {
+    initPromise = (async () => {
+      await db.batch([
+        `CREATE TABLE IF NOT EXISTS roles (
+          name TEXT PRIMARY KEY,
       permissionsJson TEXT NOT NULL DEFAULT '[]',
       createdAt TEXT,
       updatedAt TEXT
@@ -176,7 +177,14 @@ export async function initDatabase(): Promise<void> {
       createdAt TEXT,
       updatedAt TEXT
     );`
-  ], 'write');
+      ]);
+      dbInitialized = true;
+    })().catch((err) => {
+      initPromise = null;
+      throw err;
+    });
+  }
+  return initPromise;
 }
 
 export const initDb = initDatabase;

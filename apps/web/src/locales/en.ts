@@ -491,6 +491,7 @@ export const en = {
     inspector: '🕵️‍♂️ Watcher / Inspector View',
     admin: '🏛️ Fund Admin View',
     adminSubRole: 'Admin Role',
+    adminRole: 'Admin Role',
     doctorDesc: 'Registration, verification, specialty selection, fee payment, and digital certificate',
     inspectorDesc: 'Mobile field verification, QR code lookup, license validity checks, and violation reporting',
     adminDesc: 'Executive analytics, claims ledger, bank bulk upload, and user administration',
@@ -498,6 +499,7 @@ export const en = {
   doctorPortal: {
     headerTitle: 'Doctor & Medical Facility Portal',
     headerSubtitle: 'National Medical Liability Risk Fund • Registration & Coverage',
+    subtitle: 'Registration, verification, fee payment, and digital certificate',
     statusActive: 'Active Coverage',
     statusPending: 'Registration Incomplete',
     tabJourney: 'Onboarding & Contribution Steps',
@@ -506,6 +508,7 @@ export const en = {
   inspectorPortal: {
     headerTitle: 'Field Verification & Compliance Portal',
     headerSubtitle: 'Official Watcher Tool for Licensing & Liability Compliance',
+    subtitle: 'Real-time field inspection, license audit, and violation logging',
     badge: 'Official Inspector',
     inputPlaceholder: 'Enter Certificate #, Syndicate ID, National ID, or QR Hash...',
     verifyButton: 'Verify License Status',

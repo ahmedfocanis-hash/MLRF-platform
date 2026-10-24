@@ -1,4 +1,4 @@
-import argon2 from 'argon2';
+import {hashPassword} from './services/password.js';
 import {DEMO_TIERS, GOVERNORATES, ROLE_PERMISSIONS, type Role} from '@mlrf/shared';
 import {initDatabase} from './config/db.js';
 import {RoleModel, UserModel, SpecialtyTierModel, SubscriberProfileModel, SubscriptionModel, PaymentModel, CertificateModel, ClaimModel, AuditLogModel, SmsOutboxModel, BulkBatchModel, CompletionTokenModel} from './models/index.js';
@@ -22,7 +22,7 @@ async function main() {
       await SpecialtyTierModel.updateOne({code:tier.id}, {$set:{code:tier.id,name:tier.name,nameAr:tier.nameAr,entityType:tier.entityType,fee:tier.fee,risk:tier.risk,active:true}}, {upsert:true});
     }
 
-    const passwordHash = await argon2.hash('Demo123!');
+    const passwordHash = await hashPassword('Demo123!');
     const usersByIndex = new Map<number, string>();
     const adminUsers = [
       ...seededAdminRoles.map((role,i)=>({name:adminNames[role]!,email:`${role}@mlrf.demo`,phone:`010${String(i+1).padStart(8,'0')}`,role})),

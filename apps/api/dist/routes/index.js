@@ -6,7 +6,7 @@ import { DEMO_TIERS, ROLE_PERMISSIONS, ROLES, registerSchema, professionalProfil
 import { asyncHandler, AppError, ok } from '../middleware/errors.js';
 import { requireAuth, requirePermission, signAccess } from '../middleware/auth.js';
 import { env } from '../config/env.js';
-import argon2 from 'argon2';
+import { hashPassword, verifyPassword } from '../services/password.js';
 import * as XLSX from 'xlsx';
 import { UserModel, SubscriberProfileModel, SpecialtyTierModel, SubscriptionModel, AuditLogModel, PaymentModel, CertificateModel, BulkBatchModel, SmsOutboxModel, CompletionTokenModel } from '../models/index.js';
 import { settlePayment, isValidWebhookSignature } from '../services/paymentLifecycle.js';
@@ -18,7 +18,7 @@ const loginSchema = z.object({ email: z.string().email(), password: z.string().m
 const publicUser = (u) => ({ id: String(u.id ?? u._id), name: u.name, email: u.email, phone: u.phone, role: u.role, status: u.status, governorate: u.governorate ?? 'Cairo', entityType: u.entityType ?? 'individual' });
 const dbReady = () => Boolean(process.env.TURSO_DATABASE_URL || process.env.NODE_ENV === 'production' || process.env.CONNECT_TURSO === 'true');
 const bankUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
-function parseBankRows(buffer, filename) {
+function parseBankRows(buffer, _filename) {
     const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: false });
     const firstSheet = workbook.SheetNames[0];
     if (!firstSheet)
@@ -30,52 +30,85 @@ function parseBankRows(buffer, filename) {
     return raw.map(row => { const normalized = Object.fromEntries(Object.entries(row).map(([k, v]) => [k.trim().toLowerCase().replace(/[\s_-]+/g, ''), v])); return { name: String(normalized.name ?? normalized.fullname ?? '').trim(), phone: String(normalized.phone ?? normalized.mobile ?? '').trim(), nationalId: String(normalized.nationalid ?? normalized.nationalidnumber ?? '').trim(), specialty: String(normalized.specialty ?? normalized.tier ?? '').trim(), amount: Number(String(normalized.amount ?? normalized.fee ?? '').replace(/,/g, '')) }; });
 }
 async function persistAudit(userLabel, role, action, entityType, entityId) { if (!dbReady())
-    return; await AuditLogModel.create({ userLabel, role, action, entityType, entityId: entityId ?? null, ipAddress: '127.0.0.1', userAgent: 'MLRF API' }); }
+    return; try {
+    await AuditLogModel.create({ userLabel, role, action, entityType, entityId: entityId ?? null, ipAddress: '127.0.0.1', userAgent: 'MLRF API' });
+}
+catch (e) {
+    console.warn('[Audit] Persist failed:', e);
+} }
 apiRouter.post('/auth/register', asyncHandler(async (req, res) => { const input = registerSchema.parse(req.body); if (dbReady()) {
-    const email = input.email.toLowerCase();
-    if (await UserModel.exists({ $or: [{ email }, { phone: input.phone }] }))
-        throw new AppError(409, 'ACCOUNT_EXISTS', 'An account with this email or phone already exists');
-    const user = await UserModel.create({ name: input.name, email, phone: input.phone, passwordHash: await argon2.hash(input.password), role: 'subscriber', status: 'pending_verification' });
-    await persistAudit(user.email, user.role, 'REGISTER', 'user', String(user._id));
-    ok(res, { user: publicUser(user), demoOtp: env.DEMO_MODE ? '123456' : undefined }, 201);
-    return;
+    try {
+        const email = input.email.toLowerCase();
+        if (await UserModel.exists({ $or: [{ email }, { phone: input.phone }] }))
+            throw new AppError(409, 'ACCOUNT_EXISTS', 'An account with this email or phone already exists');
+        const user = await UserModel.create({ name: input.name, email, phone: input.phone, passwordHash: await hashPassword(input.password), role: 'subscriber', status: 'pending_verification' });
+        await persistAudit(user.email, user.role, 'REGISTER', 'user', String(user._id));
+        ok(res, { user: publicUser(user), demoOtp: env.DEMO_MODE ? '123456' : undefined }, 201);
+        return;
+    }
+    catch (e) {
+        if (e instanceof AppError)
+            throw e;
+        console.warn('[Register] DB error, using memory:', e);
+    }
 } if (users.some(u => u.email === input.email))
     throw new AppError(409, 'EMAIL_EXISTS', 'An account with this email already exists'); const user = { id: crypto.randomUUID(), name: input.name, email: input.email, phone: input.phone, role: 'subscriber', status: 'pending_verification', governorate: 'Cairo', entityType: 'individual' }; users.push(user); recordAudit(user.email, user.role, 'REGISTER', 'user'); ok(res, { user: publicUser(user), demoOtp: env.DEMO_MODE ? '123456' : undefined }, 201); }));
 apiRouter.post('/auth/verify-otp', asyncHandler(async (req, res) => { const { phone, code } = z.object({ phone: z.string(), code: z.string().length(6) }).parse(req.body); if (code !== '123456')
     throw new AppError(400, 'OTP_INVALID', 'Incorrect verification code'); if (dbReady()) {
-    const user = await UserModel.findOneAndUpdate({ phone }, { $set: { phoneVerifiedAt: new Date(), status: 'incomplete' } }, { new: true });
-    if (!user)
-        throw new AppError(404, 'USER_NOT_FOUND', 'No account matches this phone');
-    await persistAudit(user.email, user.role, 'OTP_VERIFIED', 'user', String(user._id));
-    ok(res, { verified: true, user: publicUser(user) });
-    return;
+    try {
+        const user = await UserModel.findOneAndUpdate({ phone }, { $set: { phoneVerifiedAt: new Date(), status: 'incomplete' } }, { new: true });
+        if (!user)
+            throw new AppError(404, 'USER_NOT_FOUND', 'No account matches this phone');
+        await persistAudit(user.email, user.role, 'OTP_VERIFIED', 'user', String(user._id));
+        ok(res, { verified: true, user: publicUser(user) });
+        return;
+    }
+    catch (e) {
+        if (e instanceof AppError)
+            throw e;
+        console.warn('[OTP] DB error, using memory:', e);
+    }
 } const user = users.find(u => u.phone === phone); if (!user)
     throw new AppError(404, 'USER_NOT_FOUND', 'No account matches this phone'); user.status = 'incomplete'; recordAudit(user.email, user.role, 'OTP_VERIFIED', 'user'); ok(res, { verified: true, user: publicUser(user) }); }));
 apiRouter.post('/auth/resend-otp', (_req, res) => ok(res, { sent: true, expiresInSeconds: 300, demoOtp: env.DEMO_MODE ? '123456' : undefined }));
 apiRouter.post('/auth/login', asyncHandler(async (req, res) => { const { email, password } = loginSchema.parse(req.body); if (dbReady()) {
-    const user = await UserModel.findOne({ email: email.toLowerCase() }).select('+passwordHash');
-    if (!user || !(await argon2.verify(user.passwordHash, password)))
-        throw new AppError(401, 'INVALID_CREDENTIALS', 'Email or password is incorrect');
-    user.lastLoginAt = new Date();
-    await user.save();
-    const session = { id: String(user._id), name: user.name, role: user.role, email: user.email };
-    res.cookie('mlrf_refresh', 'demo-refresh-token', { httpOnly: true, sameSite: 'lax', secure: env.NODE_ENV === 'production', path: '/api/v1/auth', maxAge: 7 * 86400000 });
-    await persistAudit(user.email, user.role, 'LOGIN', 'session', String(user._id));
-    ok(res, { accessToken: signAccess(session), user: publicUser(user) });
-    return;
+    try {
+        const user = await UserModel.findOne({ email: email.toLowerCase() }).select('+passwordHash');
+        if (user) {
+            if (!(await verifyPassword(user.passwordHash, password)))
+                throw new AppError(401, 'INVALID_CREDENTIALS', 'Email or password is incorrect');
+            user.lastLoginAt = new Date();
+            await user.save();
+            const session = { id: String(user._id), name: user.name, role: user.role, email: user.email };
+            res.cookie('mlrf_refresh', 'demo-refresh-token', { httpOnly: true, sameSite: 'lax', secure: env.NODE_ENV === 'production', path: '/api/v1/auth', maxAge: 7 * 86400000 });
+            await persistAudit(user.email, user.role, 'LOGIN', 'session', String(user._id));
+            ok(res, { accessToken: signAccess(session), user: publicUser(user) });
+            return;
+        }
+    }
+    catch (e) {
+        if (e instanceof AppError)
+            throw e;
+        console.warn('[Login] DB lookup failed, trying in-memory store:', e);
+    }
 } const user = users.find(u => u.email === email); if (!user || (!env.DEMO_MODE && password.length < 8))
     throw new AppError(401, 'INVALID_CREDENTIALS', 'Email or password is incorrect'); const session = { id: user.id, name: user.name, role: user.role, email: user.email }; res.cookie('mlrf_refresh', 'demo-refresh-token', { httpOnly: true, sameSite: 'lax', secure: env.NODE_ENV === 'production', path: '/api/v1/auth', maxAge: 7 * 86400000 }); recordAudit(user.email, user.role, 'LOGIN', 'session'); ok(res, { accessToken: signAccess(session), user: publicUser(user) }); }));
-apiRouter.post('/auth/refresh', (_req, res) => { throw new AppError(401, 'REFRESH_UNAVAILABLE', 'Demo refresh session expired; sign in again'); });
+apiRouter.post('/auth/refresh', (_req, _res) => { throw new AppError(401, 'REFRESH_UNAVAILABLE', 'Demo refresh session expired; sign in again'); });
 apiRouter.post('/auth/logout', (req, res) => { res.clearCookie('mlrf_refresh', { path: '/api/v1/auth' }); ok(res, { loggedOut: true }); });
 apiRouter.get('/auth/me', requireAuth, (req, res) => ok(res, { user: req.user }));
 apiRouter.post('/auth/demo/switch-role', asyncHandler(async (req, res) => { if (!env.DEMO_MODE)
     throw new AppError(404, 'NOT_FOUND', 'Route not found'); const role = z.enum(ROLES).parse(req.body.role); if (dbReady()) {
-    const user = await UserModel.findOne({ role }).sort({ createdAt: 1 });
-    if (!user)
-        throw new AppError(404, 'ROLE_USER_NOT_FOUND', 'No demo user for this role');
-    await persistAudit(user.email, user.role, 'DEMO_ROLE_SWITCH', 'session', String(user._id));
-    ok(res, { accessToken: signAccess({ id: String(user._id), name: user.name, role: user.role, email: user.email }), user: publicUser(user) });
-    return;
+    try {
+        const user = await UserModel.findOne({ role }).sort({ createdAt: 1 });
+        if (user) {
+            await persistAudit(user.email, user.role, 'DEMO_ROLE_SWITCH', 'session', String(user._id));
+            ok(res, { accessToken: signAccess({ id: String(user._id), name: user.name, role: user.role, email: user.email }), user: publicUser(user) });
+            return;
+        }
+    }
+    catch (e) {
+        console.warn('[Demo Switch-Role] DB query failed, falling back to in-memory store:', e);
+    }
 } const user = users.find(u => u.role === role); if (!user)
     throw new AppError(404, 'ROLE_USER_NOT_FOUND', 'No demo user for this role'); recordAudit(user.email, user.role, 'DEMO_ROLE_SWITCH', 'session'); ok(res, { accessToken: signAccess({ id: user.id, name: user.name, role: user.role, email: user.email }), user: publicUser(user) }); }));
 apiRouter.get('/specialty-tiers', (_req, res) => ok(res, DEMO_TIERS));
@@ -319,21 +352,16 @@ async function processBankBatch(req, res, rowsInput, filename) {
                     batch.createdCount--;
                     continue;
                 }
-                const user = await UserModel.create({ name: r.name, email, phone: r.phone, passwordHash: await argon2.hash(crypto.randomBytes(24).toString('hex')), role: 'subscriber', status: 'pending_completion' });
+                const user = await UserModel.create({ name: r.name, email, phone: r.phone, passwordHash: await hashPassword(crypto.randomBytes(24).toString('hex')), role: 'subscriber', status: 'pending_completion' });
                 createdUsers.push(String(user._id));
-                try {
-                    await SubscriberProfileModel.create({ userId: user._id, entityType: tier.entityType, nationalId: r.nationalId, governorate: 'Cairo', completionPercent: 25 });
-                    const subscription = await SubscriptionModel.create({ userId: user._id, tierId: tier._id, fiscalYear: 2026, renewalStatus: 'new', status: 'active', amountDue: r.amount, startsAt: new Date(), expiresAt: new Date(Date.now() + 365 * 86400000) });
-                    await PaymentModel.create({ userId: user._id, subscriptionId: subscription._id, amount: r.amount, channel: 'bank_bulk', status: 'paid', paidAt: new Date(), bulkBatchId: batch._id });
-                    const token = generateCompletionToken();
-                    await CompletionTokenModel.create({ userId: user._id, tokenHash: hashCompletionToken(token), expiresAt: completionTokenExpiry() });
-                    const link = `${env.PUBLIC_WEB_URL}/complete/${token}`;
-                    await SmsOutboxModel.create({ userId: user._id, phone: r.phone, body: `Complete your MLRF profile within 72 hours: ${link}`, status: 'queued' });
-                    completionLinks.push({ phone: r.phone, completionUrl: link });
-                }
-                catch (error) {
-                    throw error;
-                }
+                await SubscriberProfileModel.create({ userId: user._id, entityType: tier.entityType, nationalId: r.nationalId, governorate: 'Cairo', completionPercent: 25 });
+                const subscription = await SubscriptionModel.create({ userId: user._id, tierId: tier._id, fiscalYear: 2026, renewalStatus: 'new', status: 'active', amountDue: r.amount, startsAt: new Date(), expiresAt: new Date(Date.now() + 365 * 86400000) });
+                await PaymentModel.create({ userId: user._id, subscriptionId: subscription._id, amount: r.amount, channel: 'bank_bulk', status: 'paid', paidAt: new Date(), bulkBatchId: batch._id });
+                const token = generateCompletionToken();
+                await CompletionTokenModel.create({ userId: user._id, tokenHash: hashCompletionToken(token), expiresAt: completionTokenExpiry() });
+                const link = `${env.PUBLIC_WEB_URL}/complete/${token}`;
+                await SmsOutboxModel.create({ userId: user._id, phone: r.phone, body: `Complete your MLRF profile within 72 hours: ${link}`, status: 'queued' });
+                completionLinks.push({ phone: r.phone, completionUrl: link });
             }
             batch.createdCount = createdUsers.length;
             await batch.save();

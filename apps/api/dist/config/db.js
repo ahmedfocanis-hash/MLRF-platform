@@ -1,29 +1,31 @@
 import 'dotenv/config';
-import { createClient } from '@libsql/client';
-const url = process.env.TURSO_DATABASE_URL;
-const authToken = process.env.TURSO_AUTH_TOKEN;
-if (!url) {
-    console.warn('[Turso] Warning: TURSO_DATABASE_URL environment variable is not defined.');
-}
+import { createClient } from '@libsql/client/web';
+import { env } from './env.js';
+const url = env.TURSO_DATABASE_URL;
+const authToken = env.TURSO_AUTH_TOKEN;
 const config = {
-    url: url || 'file:local.db',
+    url,
+    authToken,
 };
-if (authToken) {
-    config.authToken = authToken;
-}
 export const db = createClient(config);
+let dbInitialized = false;
+let initPromise = null;
 /**
  * Ensures required Turso/libSQL relational tables are provisioned.
  */
 export async function initDatabase() {
-    await db.batch([
-        `CREATE TABLE IF NOT EXISTS roles (
-      name TEXT PRIMARY KEY,
+    if (dbInitialized)
+        return;
+    if (!initPromise) {
+        initPromise = (async () => {
+            await db.batch([
+                `CREATE TABLE IF NOT EXISTS roles (
+          name TEXT PRIMARY KEY,
       permissionsJson TEXT NOT NULL DEFAULT '[]',
       createdAt TEXT,
       updatedAt TEXT
     );`,
-        `CREATE TABLE IF NOT EXISTS users (
+                `CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       email TEXT NOT NULL UNIQUE,
@@ -38,7 +40,7 @@ export async function initDatabase() {
       createdAt TEXT,
       updatedAt TEXT
     );`,
-        `CREATE TABLE IF NOT EXISTS specialty_tiers (
+                `CREATE TABLE IF NOT EXISTS specialty_tiers (
       id TEXT PRIMARY KEY,
       code TEXT NOT NULL UNIQUE,
       name TEXT NOT NULL,
@@ -50,7 +52,7 @@ export async function initDatabase() {
       createdAt TEXT,
       updatedAt TEXT
     );`,
-        `CREATE TABLE IF NOT EXISTS subscriber_profiles (
+                `CREATE TABLE IF NOT EXISTS subscriber_profiles (
       id TEXT PRIMARY KEY,
       userId TEXT NOT NULL UNIQUE,
       entityType TEXT NOT NULL,
@@ -63,7 +65,7 @@ export async function initDatabase() {
       createdAt TEXT,
       updatedAt TEXT
     );`,
-        `CREATE TABLE IF NOT EXISTS subscriptions (
+                `CREATE TABLE IF NOT EXISTS subscriptions (
       id TEXT PRIMARY KEY,
       userId TEXT NOT NULL,
       tierId TEXT NOT NULL,
@@ -76,7 +78,7 @@ export async function initDatabase() {
       createdAt TEXT,
       updatedAt TEXT
     );`,
-        `CREATE TABLE IF NOT EXISTS payments (
+                `CREATE TABLE IF NOT EXISTS payments (
       id TEXT PRIMARY KEY,
       userId TEXT NOT NULL,
       subscriptionId TEXT NOT NULL,
@@ -91,7 +93,7 @@ export async function initDatabase() {
       createdAt TEXT,
       updatedAt TEXT
     );`,
-        `CREATE TABLE IF NOT EXISTS certificates (
+                `CREATE TABLE IF NOT EXISTS certificates (
       id TEXT PRIMARY KEY,
       userId TEXT NOT NULL,
       subscriptionId TEXT NOT NULL UNIQUE,
@@ -104,7 +106,7 @@ export async function initDatabase() {
       createdAt TEXT,
       updatedAt TEXT
     );`,
-        `CREATE TABLE IF NOT EXISTS bulk_batches (
+                `CREATE TABLE IF NOT EXISTS bulk_batches (
       id TEXT PRIMARY KEY,
       createdBy TEXT NOT NULL,
       filename TEXT NOT NULL,
@@ -118,7 +120,7 @@ export async function initDatabase() {
       createdAt TEXT,
       updatedAt TEXT
     );`,
-        `CREATE TABLE IF NOT EXISTS claims (
+                `CREATE TABLE IF NOT EXISTS claims (
       id TEXT PRIMARY KEY,
       claimNumber TEXT NOT NULL UNIQUE,
       subscriberId TEXT NOT NULL,
@@ -137,7 +139,7 @@ export async function initDatabase() {
       createdAt TEXT,
       updatedAt TEXT
     );`,
-        `CREATE TABLE IF NOT EXISTS audit_logs (
+                `CREATE TABLE IF NOT EXISTS audit_logs (
       id TEXT PRIMARY KEY,
       userId TEXT,
       userLabel TEXT NOT NULL,
@@ -150,7 +152,7 @@ export async function initDatabase() {
       metadata TEXT,
       createdAt TEXT
     );`,
-        `CREATE TABLE IF NOT EXISTS sms_outbox (
+                `CREATE TABLE IF NOT EXISTS sms_outbox (
       id TEXT PRIMARY KEY,
       userId TEXT,
       phone TEXT NOT NULL,
@@ -162,7 +164,7 @@ export async function initDatabase() {
       createdAt TEXT,
       updatedAt TEXT
     );`,
-        `CREATE TABLE IF NOT EXISTS completion_tokens (
+                `CREATE TABLE IF NOT EXISTS completion_tokens (
       id TEXT PRIMARY KEY,
       userId TEXT NOT NULL,
       tokenHash TEXT NOT NULL UNIQUE,
@@ -171,7 +173,14 @@ export async function initDatabase() {
       createdAt TEXT,
       updatedAt TEXT
     );`
-    ], 'write');
+            ]);
+            dbInitialized = true;
+        })().catch((err) => {
+            initPromise = null;
+            throw err;
+        });
+    }
+    return initPromise;
 }
 export const initDb = initDatabase;
 export default db;

@@ -297,7 +297,7 @@ export default function App() {
     }
   };
 
-  const verify = async () => {
+  const _verify = async () => {
     try {
       setVerifyResult(
         await request<any>('/inspector/verify', 'post', {
@@ -2180,7 +2180,7 @@ function GuideStep({
 function Subscriber({
   setToast,
   forceCertificateView = false,
-  onGoToJourney,
+  onGoToJourney: _onGoToJourney,
 }: {
   setToast: (s: string) => void;
   forceCertificateView?: boolean;
@@ -2245,7 +2245,7 @@ function Subscriber({
   const pay = async (outcome: 'success' | 'failure') => {
     try {
       const init = await request<any>('/payments/initiate', 'post', {});
-      const r = await request<any>(`/payments/${init.payment.id}/simulate`, 'post', { outcome });
+      await request<any>(`/payments/${init.payment.id}/simulate`, 'post', { outcome });
       if (outcome === 'success') {
         setPaid(true);
         setStep(4);
@@ -2627,7 +2627,7 @@ function InspectorStandalone({
   identifier,
   setIdentifier,
   verifyResult,
-  setVerifyResult,
+  setVerifyResult: _setVerifyResult,
   onVerify,
   onLogAction,
   history,
