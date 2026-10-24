@@ -28,6 +28,7 @@ import {
   Search,
   Shield,
   ShieldCheck,
+  User,
   Users,
   WalletCards,
   X,
@@ -46,6 +47,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { LoginView } from './LoginView';
 import { request } from './lib/api';
 import { exportToExcel } from './lib/exportExcel';
 import {
@@ -130,6 +132,39 @@ export default function App() {
   const isInspector = role === 'inspector';
   const isAdmin = !isSubscriber && !isInspector;
 
+  const getInitialRoute = () => {
+    if (typeof window !== 'undefined') {
+      const pathname = window.location.pathname;
+      const hash = window.location.hash;
+      if (pathname === '/login' || hash === '#/login' || hash === '#login') {
+        return '/login';
+      }
+    }
+    return '/';
+  };
+  const [currentPath, setCurrentPath] = useState<string>(getInitialRoute());
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const pathname = window.location.pathname;
+      const hash = window.location.hash;
+      if (pathname === '/login' || hash === '#/login' || hash === '#login') {
+        setCurrentPath('/login');
+      } else {
+        setCurrentPath('/');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigateTo = (path: string) => {
+    setCurrentPath(path);
+    if (typeof window !== 'undefined') {
+      window.history.pushState({}, '', path);
+    }
+  };
+
   const [loginEmail, setLoginEmail] = useState('super_admin@mlrf.demo');
   const [loginPassword, setLoginPassword] = useState('demo12345');
   const meQuery = useQuery({
@@ -197,20 +232,22 @@ export default function App() {
     ],
     [t],
   );
-  const login = async (email = loginEmail) => {
+  const login = async (email = loginEmail, password = loginPassword) => {
     try {
       const r = await request<{ accessToken: string; user: User }>('/auth/login', 'post', {
         email,
-        password: loginPassword,
+        password,
       });
       localStorage.setItem('mlrf-token', r.accessToken);
       localStorage.setItem('mlrf-role', r.user.role);
       setToken(r.accessToken);
       setRole(r.user.role);
       setToast(t('toasts.signedIn'));
+      navigateTo('/');
       await qc.invalidateQueries();
     } catch (e) {
       setToast(messageFromError(e, t('toasts.signInFailed')));
+      throw e;
     }
   };
   const switchRole = async (next: Role) => {
@@ -233,9 +270,11 @@ export default function App() {
         setPage('overview');
       }
       setToast(t('toasts.demoRole', { role: roleLabel(next) }));
+      navigateTo('/');
       await qc.invalidateQueries();
     } catch (e) {
       setToast(messageFromError(e, t('toasts.roleFailed')));
+      throw e;
     }
   };
   const signOut = () => {
@@ -243,6 +282,7 @@ export default function App() {
     localStorage.removeItem('mlrf-role');
     setToken('');
     setPage('overview');
+    navigateTo('/');
   };
   const verifyCustom = async (idToVerify?: string) => {
     const target = idToVerify ?? identifier;
@@ -338,6 +378,22 @@ export default function App() {
     }
   };
   if (!token || !currentUser) {
+    if (currentPath === '/login') {
+      return (
+        <>
+          <LoginView
+            onLogin={login}
+            onSwitchRole={switchRole}
+            onBackToHome={() => navigateTo('/')}
+            dark={dark}
+            onToggleDark={() => setDark(!dark)}
+            roleLabel={roleLabel}
+          />
+          {toast && <div className="toast">{toast}</div>}
+        </>
+      );
+    }
+
     return (
       <div className="landing-page-wrapper">
         {/* Top Floating Navbar */}
@@ -353,6 +409,14 @@ export default function App() {
               </div>
             </div>
             <div className="landing-nav-actions">
+              <button
+                type="button"
+                className="nav-login-btn"
+                onClick={() => navigateTo('/login')}
+              >
+                <User size={16} />
+                <span>{t('landing.loginAction', { defaultValue: 'تسجيل الدخول' })}</span>
+              </button>
               <button
                 type="button"
                 className="icon-btn"
@@ -376,14 +440,29 @@ export default function App() {
         {/* Hero Section with Sky Gradient Band */}
         <section className="sky-hero-band">
           <div className="landing-hero">
-            {/* Hero Text Content (Right Column in RTL, Left in LTR) */}
             <div className="hero-content-col">
-              <div className="hero-law-badge">
-                <ShieldCheck size={16} />
-                <span>{t('landing.aboutTitle')}</span>
+              <div className="hero-badges-row">
+                <div className="hero-law-badge">
+                  <ShieldCheck size={16} />
+                  <span>{t('landing.aboutTitle')}</span>
+                </div>
+                <div className="hero-deadline-banner">
+                  <Clock3 size={16} />
+                  <span>{t('landing.mandatoryDeadlineBanner')}</span>
+                </div>
               </div>
               <h1 className="hero-headline">{t('landing.heroTitle')}</h1>
               <p className="hero-lead">{t('landing.heroSubtitle')}</p>
+
+              <button
+                type="button"
+                className="hero-cta-btn"
+                onClick={() => navigateTo('/login')}
+              >
+                <User size={18} />
+                <span>{t('landing.loginAction', { defaultValue: 'تسجيل الدخول إلى المنصة' })}</span>
+                <ArrowRight size={18} />
+              </button>
 
               <div className="hero-features-list">
                 <div className="hero-feature-item">
@@ -404,7 +483,7 @@ export default function App() {
                   <span className="hero-feature-icon">🛡️</span>
                   <div>
                     <strong>مظلة تكافلية تشمل كافة التخصصات</strong>
-                    <p>تعويضات مقرة بموجب القانون رقم 184 لسنة 2020 لحماية الأطباء والمنشآت الصحية.</p>
+                    <p>تعويضات مقرة بموجب قانون تنظيم المسئولية الطبية وسلامة المريض رقم (13) لسنة 2025 لحماية الأطباء والمنشآت الصحية.</p>
                   </div>
                 </div>
               </div>
@@ -424,125 +503,10 @@ export default function App() {
                 </div>
               </div>
             </div>
-
-            {/* Floating Login & Demo Portal Switcher Card (Left Column in RTL) */}
-            <div className="hero-card-col">
-              <div className="landing-login-card">
-                <div className="login-card-header">
-                  <span className="eyebrow">{t('login.portal')}</span>
-                  <h2>{t('welcome')}</h2>
-                  <p className="muted">{t('login.manage')}</p>
-                </div>
-
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    void login();
-                  }}
-                >
-                  <label>{t('login.email')}</label>
-                  <div className="input-wrap">
-                    <Users size={17} />
-                    <input
-                      type="email"
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <label>{t('login.password')}</label>
-                  <div className="input-wrap">
-                    <LockKeyhole size={17} />
-                    <input
-                      type="password"
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <button className="btn btn-primary full" type="submit">
-                    {t('signIn')} <ArrowRight size={17} />
-                  </button>
-                </form>
-
-                <div className="demo-login">
-                  <div className="demo-login-title">
-                    <span className="live-dot" /> {t('login.demoAccess')}{' '}
-                    <span className="demo-tag">{t('login.demoTag')}</span>
-                  </div>
-                  <p>{t('login.chooseRole')}</p>
-                  <div className="demo-portals-login">
-                    <button
-                      type="button"
-                      className="portal-login-card doctor-card"
-                      onClick={() => void switchRole('subscriber')}
-                    >
-                      <div className="card-top">
-                        <span className="icon">👨‍⚕️</span>
-                        <strong>{t('portalSwitcher.doctor')}</strong>
-                      </div>
-                      <p>{t('doctorPortal.subtitle')}</p>
-                    </button>
-
-                    <button
-                      type="button"
-                      className="portal-login-card inspector-card"
-                      onClick={() => void switchRole('inspector')}
-                    >
-                      <div className="card-top">
-                        <span className="icon">🕵️‍♂️</span>
-                        <strong>{t('portalSwitcher.inspector')}</strong>
-                      </div>
-                      <p>{t('inspectorPortal.subtitle')}</p>
-                    </button>
-
-                    <button
-                      type="button"
-                      className="portal-login-card admin-card"
-                      onClick={() => void switchRole('super_admin')}
-                    >
-                      <div className="card-top">
-                        <span className="icon">🏛️</span>
-                        <strong>{t('portalSwitcher.admin')}</strong>
-                      </div>
-                      <p>{t('login.manage')}</p>
-                    </button>
-                  </div>
-
-                  <div style={{ marginTop: 12 }}>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 600 }}>
-                      {t('portalSwitcher.adminRole')}:
-                    </div>
-                    <div className="admin-subroles-list">
-                      {(['super_admin', 'finance_admin', 'practitioner_analyst', 'facility_analyst', 'claims_admin'] as Role[]).map((r) => (
-                        <button
-                          key={r}
-                          type="button"
-                          className="admin-subrole-btn"
-                          onClick={() => void switchRole(r)}
-                        >
-                          {roleLabel(r)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="hint">{t('login.hint')}</div>
-                </div>
-
-                <div className="login-panel-foot">
-                  <span>
-                    <Shield size={14} /> {t('login.secure')}
-                  </span>
-                  <button onClick={() => void i18n.changeLanguage(i18n.language === 'en' ? 'ar' : 'en')}>
-                    <Languages size={15} /> {i18n.language === 'en' ? t('arabic') : t('english')}
-                  </button>
-                </div>
-              </div>
-            </div>
           </div>
         </section>
 
-        {/* Section 1: About the Fund & Law 184 of 2020 */}
+        {/* Section 1: About the Fund & Medical Liability Law 13 of 2025 */}
         <section className="landing-section-wrapper bg-white">
           <div className="landing-section">
             <div className="section-header-centered">
@@ -638,7 +602,7 @@ export default function App() {
               <p>جمهورية مصر العربية • جميع الحقوق محفوظة © 2026</p>
             </div>
             <div className="footer-right">
-              <span>القانون رقم 184 لسنة 2020</span>
+              <span>قانون تنظيم المسئولية الطبية وسلامة المريض رقم (13) لسنة 2025</span>
               <span>بوابة الخدمات الحكومية الرقمية</span>
             </div>
           </div>
