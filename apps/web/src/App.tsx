@@ -45,10 +45,12 @@ import {
   CreditCard,
   Lock,
   UserPlus,
+  ExternalLink,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { LoginView } from './LoginView';
 import { RegisterView } from './RegisterView';
+import { VerifyView } from './VerifyView';
 import { BrandLogo } from './components/BrandLogo';
 import { request } from './lib/api';
 import { exportToExcel } from './lib/exportExcel';
@@ -138,6 +140,9 @@ export default function App() {
     if (typeof window !== 'undefined') {
       const pathname = window.location.pathname;
       const hash = window.location.hash;
+      if (pathname.startsWith('/verify') || hash.startsWith('#/verify') || hash.startsWith('#verify')) {
+        return pathname.startsWith('/verify') ? pathname : hash.replace(/^#/, '');
+      }
       if (pathname === '/login' || hash === '#/login' || hash === '#login') {
         return '/login';
       }
@@ -153,7 +158,9 @@ export default function App() {
     const handlePopState = () => {
       const pathname = window.location.pathname;
       const hash = window.location.hash;
-      if (pathname === '/login' || hash === '#/login' || hash === '#login') {
+      if (pathname.startsWith('/verify') || hash.startsWith('#/verify') || hash.startsWith('#verify')) {
+        setCurrentPath(pathname.startsWith('/verify') ? pathname : hash.replace(/^#/, ''));
+      } else if (pathname === '/login' || hash === '#/login' || hash === '#login') {
         setCurrentPath('/login');
       } else if (pathname === '/register' || hash === '#/register' || hash === '#register') {
         setCurrentPath('/register');
@@ -382,6 +389,22 @@ export default function App() {
       setToast(messageFromError(e, t('toasts.bulkFailed')));
     }
   };
+  if (currentPath.startsWith('/verify')) {
+    const parts = currentPath.split('/');
+    const certId = parts[2] || 'MLRF-2026-000123';
+    return (
+      <>
+        <VerifyView
+          certId={certId}
+          onBackToHome={() => navigateTo('/')}
+          dark={dark}
+          onToggleDark={() => setDark(!dark)}
+        />
+        {toast && <div className="toast">{toast}</div>}
+      </>
+    );
+  }
+
   if (!token || !currentUser) {
     if (currentPath === '/register') {
       return (
@@ -2587,28 +2610,28 @@ function Subscriber({
                       typeof window !== 'undefined' &&
                       window.location.origin &&
                       window.location.origin.startsWith('http')
-                        ? `${window.location.origin}/api/v1/certificates/MLRF-2026-000123/pdf`
-                        : 'https://mlrf-platform-ykit.vercel.app/api/v1/certificates/MLRF-2026-000123/pdf'
+                        ? `${window.location.origin}/verify/MLRF-2026-000123`
+                        : 'https://mlrf-platform-ykit.vercel.app/verify/MLRF-2026-000123'
                     }
                     size={110}
                   />
                   <span>{t('subscriberPage.demoQr', { lng: 'ar' })}</span>
                 </div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'center', marginTop: 24 }}>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 24 }}>
                 <button
                   className="btn btn-primary"
                   onClick={() => {
-                    const pdfUrl =
+                    const verifyUrl =
                       typeof window !== 'undefined' &&
                       window.location.origin &&
                       window.location.origin.startsWith('http')
-                        ? `${window.location.origin}/api/v1/certificates/MLRF-2026-000123/pdf`
-                        : 'https://mlrf-platform-ykit.vercel.app/api/v1/certificates/MLRF-2026-000123/pdf';
-                    window.open(pdfUrl, '_blank');
+                        ? `${window.location.origin}/verify/MLRF-2026-000123`
+                        : 'https://mlrf-platform-ykit.vercel.app/verify/MLRF-2026-000123';
+                    window.open(verifyUrl, '_blank');
                   }}
                 >
-                  <Download size={16} /> {t('subscriberPage.download', { lng: 'ar' })}
+                  <ExternalLink size={16} /> {t('subscriberPage.viewVerify', { defaultValue: 'عرض صفحة التحقق والتحميل' })}
                 </button>
               </div>
             </div>

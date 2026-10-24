@@ -4533,4 +4533,8 @@ html[lang='ar'],
     display: block !important;
     margin: 0 auto !important;
   }
+
+  .no-print {
+    display: none !important;
+  }
 }
