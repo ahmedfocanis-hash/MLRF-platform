@@ -4,8 +4,8 @@ import { ROLE_PERMISSIONS, type Role } from '@mlrf/shared';
 import { env } from '../config/env.js';
 import { AppError } from './errors.js';
 export type SessionUser = { id: string; name: string; role: Role; email: string };
-// eslint-disable-next-line @typescript-eslint/no-namespace
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       user?: SessionUser;
