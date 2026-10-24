@@ -1,14 +1,13 @@
-import mongoose from 'mongoose';
 import argon2 from 'argon2';
 import { DEMO_TIERS, GOVERNORATES, ROLE_PERMISSIONS } from '@mlrf/shared';
-import { env } from './config/env.js';
+import { initDb } from './config/db.js';
 import { RoleModel, UserModel, SpecialtyTierModel, SubscriberProfileModel, SubscriptionModel, PaymentModel, CertificateModel, ClaimModel, AuditLogModel, SmsOutboxModel, BulkBatchModel, CompletionTokenModel } from './models/index.js';
 const fiscalYear = 2026;
 const seededAdminRoles = ['super_admin', 'finance_admin', 'practitioner_analyst', 'facility_analyst', 'claims_admin'];
 const adminNames = { super_admin: 'Super Admin', finance_admin: 'Finance Admin', practitioner_analyst: 'Practitioner Analyst', facility_analyst: 'Facility Analyst', claims_admin: 'Claims Admin', inspector: 'Ahmed Inspector' };
 const specialties = [...DEMO_TIERS];
 async function main() {
-    await mongoose.connect(env.MONGODB_URI);
+    await initDb();
     try {
         if (process.argv.includes('--reset')) {
             await Promise.all([RoleModel, UserModel, SpecialtyTierModel, SubscriberProfileModel, SubscriptionModel, PaymentModel, CertificateModel, ClaimModel, AuditLogModel, SmsOutboxModel, BulkBatchModel, CompletionTokenModel].map(model => model.deleteMany({})));
@@ -36,14 +35,17 @@ async function main() {
             const governorate = GOVERNORATES[i % GOVERNORATES.length][0];
             const status = i % 7 === 0 ? 'expired' : 'active';
             const user = await UserModel.findOneAndUpdate({ email }, { $set: { name: names[i % names.length], email, phone: `011${String(i + 1).padStart(8, '0')}`, passwordHash, role: 'subscriber', status } }, { upsert: true, new: true, setDefaultsOnInsert: true });
-            usersByIndex.set(i, user._id);
-            const profile = await SubscriberProfileModel.findOneAndUpdate({ userId: user._id }, { $set: { userId: user._id, entityType: tier.entityType, governorate, completionPercent: 100 } }, { upsert: true, new: true });
-            const subscription = await SubscriptionModel.findOneAndUpdate({ userId: user._id, fiscalYear }, { $set: { userId: user._id, tierId: (await SpecialtyTierModel.findOne({ code: tier.id }))._id, fiscalYear, renewalStatus: i % 5 === 0 ? 'renewed' : 'new', status: status === 'active' ? 'active' : 'expired', amountDue: tier.fee, startsAt: new Date(Date.UTC(fiscalYear, 0, 1)), expiresAt: new Date(Date.UTC(fiscalYear + 1, 0, 1)) } }, { upsert: true, new: true });
+            const userId = String(user._id ?? user.id);
+            usersByIndex.set(i, userId);
+            const profile = await SubscriberProfileModel.findOneAndUpdate({ userId }, { $set: { userId, entityType: tier.entityType, governorate, completionPercent: 100 } }, { upsert: true, new: true });
+            const tierRecord = await SpecialtyTierModel.findOne({ code: tier.id });
+            const tierId = String(tierRecord?._id ?? tierRecord?.id ?? tier.id);
+            const subscription = await SubscriptionModel.findOneAndUpdate({ userId, fiscalYear }, { $set: { userId, tierId, fiscalYear, renewalStatus: i % 5 === 0 ? 'renewed' : 'new', status: status === 'active' ? 'active' : 'expired', amountDue: tier.fee, startsAt: new Date(Date.UTC(fiscalYear, 0, 1)), expiresAt: new Date(Date.UTC(fiscalYear + 1, 0, 1)) } }, { upsert: true, new: true });
             if (i < 120) {
-                await PaymentModel.updateOne({ gatewayReference: `seed-payment-${i + 1}` }, { $set: { userId: user._id, subscriptionId: subscription._id, amount: tier.fee, currency: 'EGP', channel: i % 6 === 0 ? 'bank_bulk' : 'gateway', status: 'paid', gatewayReference: `seed-payment-${i + 1}`, paidAt: new Date(Date.UTC(fiscalYear, i % 12, 1 + i % 27)) } }, { upsert: true });
+                await PaymentModel.updateOne({ gatewayReference: `seed-payment-${i + 1}` }, { $set: { userId, subscriptionId: subscription._id ?? subscription.id, amount: tier.fee, currency: 'EGP', channel: i % 6 === 0 ? 'bank_bulk' : 'gateway', status: 'paid', gatewayReference: `seed-payment-${i + 1}`, paidAt: new Date(Date.UTC(fiscalYear, i % 12, 1 + i % 27)) } }, { upsert: true });
             }
             if (i === 0) {
-                await CertificateModel.updateOne({ certNumber: 'MLRF-2026-000123' }, { $set: { userId: user._id, subscriptionId: subscription._id, certNumber: 'MLRF-2026-000123', qrHash: 'demo-qr-valid-7f0c1a', issuedAt: new Date(Date.UTC(fiscalYear, 0, 1)), expiresAt: new Date(Date.UTC(fiscalYear + 1, 0, 1)), status: 'valid' } }, { upsert: true });
+                await CertificateModel.updateOne({ certNumber: 'MLRF-2026-000123' }, { $set: { userId, subscriptionId: subscription._id ?? subscription.id, certNumber: 'MLRF-2026-000123', qrHash: 'demo-qr-valid-7f0c1a', issuedAt: new Date(Date.UTC(fiscalYear, 0, 1)), expiresAt: new Date(Date.UTC(fiscalYear + 1, 0, 1)), status: 'valid' } }, { upsert: true });
             }
             void profile;
         }
@@ -59,11 +61,11 @@ async function main() {
             await AuditLogModel.updateOne({ entityId: `seed-audit-${i + 1}` }, { $set: { userLabel: email, role, action: ['LOGIN', 'PROFILE_UPDATED', 'PAYMENT_SUCCESS', 'EXPORT_REQUESTED'][i % 4], entityType: 'seed', entityId: `seed-audit-${i + 1}`, ipAddress: `192.0.2.${(i % 250) + 1}`, userAgent: 'MLRF deterministic seed', metadata: { seeded: true } } }, { upsert: true });
         }
         const counts = await Promise.all([RoleModel.countDocuments(), UserModel.countDocuments(), SpecialtyTierModel.countDocuments(), SubscriberProfileModel.countDocuments(), SubscriptionModel.countDocuments(), PaymentModel.countDocuments(), CertificateModel.countDocuments(), ClaimModel.countDocuments(), AuditLogModel.countDocuments()]);
-        console.log(JSON.stringify({ database: mongoose.connection.name, roles: counts[0], users: counts[1], specialtyTiers: counts[2], profiles: counts[3], subscriptions: counts[4], payments: counts[5], certificates: counts[6], claims: counts[7], auditLogs: counts[8], demoPassword: 'Demo123!' }, null, 2));
+        console.log(JSON.stringify({ database: 'turso', roles: counts[0], users: counts[1], specialtyTiers: counts[2], profiles: counts[3], subscriptions: counts[4], payments: counts[5], certificates: counts[6], claims: counts[7], auditLogs: counts[8], demoPassword: 'Demo123!' }, null, 2));
     }
     finally {
-        await mongoose.disconnect();
+        // completed
     }
 }
-main().catch(async (error) => { console.error('Seed failed', error); await mongoose.disconnect().catch(() => undefined); process.exitCode = 1; });
+main().catch(async (error) => { console.error('Seed failed', error); process.exitCode = 1; });
 //# sourceMappingURL=seed.js.map

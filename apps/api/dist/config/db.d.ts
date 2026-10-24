@@ -1,14 +1,9 @@
-import mongoose from 'mongoose';
-interface MongooseCache {
-    conn: typeof mongoose | null;
-    promise: Promise<typeof mongoose> | null;
-}
-declare global {
-    var mongooseCache: MongooseCache | undefined;
-}
+import { type Client } from '@libsql/client';
+export declare const db: Client;
 /**
- * Connect to MongoDB with connection reuse and global caching
- * for serverless cold start optimization.
+ * Ensures required Turso/libSQL relational tables are provisioned.
  */
-export declare function connectMongo(): Promise<typeof mongoose | undefined>;
-export {};
+export declare function initDb(): Promise<void>;
+/** Backward compatibility helper for legacy connectMongo calls */
+export declare function connectMongo(): Promise<Client>;
+export default db;

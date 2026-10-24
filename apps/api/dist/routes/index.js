@@ -6,7 +6,6 @@ import { DEMO_TIERS, ROLE_PERMISSIONS, ROLES, registerSchema, professionalProfil
 import { asyncHandler, AppError, ok } from '../middleware/errors.js';
 import { requireAuth, requirePermission, signAccess } from '../middleware/auth.js';
 import { env } from '../config/env.js';
-import mongoose from 'mongoose';
 import argon2 from 'argon2';
 import * as XLSX from 'xlsx';
 import { UserModel, SubscriberProfileModel, SpecialtyTierModel, SubscriptionModel, AuditLogModel, PaymentModel, CertificateModel, BulkBatchModel, SmsOutboxModel, CompletionTokenModel } from '../models/index.js';
@@ -17,7 +16,7 @@ import { LocalDiskStorageProvider, detectDocumentMime } from '../providers/stora
 export const apiRouter = Router();
 const loginSchema = z.object({ email: z.string().email(), password: z.string().min(1) });
 const publicUser = (u) => ({ id: String(u.id ?? u._id), name: u.name, email: u.email, phone: u.phone, role: u.role, status: u.status, governorate: u.governorate ?? 'Cairo', entityType: u.entityType ?? 'individual' });
-const mongoReady = () => mongoose.connection.readyState === 1;
+const mongoReady = () => Boolean(process.env.TURSO_DATABASE_URL || process.env.NODE_ENV === 'production' || process.env.CONNECT_MONGO === 'true' || process.env.CONNECT_TURSO === 'true');
 const bankUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
 function parseBankRows(buffer, filename) {
     const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: false });
@@ -342,7 +341,7 @@ async function processBankBatch(req, res, rowsInput, filename) {
             return ok(res, { id: String(batch._id), filename: batch.filename, createdAt: batch.createdAt, total: batch.totalRows, created: batch.createdCount, duplicate: batch.duplicateCount, invalid: batch.invalidCount, status: batch.status, completionLinks }, 201);
         }
         catch (error) {
-            const userIds = createdUsers.filter(id => mongoose.isValidObjectId(id)).map(id => new mongoose.Types.ObjectId(id));
+            const userIds = createdUsers.filter((id) => Boolean(id) && typeof id === 'string');
             if (userIds.length) {
                 await Promise.all([SmsOutboxModel, CompletionTokenModel, PaymentModel, SubscriptionModel, SubscriberProfileModel, UserModel].map(model => model.deleteMany({ userId: { $in: userIds } })));
             }

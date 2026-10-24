@@ -1,4 +1,5 @@
-import {AuditLogModel} from '../models/index.js';
+import crypto from 'node:crypto';
+import { db } from '../config/db.js';
 
 export type CreateAuditEntry = {
   userId?: string | null;
@@ -12,20 +13,66 @@ export type CreateAuditEntry = {
   metadata?: Record<string, unknown>;
 };
 
-/** Persistence boundary for audit data; controllers and services must not use Mongoose directly. */
+/** Persistence boundary for audit data using raw SQL queries via Turso client. */
 export const auditRepository = {
-  create(entry: CreateAuditEntry) {
-    return AuditLogModel.create(entry);
+  async create(entry: CreateAuditEntry) {
+    const id = crypto.randomUUID();
+    const createdAt = new Date().toISOString();
+    await db.execute({
+      sql: `INSERT INTO audit_logs (id, userId, userLabel, role, action, entityType, entityId, ipAddress, userAgent, metadata, createdAt)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        id,
+        entry.userId ?? null,
+        entry.userLabel,
+        entry.role,
+        entry.action,
+        entry.entityType,
+        entry.entityId ?? null,
+        entry.ipAddress,
+        entry.userAgent ?? '',
+        entry.metadata ? JSON.stringify(entry.metadata) : null,
+        createdAt,
+      ],
+    });
+    return {
+      _id: id,
+      id,
+      ...entry,
+      createdAt,
+    };
   },
-  findRecent(limit = 50, filter: {role?: string; action?: string; userLabel?: string} = {}) {
-    const query: Record<string, unknown> = {};
-    if (filter.role) query.role = filter.role;
-    if (filter.action) query.action = filter.action;
-    if (filter.userLabel) query.userLabel = {$regex: escapeRegex(filter.userLabel), $options: 'i'};
-    return AuditLogModel.find(query).sort({createdAt: -1, _id: -1}).limit(Math.min(Math.max(limit, 1), 200)).lean();
+
+  async findRecent(limit = 50, filter: { role?: string; action?: string; userLabel?: string } = {}) {
+    const conditions: string[] = [];
+    const args: any[] = [];
+
+    if (filter.role) {
+      conditions.push('role = ?');
+      args.push(filter.role);
+    }
+    if (filter.action) {
+      conditions.push('action = ?');
+      args.push(filter.action);
+    }
+    if (filter.userLabel) {
+      conditions.push('userLabel LIKE ?');
+      args.push(`%${filter.userLabel}%`);
+    }
+
+    const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    const safeLimit = Math.min(Math.max(limit, 1), 200);
+    args.push(safeLimit);
+
+    const result = await db.execute({
+      sql: `SELECT * FROM audit_logs ${whereClause} ORDER BY createdAt DESC, id DESC LIMIT ?`,
+      args,
+    });
+
+    return result.rows.map((row: any) => ({
+      _id: row.id,
+      ...row,
+      metadata: row.metadata ? (typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata) : {},
+    }));
   },
 };
-
-function escapeRegex(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}

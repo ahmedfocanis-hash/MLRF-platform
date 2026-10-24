@@ -1,17 +1,17 @@
 import crypto from 'node:crypto';
-import mongoose from 'mongoose';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { initDb } from '../config/db.js';
 import { UserModel, SubscriptionModel, PaymentModel, CertificateModel, AuditLogModel } from '../models/index.js';
 import { settleMongoPayment } from '../services/paymentLifecycle.js';
-const mongoTestUri = process.env.MONGO_TEST_URI;
-const integration = describe.skipIf(!mongoTestUri);
-integration('MongoDB payment lifecycle integration', () => {
-    let userId = new mongoose.Types.ObjectId();
-    let subscriptionId = new mongoose.Types.ObjectId();
+const isTestDbEnabled = Boolean(process.env.TURSO_DATABASE_URL || process.env.TEST_TURSO);
+const integration = describe.skipIf(!isTestDbEnabled);
+integration('Turso payment lifecycle integration', () => {
+    let userId = crypto.randomUUID();
+    let subscriptionId = crypto.randomUUID();
     let paymentId = '';
     let hasFixture = false;
     beforeAll(async () => {
-        await mongoose.connect(mongoTestUri);
+        await initDb();
     });
     async function cleanPreviousFixture() {
         if (!hasFixture)
@@ -34,15 +34,15 @@ integration('MongoDB payment lifecycle integration', () => {
             role: 'subscriber',
             status: 'pending_verification',
         });
-        userId = user._id;
+        userId = user._id ?? user.id;
         const subscription = await SubscriptionModel.create({
             userId,
-            tierId: new mongoose.Types.ObjectId(),
+            tierId: crypto.randomUUID(),
             fiscalYear: 2098,
             status: 'pending_payment',
             amountDue: 1250,
         });
-        subscriptionId = subscription._id;
+        subscriptionId = subscription._id ?? subscription.id;
         const payment = await PaymentModel.create({
             userId,
             subscriptionId,
@@ -51,12 +51,11 @@ integration('MongoDB payment lifecycle integration', () => {
             status: 'pending',
             gatewayReference: `gw-${crypto.randomUUID()}`,
         });
-        paymentId = String(payment._id);
+        paymentId = String(payment._id ?? payment.id);
         hasFixture = true;
     });
     afterAll(async () => {
         await cleanPreviousFixture();
-        await mongoose.disconnect();
     });
     it('settles success atomically and repeated success does not duplicate the certificate', async () => {
         const first = await settleMongoPayment(paymentId, 'success', 'evt-integration-success');

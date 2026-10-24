@@ -5,7 +5,7 @@ import rateLimit from 'express-rate-limit';
 import mongoSanitize from 'express-mongo-sanitize';
 import cookieParser from 'cookie-parser';
 import { env } from './config/env.js';
-import { connectMongo } from './config/db.js';
+import { initDb } from './config/db.js';
 import { errorHandler } from './middleware/errors.js';
 import { apiRouter } from './routes/index.js';
 export const app = express();
@@ -24,8 +24,8 @@ app.use((req, res, next) => {
 // Serverless DB connection verification middleware
 app.use(async (_req, _res, next) => {
     try {
-        if (env.MONGODB_URI && (process.env.NODE_ENV === 'production' || process.env.CONNECT_MONGO === 'true')) {
-            await connectMongo();
+        if (process.env.TURSO_DATABASE_URL || process.env.NODE_ENV === 'production' || process.env.CONNECT_TURSO === 'true' || process.env.CONNECT_MONGO === 'true') {
+            await initDb();
         }
         next();
     }

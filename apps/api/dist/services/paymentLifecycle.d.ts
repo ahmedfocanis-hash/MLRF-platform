@@ -1,10 +1,18 @@
-import mongoose, { type ClientSession } from 'mongoose';
 export type PaymentOutcome = 'success' | 'failure';
-export declare function issueCertificate(userId: mongoose.Types.ObjectId, subscriptionId: mongoose.Types.ObjectId, session?: ClientSession): Promise<any>;
+export declare function issueCertificate(userId: string | any, subscriptionId: string | any, session?: any): Promise<any>;
 /**
- * Applies a payment outcome in a MongoDB transaction. The Mongo deployment must
- * support transactions (for example, a replica set). If any related write fails,
- * payment, subscription, user, certificate and audit changes roll back together.
+ * Applies a payment outcome using Turso / libSQL.
  */
-export declare function settleMongoPayment(paymentId: string, outcome: PaymentOutcome, webhookReference?: string): Promise<any>;
+export declare function settleMongoPayment(paymentId: string, outcome: PaymentOutcome, webhookReference?: string): Promise<{
+    payment: any;
+    duplicate: boolean;
+    certificate?: never;
+    user?: never;
+} | {
+    payment: any;
+    certificate: any;
+    user: any;
+    duplicate: boolean;
+}>;
+export declare const settleTursoPayment: typeof settleMongoPayment;
 export declare function isValidWebhookSignature(body: unknown, signature: string): boolean;

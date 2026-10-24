@@ -1,15 +1,56 @@
-import { SubscriptionModel } from '../models/index.js';
+import crypto from 'node:crypto';
+import { db } from '../config/db.js';
 export const subscriptionRepository = {
-    findForUserAndYear(userId, fiscalYear) {
-        return SubscriptionModel.findOne({ userId, fiscalYear }).lean();
+    async findForUserAndYear(userId, fiscalYear) {
+        const result = await db.execute({
+            sql: `SELECT * FROM subscriptions WHERE userId = ? AND fiscalYear = ? LIMIT 1`,
+            args: [userId, fiscalYear],
+        });
+        if (!result.rows.length)
+            return null;
+        const row = result.rows[0];
+        return {
+            _id: row.id,
+            ...row,
+        };
     },
-    createPending(input) {
-        return SubscriptionModel.create({ ...input, renewalStatus: 'new', status: 'pending_payment' });
+    async createPending(input) {
+        const id = crypto.randomUUID();
+        const now = new Date().toISOString();
+        await db.execute({
+            sql: `INSERT INTO subscriptions (id, userId, tierId, fiscalYear, renewalStatus, status, amountDue, startsAt, expiresAt, createdAt, updatedAt)
+            VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?)`,
+            args: [id, input.userId, input.tierId, input.fiscalYear, 'new', 'pending_payment', input.amountDue, now, now],
+        });
+        return {
+            _id: id,
+            id,
+            ...input,
+            renewalStatus: 'new',
+            status: 'pending_payment',
+            createdAt: now,
+            updatedAt: now,
+        };
     },
-    activate(id, startsAt = new Date()) {
+    async activate(id, startsAt = new Date()) {
         const expiresAt = new Date(startsAt);
         expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-        return SubscriptionModel.findByIdAndUpdate(id, { status: 'active', startsAt, expiresAt }, { new: true, runValidators: true });
+        const now = new Date().toISOString();
+        await db.execute({
+            sql: `UPDATE subscriptions SET status = 'active', startsAt = ?, expiresAt = ?, updatedAt = ? WHERE id = ?`,
+            args: [startsAt.toISOString(), expiresAt.toISOString(), now, id],
+        });
+        const result = await db.execute({
+            sql: `SELECT * FROM subscriptions WHERE id = ? LIMIT 1`,
+            args: [id],
+        });
+        if (!result.rows.length)
+            return null;
+        const row = result.rows[0];
+        return {
+            _id: row.id,
+            ...row,
+        };
     },
 };
 //# sourceMappingURL=subscription.repository.js.map
