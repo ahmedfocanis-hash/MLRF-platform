@@ -223,7 +223,7 @@ export async function initDatabase() {
       usedAt TEXT,
       createdAt TEXT,
       updatedAt TEXT
-    );`
+    );`,
             ]);
             dbInitialized = true;
         })().catch((err) => {

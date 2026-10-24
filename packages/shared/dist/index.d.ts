@@ -1,6 +1,6 @@
 import { z } from 'zod';
 export declare const ROLES: readonly ["super_admin", "finance_admin", "practitioner_analyst", "facility_analyst", "claims_admin", "inspector", "subscriber"];
-export type Role = typeof ROLES[number];
+export type Role = (typeof ROLES)[number];
 export declare const ACCOUNT_STATUSES: readonly ["pending_verification", "incomplete", "pending_completion", "active", "expired"];
 export declare const PAYMENT_CHANNELS: readonly ["gateway", "bank_bulk"];
 export declare const VERIFICATION_RESULTS: readonly ["VALID", "EXPIRED", "INVALID"];

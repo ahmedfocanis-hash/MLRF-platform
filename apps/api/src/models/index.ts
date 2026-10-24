@@ -343,7 +343,10 @@ export const UserModel = {
   async deleteOne(filter: any): Promise<any> {
     const id = filter._id || filter.id;
     if (id) {
-      await db.execute({ sql: `DELETE FROM users WHERE id = ?`, args: sanitizeSqlArgs([String(id)]) });
+      await db.execute({
+        sql: `DELETE FROM users WHERE id = ?`,
+        args: sanitizeSqlArgs([String(id)]),
+      });
     }
   },
 
@@ -356,7 +359,10 @@ export const UserModel = {
       const ids = filter.userId.$in.map(String);
       if (ids.length) {
         const placeholders = ids.map(() => '?').join(',');
-        await db.execute({ sql: `DELETE FROM users WHERE id IN (${placeholders})`, args: sanitizeSqlArgs(ids) });
+        await db.execute({
+          sql: `DELETE FROM users WHERE id IN (${placeholders})`,
+          args: sanitizeSqlArgs(ids),
+        });
       }
     }
   },
@@ -448,14 +454,24 @@ export const SubscriberProfileModel = {
     if (opts.upsert) {
       const id = setObj.id || setObj._id || crypto.randomUUID();
       const entityType = setObj.entityType ?? 'individual';
-      const nationalId = setObj.nationalId !== undefined ? (setObj.nationalId || null) : null;
-      const syndicateId = setObj.syndicateId !== undefined ? (setObj.syndicateId || null) : null;
-      const facilityLicense = setObj.facilityLicense !== undefined ? (setObj.facilityLicense || null) : null;
+      const nationalId = setObj.nationalId !== undefined ? setObj.nationalId || null : null;
+      const syndicateId = setObj.syndicateId !== undefined ? setObj.syndicateId || null : null;
+      const facilityLicense =
+        setObj.facilityLicense !== undefined ? setObj.facilityLicense || null : null;
       const governorate = setObj.governorate ?? 'Cairo';
-      const address = setObj.address !== undefined ? (setObj.address || null) : null;
-      const completionPercent = setObj.completionPercent !== undefined ? setObj.completionPercent : 25;
+      const address = setObj.address !== undefined ? setObj.address || null : null;
+      const completionPercent =
+        setObj.completionPercent !== undefined ? setObj.completionPercent : 25;
 
-      const allowedFields = ['entityType', 'nationalId', 'syndicateId', 'facilityLicense', 'governorate', 'address', 'completionPercent'];
+      const allowedFields = [
+        'entityType',
+        'nationalId',
+        'syndicateId',
+        'facilityLicense',
+        'governorate',
+        'address',
+        'completionPercent',
+      ];
       const updateFields: string[] = [];
       for (const field of allowedFields) {
         if (setObj[field] !== undefined) {
@@ -517,7 +533,10 @@ export const SubscriberProfileModel = {
       const ids = filter.userId.$in.map(String);
       if (ids.length) {
         const placeholders = ids.map(() => '?').join(',');
-        await db.execute({ sql: `DELETE FROM subscriber_profiles WHERE userId IN (${placeholders})`, args: sanitizeSqlArgs(ids) });
+        await db.execute({
+          sql: `DELETE FROM subscriber_profiles WHERE userId IN (${placeholders})`,
+          args: sanitizeSqlArgs(ids),
+        });
       }
     }
   },
@@ -750,7 +769,10 @@ export const SubscriptionModel = {
       const ids = filter.userId.$in.map(String);
       if (ids.length) {
         const placeholders = ids.map(() => '?').join(',');
-        await db.execute({ sql: `DELETE FROM subscriptions WHERE userId IN (${placeholders})`, args: sanitizeSqlArgs(ids) });
+        await db.execute({
+          sql: `DELETE FROM subscriptions WHERE userId IN (${placeholders})`,
+          args: sanitizeSqlArgs(ids),
+        });
       }
     }
   },
@@ -858,7 +880,10 @@ export const PaymentModel = {
       const ids = filter.userId.$in.map(String);
       if (ids.length) {
         const placeholders = ids.map(() => '?').join(',');
-        await db.execute({ sql: `DELETE FROM payments WHERE userId IN (${placeholders})`, args: sanitizeSqlArgs(ids) });
+        await db.execute({
+          sql: `DELETE FROM payments WHERE userId IN (${placeholders})`,
+          args: sanitizeSqlArgs(ids),
+        });
       }
     }
   },
@@ -972,7 +997,9 @@ export const CertificateModel = {
           sql: `SELECT id, name FROM users WHERE id = ? LIMIT 1`,
           args: sanitizeSqlArgs([cert.userId]),
         });
-        cert.userId = uRes.rows[0] ? { _id: uRes.rows[0].id, id: uRes.rows[0].id, name: uRes.rows[0].name } : null;
+        cert.userId = uRes.rows[0]
+          ? { _id: uRes.rows[0].id, id: uRes.rows[0].id, name: uRes.rows[0].name }
+          : null;
       }
       if (populates.some((p: any) => p.path === 'subscriptionId' || p === 'subscriptionId')) {
         const sRes = await db.execute({
@@ -1027,7 +1054,10 @@ export const CertificateModel = {
       const ids = filter.userId.$in.map(String);
       if (ids.length) {
         const placeholders = ids.map(() => '?').join(',');
-        await db.execute({ sql: `DELETE FROM certificates WHERE userId IN (${placeholders})`, args: sanitizeSqlArgs(ids) });
+        await db.execute({
+          sql: `DELETE FROM certificates WHERE userId IN (${placeholders})`,
+          args: sanitizeSqlArgs(ids),
+        });
       }
     }
   },
@@ -1249,7 +1279,10 @@ export const AuditLogModel = {
       const ids = filter.userId.$in.map(String);
       if (ids.length) {
         const placeholders = ids.map(() => '?').join(',');
-        await db.execute({ sql: `DELETE FROM audit_logs WHERE userId IN (${placeholders})`, args: sanitizeSqlArgs(ids) });
+        await db.execute({
+          sql: `DELETE FROM audit_logs WHERE userId IN (${placeholders})`,
+          args: sanitizeSqlArgs(ids),
+        });
       }
     }
   },
@@ -1297,7 +1330,10 @@ export const SmsOutboxModel = {
       const ids = filter.userId.$in.map(String);
       if (ids.length) {
         const placeholders = ids.map(() => '?').join(',');
-        await db.execute({ sql: `DELETE FROM sms_outbox WHERE userId IN (${placeholders})`, args: sanitizeSqlArgs(ids) });
+        await db.execute({
+          sql: `DELETE FROM sms_outbox WHERE userId IN (${placeholders})`,
+          args: sanitizeSqlArgs(ids),
+        });
       }
     }
   },
@@ -1351,7 +1387,11 @@ export const CompletionTokenModel = {
     if (id) {
       await db.execute({
         sql: `UPDATE completion_tokens SET usedAt = ?, updatedAt = ? WHERE id = ?`,
-        args: sanitizeSqlArgs([setObj.usedAt ? new Date(setObj.usedAt).toISOString() : null, now, String(id)]),
+        args: sanitizeSqlArgs([
+          setObj.usedAt ? new Date(setObj.usedAt).toISOString() : null,
+          now,
+          String(id),
+        ]),
       });
     }
   },
@@ -1365,7 +1405,10 @@ export const CompletionTokenModel = {
       const ids = filter.userId.$in.map(String);
       if (ids.length) {
         const placeholders = ids.map(() => '?').join(',');
-        await db.execute({ sql: `DELETE FROM completion_tokens WHERE userId IN (${placeholders})`, args: sanitizeSqlArgs(ids) });
+        await db.execute({
+          sql: `DELETE FROM completion_tokens WHERE userId IN (${placeholders})`,
+          args: sanitizeSqlArgs(ids),
+        });
       }
     }
   },

@@ -15,13 +15,28 @@ export const subscriptionRepository = {
     };
   },
 
-  async createPending(input: { userId: string; tierId: string; fiscalYear: number; amountDue: number }) {
+  async createPending(input: {
+    userId: string;
+    tierId: string;
+    fiscalYear: number;
+    amountDue: number;
+  }) {
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
     await db.execute({
       sql: `INSERT INTO subscriptions (id, userId, tierId, fiscalYear, renewalStatus, status, amountDue, startsAt, expiresAt, createdAt, updatedAt)
             VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?)`,
-      args: sanitizeSqlArgs([id, input.userId, input.tierId, input.fiscalYear, 'new', 'pending_payment', input.amountDue, now, now]),
+      args: sanitizeSqlArgs([
+        id,
+        input.userId,
+        input.tierId,
+        input.fiscalYear,
+        'new',
+        'pending_payment',
+        input.amountDue,
+        now,
+        now,
+      ]),
     });
     return {
       _id: id,

@@ -66,7 +66,9 @@ export function riskLabel(risk: string) {
 }
 
 export function specialtyLabel(nameOrId: string) {
-  const tier = DEMO_TIERS.find((item) => item.name === nameOrId || item.nameAr === nameOrId || item.id === nameOrId);
+  const tier = DEMO_TIERS.find(
+    (item) => item.name === nameOrId || item.nameAr === nameOrId || item.id === nameOrId,
+  );
   const tierKey = tier ? tier.id : nameOrId;
   const translated = i18n.t(`tiers.${tierKey}`);
   if (translated && translated !== `tiers.${tierKey}`) {

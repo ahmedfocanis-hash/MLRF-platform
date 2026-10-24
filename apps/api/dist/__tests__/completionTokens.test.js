@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { completionTokenExpiry, generateCompletionToken, hashCompletionToken, isWellFormedCompletionToken } from '../services/completionTokens.js';
+import { completionTokenExpiry, generateCompletionToken, hashCompletionToken, isWellFormedCompletionToken, } from '../services/completionTokens.js';
 describe('bank-import completion tokens', () => {
     it('generates URL-safe 256-bit tokens without persisting the raw value', () => {
         const token = generateCompletionToken();

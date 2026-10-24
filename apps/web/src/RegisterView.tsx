@@ -110,11 +110,7 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
       {/* Top Floating Navbar for Registration View */}
       <header className="landing-nav">
         <div className="landing-nav-inner">
-          <div
-            className="landing-brand"
-            style={{ cursor: 'pointer' }}
-            onClick={onBackToHome}
-          >
+          <div className="landing-brand" style={{ cursor: 'pointer' }} onClick={onBackToHome}>
             <div className="brand-mark">
               <ShieldCheck size={28} />
             </div>
@@ -133,19 +129,11 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
               <Home size={15} />
               <span>{t('landing.backToHome')}</span>
             </button>
-            <button
-              type="button"
-              className="nav-register-btn"
-              style={{ cursor: 'default' }}
-            >
+            <button type="button" className="nav-register-btn" style={{ cursor: 'default' }}>
               <UserPlus size={16} />
               <span>{t('landing.registerAction', { defaultValue: 'إنشاء حساب' })}</span>
             </button>
-            <button
-              type="button"
-              className="nav-login-btn"
-              onClick={onNavigateToLogin}
-            >
+            <button type="button" className="nav-login-btn" onClick={onNavigateToLogin}>
               <User size={16} />
               <span>{t('landing.loginAction', { defaultValue: 'تسجيل الدخول' })}</span>
             </button>

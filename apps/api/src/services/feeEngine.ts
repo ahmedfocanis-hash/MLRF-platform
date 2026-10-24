@@ -10,7 +10,10 @@ export type FeeBreakdown = {
 };
 
 /** Server-owned fee calculation. Client-provided totals are intentionally not accepted. */
-export function calculateFee(tierId: string, options: { lateRenewal?: boolean } = {}): FeeBreakdown {
+export function calculateFee(
+  tierId: string,
+  options: { lateRenewal?: boolean } = {},
+): FeeBreakdown {
   const tier = DEMO_TIERS.find((candidate) => candidate.id === tierId);
   if (!tier) throw new Error('Unknown specialty tier');
   const riskValue = tier.risk as string;

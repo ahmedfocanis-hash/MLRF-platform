@@ -43,7 +43,10 @@ export const auditRepository = {
     };
   },
 
-  async findRecent(limit = 50, filter: { role?: string; action?: string; userLabel?: string } = {}) {
+  async findRecent(
+    limit = 50,
+    filter: { role?: string; action?: string; userLabel?: string } = {},
+  ) {
     const conditions: string[] = [];
     const args: any[] = [];
 
@@ -72,7 +75,11 @@ export const auditRepository = {
     return result.rows.map((row: any) => ({
       _id: row.id,
       ...row,
-      metadata: row.metadata ? (typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata) : {},
+      metadata: row.metadata
+        ? typeof row.metadata === 'string'
+          ? JSON.parse(row.metadata)
+          : row.metadata
+        : {},
     }));
   },
 };

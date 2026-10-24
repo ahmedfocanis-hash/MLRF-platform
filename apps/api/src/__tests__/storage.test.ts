@@ -1,5 +1,5 @@
-import {describe, expect, it} from 'vitest';
-import {detectDocumentMime} from '../providers/storage.js';
+import { describe, expect, it } from 'vitest';
+import { detectDocumentMime } from '../providers/storage.js';
 
 describe('document magic-byte validation', () => {
   it('recognizes PDF content independently of its filename', () => {

@@ -10,7 +10,9 @@ export class ApiError extends Error {
 }
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? '/api/v1' : 'http://localhost:4000/api/v1'),
+  baseURL:
+    import.meta.env.VITE_API_URL ??
+    (import.meta.env.PROD ? '/api/v1' : 'http://localhost:4000/api/v1'),
   withCredentials: true,
 });
 api.interceptors.request.use((config) => {
@@ -43,8 +45,7 @@ export async function request<T>(
     if (error instanceof ApiError) throw error;
     if (axios.isAxiosError(error)) {
       const body = error.response?.data as
-        | { error?: { code?: string; message?: string } }
-        | undefined;
+        { error?: { code?: string; message?: string } } | undefined;
       throw new ApiError(body?.error?.message ?? error.message, body?.error?.code);
     }
     throw error;

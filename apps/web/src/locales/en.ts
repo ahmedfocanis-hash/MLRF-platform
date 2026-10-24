@@ -75,7 +75,8 @@ export const en = {
     badge: 'NATIONAL MEDICAL LIABILITY FUND',
     heroTitle: 'Coverage that builds',
     heroEmphasis: 'confidence.',
-    heroBody: 'One connected view of subscriptions, verification, and operational performance across Egypt.',
+    heroBody:
+      'One connected view of subscriptions, verification, and operational performance across Egypt.',
     explore: 'Explore fund analytics',
     verified: 'Verified',
     coverageActive: 'Coverage active',
@@ -144,7 +145,8 @@ export const en = {
     expiredHint: 'Simulated expired record',
     unregistered: 'Unregistered professional',
     privacy: 'Privacy by design',
-    privacyBody: 'Public verification returns masked information only. Every inspector action is audit logged.',
+    privacyBody:
+      'Public verification returns masked information only. Every inspector action is audit logged.',
   },
   analyticsPage: {
     eyebrow: 'FUND PERFORMANCE',
@@ -260,15 +262,20 @@ export const en = {
     title: 'Demo guide',
     body: 'A repeatable walkthrough for demonstrating the Medical Liability Risk Fund platform.',
     step1Title: 'Year 1 vs. Years 2 & 3',
-    step1: 'Open Subscriptions & Growth and switch the scenario filter to compare cohorts, revenue, and renewals.',
+    step1:
+      'Open Subscriptions & Growth and switch the scenario filter to compare cohorts, revenue, and renewals.',
     step2Title: 'Verify a certificate',
-    step2: 'Open Inspector Tools and verify the seeded certificate. Try the unregistered scenario to see the invalid path.',
+    step2:
+      'Open Inspector Tools and verify the seeded certificate. Try the unregistered scenario to see the invalid path.',
     step3Title: 'Bank upload to completion',
-    step3: 'Preview the sample CSV, inspect duplicate and invalid rows, then commit accepted rows. View the mock SMS inbox endpoint.',
+    step3:
+      'Preview the sample CSV, inspect duplicate and invalid rows, then commit accepted rows. View the mock SMS inbox endpoint.',
     step4Title: 'Role switching & audit',
-    step4: 'Use the role switcher in the top bar. Restricted modules disappear and every action creates an audit event.',
+    step4:
+      'Use the role switcher in the top bar. Restricted modules disappear and every action creates an audit event.',
     credentials: 'Demo credentials',
-    credentialsBody: 'Use the role switcher to get a real demo session for each seeded role. OTP is 123456. All fees and subscriber data are fictional placeholders.',
+    credentialsBody:
+      'Use the role switcher to get a real demo session for each seeded role. OTP is 123456. All fees and subscriber data are fictional placeholders.',
     load: 'Load server demo guide',
     open: 'Open workflow',
   },
@@ -297,12 +304,14 @@ export const en = {
     license: 'Facility license number',
     demoOnly: 'Demo validation only. Use fictional test data.',
     governorate: 'Governorate',
-    detailsNote: 'Your professional details are used to calculate the appropriate fee and issue a certificate.',
+    detailsNote:
+      'Your professional details are used to calculate the appropriate fee and issue a certificate.',
     save: 'Save and continue',
     tier: 'Coverage tier',
     annual: 'Annual contribution',
     risk: '{{level}} risk',
-    feeNote: 'Fee calculated by the server-side FeeEngine. Amounts are placeholders for demonstration.',
+    feeNote:
+      'Fee calculated by the server-side FeeEngine. Amounts are placeholders for demonstration.',
     back: 'Back',
     confirm: 'Confirm coverage',
     coverage: 'Coverage',
@@ -319,7 +328,8 @@ export const en = {
     simulateSuccess: 'Simulate Success',
     simulateFailure: 'Simulate Failure',
     paymentDeclined: '⚠️ Payment Declined: Insufficient Funds',
-    payNote: 'Use the controls below to exercise the success and failure callbacks. No real payment is collected.',
+    payNote:
+      'Use the controls below to exercise the success and failure callbacks. No real payment is collected.',
     fail: 'Simulate failure',
     success: 'Simulate successful payment',
     certTitle: 'Certificate of Coverage',
@@ -338,7 +348,8 @@ export const en = {
     completed: 'completed',
     issued: 'Certificate issued',
     secure: 'Secure by design',
-    secureBody: 'OTP verification and payment are simulated. Do not use real personal or payment information.',
+    secureBody:
+      'OTP verification and payment are simulated. Do not use real personal or payment information.',
   },
   time: {
     justNow: 'Just now',
@@ -492,8 +503,10 @@ export const en = {
     admin: '🏛️ Fund Admin View',
     adminSubRole: 'Admin Role',
     adminRole: 'Admin Role',
-    doctorDesc: 'Registration, verification, specialty selection, fee payment, and digital certificate',
-    inspectorDesc: 'Mobile field verification, QR code lookup, license validity checks, and violation reporting',
+    doctorDesc:
+      'Registration, verification, specialty selection, fee payment, and digital certificate',
+    inspectorDesc:
+      'Mobile field verification, QR code lookup, license validity checks, and violation reporting',
     adminDesc: 'Executive analytics, claims ledger, bank bulk upload, and user administration',
   },
   doctorPortal: {
@@ -564,7 +577,8 @@ export const en = {
   register: {
     portalBadge: 'Doctor & Practitioner Registration Portal',
     title: 'Create Doctor Account',
-    subtitle: 'Join the legal & financial protection umbrella under Medical Liability Law No. (13) of 2025',
+    subtitle:
+      'Join the legal & financial protection umbrella under Medical Liability Law No. (13) of 2025',
     name: 'Full Name (as registered with syndicate or national ID)',
     namePlaceholder: 'Dr. Ahmed Mahmoud',
     email: 'Email Address',
@@ -580,7 +594,8 @@ export const en = {
     phoneInvalid: 'Please enter a valid Egyptian mobile number starting with 01',
     hasAccount: 'Already have an account?',
     loginNow: 'Log in now',
-    doctorNotice: 'Registration is open to human doctors, dental surgeons, pharmacists, nursing staff, and medical facilities.',
+    doctorNotice:
+      'Registration is open to human doctors, dental surgeons, pharmacists, nursing staff, and medical facilities.',
     successTitle: 'Account Created Successfully',
   },
 };

@@ -19,7 +19,9 @@ app.use((req, res, next) => {
   const start = Date.now();
   res.on('finish', () => {
     const duration = Date.now() - start;
-    console.log(`[HTTP] ${req.method} ${req.originalUrl || req.url} ${res.statusCode} - ${duration}ms`);
+    console.log(
+      `[HTTP] ${req.method} ${req.originalUrl || req.url} ${res.statusCode} - ${duration}ms`,
+    );
   });
   next();
 });
@@ -27,7 +29,11 @@ app.use((req, res, next) => {
 // Serverless DB connection verification middleware
 app.use(async (_req, _res, next) => {
   try {
-    if (process.env.TURSO_DATABASE_URL || process.env.NODE_ENV === 'production' || process.env.CONNECT_TURSO === 'true') {
+    if (
+      process.env.TURSO_DATABASE_URL ||
+      process.env.NODE_ENV === 'production' ||
+      process.env.CONNECT_TURSO === 'true'
+    ) {
       await initDatabase();
     }
     next();

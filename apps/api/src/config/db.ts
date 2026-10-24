@@ -62,7 +62,6 @@ db.execute = function (stmt: any, ...rest: any[]) {
   return originalExecute(stmt, ...rest);
 } as any;
 
-
 let dbInitialized = false;
 let initPromise: Promise<void> | null = null;
 
@@ -80,7 +79,7 @@ export async function initDatabase(): Promise<void> {
       createdAt TEXT,
       updatedAt TEXT
     );`,
-    `CREATE TABLE IF NOT EXISTS users (
+        `CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       email TEXT NOT NULL UNIQUE,
@@ -95,7 +94,7 @@ export async function initDatabase(): Promise<void> {
       createdAt TEXT,
       updatedAt TEXT
     );`,
-    `CREATE TABLE IF NOT EXISTS specialty_tiers (
+        `CREATE TABLE IF NOT EXISTS specialty_tiers (
       id TEXT PRIMARY KEY,
       code TEXT NOT NULL UNIQUE,
       name TEXT NOT NULL,
@@ -107,7 +106,7 @@ export async function initDatabase(): Promise<void> {
       createdAt TEXT,
       updatedAt TEXT
     );`,
-    `CREATE TABLE IF NOT EXISTS subscriber_profiles (
+        `CREATE TABLE IF NOT EXISTS subscriber_profiles (
       id TEXT PRIMARY KEY,
       userId TEXT NOT NULL UNIQUE,
       entityType TEXT NOT NULL,
@@ -120,7 +119,7 @@ export async function initDatabase(): Promise<void> {
       createdAt TEXT,
       updatedAt TEXT
     );`,
-    `CREATE TABLE IF NOT EXISTS subscriptions (
+        `CREATE TABLE IF NOT EXISTS subscriptions (
       id TEXT PRIMARY KEY,
       userId TEXT NOT NULL,
       tierId TEXT NOT NULL,
@@ -133,7 +132,7 @@ export async function initDatabase(): Promise<void> {
       createdAt TEXT,
       updatedAt TEXT
     );`,
-    `CREATE TABLE IF NOT EXISTS payments (
+        `CREATE TABLE IF NOT EXISTS payments (
       id TEXT PRIMARY KEY,
       userId TEXT NOT NULL,
       subscriptionId TEXT NOT NULL,
@@ -148,7 +147,7 @@ export async function initDatabase(): Promise<void> {
       createdAt TEXT,
       updatedAt TEXT
     );`,
-    `CREATE TABLE IF NOT EXISTS certificates (
+        `CREATE TABLE IF NOT EXISTS certificates (
       id TEXT PRIMARY KEY,
       userId TEXT NOT NULL,
       subscriptionId TEXT NOT NULL UNIQUE,
@@ -161,7 +160,7 @@ export async function initDatabase(): Promise<void> {
       createdAt TEXT,
       updatedAt TEXT
     );`,
-    `CREATE TABLE IF NOT EXISTS bulk_batches (
+        `CREATE TABLE IF NOT EXISTS bulk_batches (
       id TEXT PRIMARY KEY,
       createdBy TEXT NOT NULL,
       filename TEXT NOT NULL,
@@ -175,7 +174,7 @@ export async function initDatabase(): Promise<void> {
       createdAt TEXT,
       updatedAt TEXT
     );`,
-    `CREATE TABLE IF NOT EXISTS claims (
+        `CREATE TABLE IF NOT EXISTS claims (
       id TEXT PRIMARY KEY,
       claimNumber TEXT NOT NULL UNIQUE,
       subscriberId TEXT NOT NULL,
@@ -194,7 +193,7 @@ export async function initDatabase(): Promise<void> {
       createdAt TEXT,
       updatedAt TEXT
     );`,
-    `CREATE TABLE IF NOT EXISTS audit_logs (
+        `CREATE TABLE IF NOT EXISTS audit_logs (
       id TEXT PRIMARY KEY,
       userId TEXT,
       userLabel TEXT NOT NULL,
@@ -207,7 +206,7 @@ export async function initDatabase(): Promise<void> {
       metadata TEXT,
       createdAt TEXT
     );`,
-    `CREATE TABLE IF NOT EXISTS sms_outbox (
+        `CREATE TABLE IF NOT EXISTS sms_outbox (
       id TEXT PRIMARY KEY,
       userId TEXT,
       phone TEXT NOT NULL,
@@ -219,7 +218,7 @@ export async function initDatabase(): Promise<void> {
       createdAt TEXT,
       updatedAt TEXT
     );`,
-    `CREATE TABLE IF NOT EXISTS completion_tokens (
+        `CREATE TABLE IF NOT EXISTS completion_tokens (
       id TEXT PRIMARY KEY,
       userId TEXT NOT NULL,
       tokenHash TEXT NOT NULL UNIQUE,
@@ -227,7 +226,7 @@ export async function initDatabase(): Promise<void> {
       usedAt TEXT,
       createdAt TEXT,
       updatedAt TEXT
-    );`
+    );`,
       ]);
       dbInitialized = true;
     })().catch((err) => {

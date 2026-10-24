@@ -2,23 +2,37 @@ import { Router } from 'express';
 import multer from 'multer';
 import crypto from 'node:crypto';
 import { z } from 'zod';
-import { DEMO_TIERS, ROLE_PERMISSIONS, ROLES, registerSchema, professionalProfileSchema, tierSchema } from '@mlrf/shared';
+import { DEMO_TIERS, ROLE_PERMISSIONS, ROLES, registerSchema, professionalProfileSchema, tierSchema, } from '@mlrf/shared';
 import { asyncHandler, AppError, ok } from '../middleware/errors.js';
 import { requireAuth, requirePermission, signAccess } from '../middleware/auth.js';
 import { env } from '../config/env.js';
 import { hashPassword, verifyPassword } from '../services/password.js';
 import * as XLSX from 'xlsx';
-import { UserModel, SubscriberProfileModel, SpecialtyTierModel, SubscriptionModel, AuditLogModel, PaymentModel, CertificateModel, BulkBatchModel, SmsOutboxModel, CompletionTokenModel } from '../models/index.js';
+import { UserModel, SubscriberProfileModel, SpecialtyTierModel, SubscriptionModel, AuditLogModel, PaymentModel, CertificateModel, BulkBatchModel, SmsOutboxModel, CompletionTokenModel, } from '../models/index.js';
 import { settlePayment, isValidWebhookSignature } from '../services/paymentLifecycle.js';
-import { generateCompletionToken, hashCompletionToken, isWellFormedCompletionToken, completionTokenExpiry } from '../services/completionTokens.js';
-import { users, payments, claims, batches, audit, certificates, recordAudit, feeFor, resetDemo } from '../services/demoStore.js';
-import { LocalDiskStorageProvider, detectDocumentMime } from '../providers/storage.js';
+import { generateCompletionToken, hashCompletionToken, isWellFormedCompletionToken, completionTokenExpiry, } from '../services/completionTokens.js';
+import { users, payments, claims, batches, audit, certificates, recordAudit, feeFor, resetDemo, } from '../services/demoStore.js';
+import { LocalDiskStorageProvider, detectDocumentMime, } from '../providers/storage.js';
 import { generateCertificatePdf } from '../services/certificatePdf.js';
 export const apiRouter = Router();
 const loginSchema = z.object({ email: z.string().email(), password: z.string().min(1) });
-const publicUser = (u) => ({ id: String(u.id ?? u._id), name: u.name, email: u.email, phone: u.phone, role: u.role, status: u.status, governorate: u.governorate ?? 'Cairo', entityType: u.entityType ?? 'individual' });
-const dbReady = () => Boolean(process.env.TURSO_DATABASE_URL || process.env.NODE_ENV === 'production' || process.env.CONNECT_TURSO === 'true');
-const bankUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
+const publicUser = (u) => ({
+    id: String(u.id ?? u._id),
+    name: u.name,
+    email: u.email,
+    phone: u.phone,
+    role: u.role,
+    status: u.status,
+    governorate: u.governorate ?? 'Cairo',
+    entityType: u.entityType ?? 'individual',
+});
+const dbReady = () => Boolean(process.env.TURSO_DATABASE_URL ||
+    process.env.NODE_ENV === 'production' ||
+    process.env.CONNECT_TURSO === 'true');
+const bankUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+});
 function parseBankRows(buffer, _filename) {
     const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: false });
     const firstSheet = workbook.SheetNames[0];
@@ -28,211 +42,515 @@ function parseBankRows(buffer, _filename) {
     if (!sheet)
         throw new AppError(400, 'EMPTY_SHEET', 'The uploaded workbook has no worksheet');
     const raw = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false });
-    return raw.map(row => { const normalized = Object.fromEntries(Object.entries(row).map(([k, v]) => [k.trim().toLowerCase().replace(/[\s_-]+/g, ''), v])); return { name: String(normalized.name ?? normalized.fullname ?? '').trim(), phone: String(normalized.phone ?? normalized.mobile ?? '').trim(), nationalId: String(normalized.nationalid ?? normalized.nationalidnumber ?? '').trim(), specialty: String(normalized.specialty ?? normalized.tier ?? '').trim(), amount: Number(String(normalized.amount ?? normalized.fee ?? '').replace(/,/g, '')) }; });
+    return raw.map((row) => {
+        const normalized = Object.fromEntries(Object.entries(row).map(([k, v]) => [
+            k
+                .trim()
+                .toLowerCase()
+                .replace(/[\s_-]+/g, ''),
+            v,
+        ]));
+        return {
+            name: String(normalized.name ?? normalized.fullname ?? '').trim(),
+            phone: String(normalized.phone ?? normalized.mobile ?? '').trim(),
+            nationalId: String(normalized.nationalid ?? normalized.nationalidnumber ?? '').trim(),
+            specialty: String(normalized.specialty ?? normalized.tier ?? '').trim(),
+            amount: Number(String(normalized.amount ?? normalized.fee ?? '').replace(/,/g, '')),
+        };
+    });
 }
-async function persistAudit(userLabel, role, action, entityType, entityId) { if (!dbReady())
-    return; try {
-    await AuditLogModel.create({ userLabel, role, action, entityType, entityId: entityId ?? null, ipAddress: '127.0.0.1', userAgent: 'MLRF API' });
-}
-catch (e) {
-    console.warn('[Audit] Persist failed:', e);
-} }
-apiRouter.post('/auth/register', asyncHandler(async (req, res) => { const input = registerSchema.parse(req.body); if (dbReady()) {
-    try {
-        const email = input.email.toLowerCase();
-        if (await UserModel.exists({ $or: [{ email }, { phone: input.phone }] }))
-            throw new AppError(409, 'ACCOUNT_EXISTS', 'An account with this email or phone already exists');
-        const user = await UserModel.create({ name: input.name, email, phone: input.phone, passwordHash: await hashPassword(input.password), role: 'subscriber', status: 'pending_verification' });
-        await persistAudit(user.email, user.role, 'REGISTER', 'user', String(user._id));
-        ok(res, { user: publicUser(user), demoOtp: env.DEMO_MODE ? '123456' : undefined }, 201);
+async function persistAudit(userLabel, role, action, entityType, entityId) {
+    if (!dbReady())
         return;
+    try {
+        await AuditLogModel.create({
+            userLabel,
+            role,
+            action,
+            entityType,
+            entityId: entityId ?? null,
+            ipAddress: '127.0.0.1',
+            userAgent: 'MLRF API',
+        });
     }
     catch (e) {
-        if (e instanceof AppError)
-            throw e;
-        console.warn('[Register] DB error, using memory:', e);
+        console.warn('[Audit] Persist failed:', e);
     }
-} if (users.some(u => u.email === input.email))
-    throw new AppError(409, 'EMAIL_EXISTS', 'An account with this email already exists'); const user = { id: crypto.randomUUID(), name: input.name, email: input.email, phone: input.phone, role: 'subscriber', status: 'pending_verification', governorate: 'Cairo', entityType: 'individual' }; users.push(user); recordAudit(user.email, user.role, 'REGISTER', 'user'); ok(res, { user: publicUser(user), demoOtp: env.DEMO_MODE ? '123456' : undefined }, 201); }));
-apiRouter.post('/auth/verify-otp', asyncHandler(async (req, res) => { const { phone, code } = z.object({ phone: z.string(), code: z.string().length(6) }).parse(req.body); if (code !== '123456')
-    throw new AppError(400, 'OTP_INVALID', 'Incorrect verification code'); if (dbReady()) {
-    try {
-        const user = await UserModel.findOneAndUpdate({ phone }, { $set: { phoneVerifiedAt: new Date(), status: 'incomplete' } }, { new: true });
-        if (!user)
-            throw new AppError(404, 'USER_NOT_FOUND', 'No account matches this phone');
-        await persistAudit(user.email, user.role, 'OTP_VERIFIED', 'user', String(user._id));
-        ok(res, { verified: true, user: publicUser(user) });
-        return;
-    }
-    catch (e) {
-        if (e instanceof AppError)
-            throw e;
-        console.warn('[OTP] DB error, using memory:', e);
-    }
-} const user = users.find(u => u.phone === phone); if (!user)
-    throw new AppError(404, 'USER_NOT_FOUND', 'No account matches this phone'); user.status = 'incomplete'; recordAudit(user.email, user.role, 'OTP_VERIFIED', 'user'); ok(res, { verified: true, user: publicUser(user) }); }));
-apiRouter.post('/auth/resend-otp', (_req, res) => ok(res, { sent: true, expiresInSeconds: 300, demoOtp: env.DEMO_MODE ? '123456' : undefined }));
-apiRouter.post('/auth/login', asyncHandler(async (req, res) => { const { email, password } = loginSchema.parse(req.body); if (dbReady()) {
-    try {
-        const user = await UserModel.findOne({ email: email.toLowerCase() }).select('+passwordHash');
-        if (user) {
-            if (!(await verifyPassword(user.passwordHash, password)))
-                throw new AppError(401, 'INVALID_CREDENTIALS', 'Email or password is incorrect');
-            user.lastLoginAt = new Date();
-            await user.save();
-            const session = { id: String(user._id), name: user.name, role: user.role, email: user.email };
-            res.cookie('mlrf_refresh', 'demo-refresh-token', { httpOnly: true, sameSite: 'lax', secure: env.NODE_ENV === 'production', path: '/api/v1/auth', maxAge: 7 * 86400000 });
-            await persistAudit(user.email, user.role, 'LOGIN', 'session', String(user._id));
-            ok(res, { accessToken: signAccess(session), user: publicUser(user) });
+}
+apiRouter.post('/auth/register', asyncHandler(async (req, res) => {
+    const input = registerSchema.parse(req.body);
+    if (dbReady()) {
+        try {
+            const email = input.email.toLowerCase();
+            if (await UserModel.exists({ $or: [{ email }, { phone: input.phone }] }))
+                throw new AppError(409, 'ACCOUNT_EXISTS', 'An account with this email or phone already exists');
+            const user = await UserModel.create({
+                name: input.name,
+                email,
+                phone: input.phone,
+                passwordHash: await hashPassword(input.password),
+                role: 'subscriber',
+                status: 'pending_verification',
+            });
+            await persistAudit(user.email, user.role, 'REGISTER', 'user', String(user._id));
+            ok(res, { user: publicUser(user), demoOtp: env.DEMO_MODE ? '123456' : undefined }, 201);
             return;
         }
+        catch (e) {
+            if (e instanceof AppError)
+                throw e;
+            console.warn('[Register] DB error, using memory:', e);
+        }
     }
-    catch (e) {
-        if (e instanceof AppError)
-            throw e;
-        console.warn('[Login] DB lookup failed, trying in-memory store:', e);
-    }
-} const user = users.find(u => u.email === email); if (!user || (!env.DEMO_MODE && password.length < 8))
-    throw new AppError(401, 'INVALID_CREDENTIALS', 'Email or password is incorrect'); const session = { id: user.id, name: user.name, role: user.role, email: user.email }; res.cookie('mlrf_refresh', 'demo-refresh-token', { httpOnly: true, sameSite: 'lax', secure: env.NODE_ENV === 'production', path: '/api/v1/auth', maxAge: 7 * 86400000 }); recordAudit(user.email, user.role, 'LOGIN', 'session'); ok(res, { accessToken: signAccess(session), user: publicUser(user) }); }));
-apiRouter.post('/auth/refresh', (_req, _res) => { throw new AppError(401, 'REFRESH_UNAVAILABLE', 'Demo refresh session expired; sign in again'); });
-apiRouter.post('/auth/logout', (req, res) => { res.clearCookie('mlrf_refresh', { path: '/api/v1/auth' }); ok(res, { loggedOut: true }); });
-apiRouter.get('/auth/me', requireAuth, (req, res) => ok(res, { user: req.user }));
-apiRouter.post('/auth/demo/switch-role', asyncHandler(async (req, res) => { if (!env.DEMO_MODE)
-    throw new AppError(404, 'NOT_FOUND', 'Route not found'); const role = z.enum(ROLES).parse(req.body.role); if (dbReady()) {
-    try {
-        const user = await UserModel.findOne({ role }).sort({ createdAt: 1 });
-        if (user) {
-            await persistAudit(user.email, user.role, 'DEMO_ROLE_SWITCH', 'session', String(user._id));
-            ok(res, { accessToken: signAccess({ id: String(user._id), name: user.name, role: user.role, email: user.email }), user: publicUser(user) });
+    if (users.some((u) => u.email === input.email))
+        throw new AppError(409, 'EMAIL_EXISTS', 'An account with this email already exists');
+    const user = {
+        id: crypto.randomUUID(),
+        name: input.name,
+        email: input.email,
+        phone: input.phone,
+        role: 'subscriber',
+        status: 'pending_verification',
+        governorate: 'Cairo',
+        entityType: 'individual',
+    };
+    users.push(user);
+    recordAudit(user.email, user.role, 'REGISTER', 'user');
+    ok(res, { user: publicUser(user), demoOtp: env.DEMO_MODE ? '123456' : undefined }, 201);
+}));
+apiRouter.post('/auth/verify-otp', asyncHandler(async (req, res) => {
+    const { phone, code } = z
+        .object({ phone: z.string(), code: z.string().length(6) })
+        .parse(req.body);
+    if (code !== '123456')
+        throw new AppError(400, 'OTP_INVALID', 'Incorrect verification code');
+    if (dbReady()) {
+        try {
+            const user = await UserModel.findOneAndUpdate({ phone }, { $set: { phoneVerifiedAt: new Date(), status: 'incomplete' } }, { new: true });
+            if (!user)
+                throw new AppError(404, 'USER_NOT_FOUND', 'No account matches this phone');
+            await persistAudit(user.email, user.role, 'OTP_VERIFIED', 'user', String(user._id));
+            ok(res, { verified: true, user: publicUser(user) });
             return;
         }
-    }
-    catch (e) {
-        console.warn('[Demo Switch-Role] DB query failed, falling back to in-memory store:', e);
-    }
-} const user = users.find(u => u.role === role); if (!user)
-    throw new AppError(404, 'ROLE_USER_NOT_FOUND', 'No demo user for this role'); recordAudit(user.email, user.role, 'DEMO_ROLE_SWITCH', 'session'); ok(res, { accessToken: signAccess({ id: user.id, name: user.name, role: user.role, email: user.email }), user: publicUser(user) }); }));
-apiRouter.get('/specialty-tiers', (_req, res) => ok(res, DEMO_TIERS));
-apiRouter.get('/subscriber/dashboard', requireAuth, asyncHandler(async (req, res) => { if (dbReady()) {
-    let user = await UserModel.findById(req.user?.id);
-    if (!user && req.user?.email) {
-        user = await UserModel.findOne({ email: req.user.email });
-    }
-    if (!user && (req.user?.id === 'subscriber-1' || req.user?.email === 'subscriber@mlrf.demo')) {
-        user = await UserModel.findOne({ email: 'subscriber@mlrf.demo' });
-    }
-    if (!user) {
-        const fallbackId = req.user?.id || 'subscriber-1';
-        user = { _id: fallbackId, id: fallbackId, name: req.user?.name || 'د. أحمد محمد محمود', email: req.user?.email || 'subscriber@mlrf.demo', phone: '01012345678', role: 'subscriber', status: 'incomplete', toObject: () => ({ id: fallbackId, name: req.user?.name || 'د. أحمد محمد محمود', email: req.user?.email || 'subscriber@mlrf.demo', phone: '01012345678', role: 'subscriber', status: 'incomplete' }) };
-    }
-    const profile = await SubscriberProfileModel.findOne({ userId: user._id });
-    const subscription = await SubscriptionModel.findOne({ userId: user._id }).sort({ createdAt: -1 }).populate('tierId');
-    const progress = user.status === 'active' ? 100 : subscription ? 75 : profile ? 50 : 25;
-    ok(res, { progress, nextStep: progress < 50 ? 'professional-info' : progress < 75 ? 'specialty-selection' : progress < 100 ? 'payment' : 'certificate', status: user.status, user: publicUser({ ...user.toObject(), governorate: profile?.governorate, entityType: profile?.entityType }), subscription });
-    return;
-} let user = users.find(u => u.id === req.user?.id || u.email === req.user?.email || u.email === 'subscriber@mlrf.demo'); if (!user) {
-    user = { id: req.user?.id || 'subscriber-1', name: req.user?.name || 'د. أحمد محمد محمود', email: req.user?.email || 'subscriber@mlrf.demo', phone: '01012345678', role: 'subscriber', status: 'incomplete', governorate: 'Cairo', entityType: 'individual', tierId: 'human_doctor_gp' };
-    users.push(user);
-} const progress = user?.status === 'active' ? 100 : user?.tierId ? 75 : user?.governorate !== 'Cairo' ? 50 : 25; ok(res, { progress, nextStep: progress < 50 ? 'professional-info' : progress < 75 ? 'specialty-selection' : progress < 100 ? 'payment' : 'certificate', status: user?.status ?? 'incomplete', user: user ? publicUser(user) : null, certificate: certificates.find((c) => c.userId === user?.id) ?? null }); }));
-apiRouter.put('/subscriber/profile', requireAuth, asyncHandler(async (req, res) => { const input = professionalProfileSchema.parse(req.body); if (dbReady()) {
-    let user = await UserModel.findById(req.user?.id);
-    if (!user && req.user?.email) {
-        user = await UserModel.findOne({ email: req.user.email });
-    }
-    if (!user && (req.user?.id === 'subscriber-1' || req.user?.email === 'subscriber@mlrf.demo' || input.nationalId === '29901011234567')) {
-        user = await UserModel.findOne({ email: 'subscriber@mlrf.demo' });
-    }
-    if (!user) {
-        const newUserId = req.user?.id || crypto.randomUUID();
-        try {
-            user = await UserModel.create({ id: newUserId, name: req.user?.name || 'د. أحمد محمد محمود', email: req.user?.email || 'subscriber@mlrf.demo', phone: '01012345678', passwordHash: '$argon2id$v=19$m=65536,t=3,p=1$1Eh/YDKkcGKf0kO4ujYUVw$7SZRaU+ML9SO13+68KZ/PqkJm/eEU80dU8Hw19sJNco', role: 'subscriber', status: 'incomplete' });
-        }
-        catch (_e) {
-            user = await UserModel.findOne({ email: 'subscriber@mlrf.demo' }) || { _id: newUserId, id: newUserId, name: req.user?.name || 'د. أحمد محمد محمود', email: req.user?.email || 'subscriber@mlrf.demo', phone: '01012345678', role: 'subscriber', status: 'incomplete', toObject: () => ({ id: newUserId, name: req.user?.name || 'د. أحمد محمد محمود', email: req.user?.email || 'subscriber@mlrf.demo', role: 'subscriber', status: 'incomplete' }), save: async () => { } };
+        catch (e) {
+            if (e instanceof AppError)
+                throw e;
+            console.warn('[OTP] DB error, using memory:', e);
         }
     }
-    if (input.entityType === 'individual' && !input.nationalId && !input.syndicateId)
-        input.nationalId = '29901011234567';
-    let profile;
-    try {
-        if (input.nationalId) {
-            profile = await SubscriberProfileModel.findOne({ nationalId: input.nationalId });
-        }
-        if (!profile) {
-            profile = await SubscriberProfileModel.findOne({ userId: user._id });
-        }
-        if (profile) {
-            profile.userId = user._id;
-            profile.entityType = input.entityType;
-            if (input.nationalId)
-                profile.nationalId = input.nationalId;
-            if (input.syndicateId)
-                profile.syndicateId = input.syndicateId;
-            if (input.facilityLicense)
-                profile.facilityLicense = input.facilityLicense;
-            profile.governorate = input.governorate;
-            profile.completionPercent = 50;
-            await profile.save();
-        }
-        else {
-            profile = await SubscriberProfileModel.findOneAndUpdate({ userId: user._id }, { $set: { userId: user._id, entityType: input.entityType, nationalId: input.nationalId, syndicateId: input.syndicateId, facilityLicense: input.facilityLicense, governorate: input.governorate, completionPercent: 50 } }, { upsert: true, new: true, runValidators: true });
-        }
-        user.status = 'incomplete';
-        if (typeof user.save === 'function')
-            await user.save();
-    }
-    catch (_err) {
-        profile = { governorate: input.governorate, entityType: input.entityType, _id: user._id };
-    }
-    if (user.email) {
-        try {
-            await persistAudit(user.email, user.role, 'PROFILE_UPDATED', 'subscriber-profile', String(profile?._id || user._id));
-        }
-        catch (_a) { }
-    }
-    ok(res, { user: publicUser({ ...user.toObject(), governorate: profile?.governorate || input.governorate, entityType: profile?.entityType || input.entityType }), progress: 50 });
-    return;
-} let user = users.find(u => u.id === req.user?.id || u.email === req.user?.email || u.email === 'subscriber@mlrf.demo'); if (!user) {
-    user = { id: req.user?.id || 'subscriber-1', name: req.user?.name || 'د. أحمد محمد محمود', email: req.user?.email || 'subscriber@mlrf.demo', phone: '01012345678', role: 'subscriber', status: 'incomplete', governorate: input.governorate, entityType: input.entityType, tierId: 'human_doctor_gp' };
-    users.push(user);
-} Object.assign(user, { governorate: input.governorate, entityType: input.entityType, status: 'incomplete' }); recordAudit(user.email, user.role, 'PROFILE_UPDATED', 'subscriber-profile'); ok(res, { user: publicUser(user), progress: 50 }); }));
-apiRouter.post('/subscriber/select-tier', requireAuth, asyncHandler(async (req, res) => { const { tierId, entityType } = tierSchema.parse(req.body); if (dbReady()) {
-    let user = await UserModel.findById(req.user?.id);
-    if (!user && req.user?.email) {
-        user = await UserModel.findOne({ email: req.user.email });
-    }
-    if (!user && (req.user?.id === 'subscriber-1' || req.user?.email === 'subscriber@mlrf.demo')) {
-        user = await UserModel.findOne({ email: 'subscriber@mlrf.demo' });
-    }
-    const tierRecord = await SpecialtyTierModel.findOne({ code: tierId, entityType, active: true });
+    const user = users.find((u) => u.phone === phone);
     if (!user)
-        throw new AppError(404, 'USER_NOT_FOUND', 'User not found');
-    if (!tierRecord)
-        throw new AppError(400, 'TIER_NOT_FOUND', 'Specialty tier does not match entity type');
-    let profile = await SubscriberProfileModel.findOne({ userId: user._id });
-    if (!profile) {
+        throw new AppError(404, 'USER_NOT_FOUND', 'No account matches this phone');
+    user.status = 'incomplete';
+    recordAudit(user.email, user.role, 'OTP_VERIFIED', 'user');
+    ok(res, { verified: true, user: publicUser(user) });
+}));
+apiRouter.post('/auth/resend-otp', (_req, res) => ok(res, { sent: true, expiresInSeconds: 300, demoOtp: env.DEMO_MODE ? '123456' : undefined }));
+apiRouter.post('/auth/login', asyncHandler(async (req, res) => {
+    const { email, password } = loginSchema.parse(req.body);
+    if (dbReady()) {
         try {
-            profile = await SubscriberProfileModel.create({ userId: user._id, entityType, nationalId: '29901011234567', governorate: 'Cairo', completionPercent: 50 });
+            const user = await UserModel.findOne({ email: email.toLowerCase() }).select('+passwordHash');
+            if (user) {
+                if (!(await verifyPassword(user.passwordHash, password)))
+                    throw new AppError(401, 'INVALID_CREDENTIALS', 'Email or password is incorrect');
+                user.lastLoginAt = new Date();
+                await user.save();
+                const session = {
+                    id: String(user._id),
+                    name: user.name,
+                    role: user.role,
+                    email: user.email,
+                };
+                res.cookie('mlrf_refresh', 'demo-refresh-token', {
+                    httpOnly: true,
+                    sameSite: 'lax',
+                    secure: env.NODE_ENV === 'production',
+                    path: '/api/v1/auth',
+                    maxAge: 7 * 86400000,
+                });
+                await persistAudit(user.email, user.role, 'LOGIN', 'session', String(user._id));
+                ok(res, { accessToken: signAccess(session), user: publicUser(user) });
+                return;
+            }
         }
-        catch (_e) {
-            profile = await SubscriberProfileModel.findOne({ nationalId: '29901011234567' }) || { userId: user._id, entityType, completionPercent: 50, save: async () => { } };
+        catch (e) {
+            if (e instanceof AppError)
+                throw e;
+            console.warn('[Login] DB lookup failed, trying in-memory store:', e);
         }
     }
-    const fiscalYear = new Date().getFullYear();
-    const subscription = await SubscriptionModel.findOneAndUpdate({ userId: user._id, fiscalYear }, { $set: { userId: user._id, tierId: tierRecord._id, fiscalYear, amountDue: tierRecord.fee, status: 'pending_payment', renewalStatus: 'new' } }, { upsert: true, new: true, runValidators: true });
-    profile.entityType = entityType;
-    profile.completionPercent = 75;
-    if (typeof profile.save === 'function')
-        await profile.save();
-    await persistAudit(user.email, user.role, 'TIER_SELECTED', 'subscription', String(subscription._id));
-    ok(res, { tier: { id: tierRecord.code, name: tierRecord.name, nameAr: tierRecord.nameAr, entityType: tierRecord.entityType, fee: tierRecord.fee, risk: tierRecord.risk }, amount: tierRecord.fee, currency: 'EGP', progress: 75, subscriptionId: String(subscription._id) });
-    return;
-} const tier = DEMO_TIERS.find(t => t.id === tierId && t.entityType === entityType); if (!tier)
-    throw new AppError(400, 'TIER_NOT_FOUND', 'Specialty tier does not match entity type'); let user = users.find(u => u.id === req.user?.id || u.email === req.user?.email || u.email === 'subscriber@mlrf.demo'); if (!user) {
-    user = { id: req.user?.id || 'subscriber-1', name: 'د. أحمد محمد محمود', email: 'subscriber@mlrf.demo', phone: '01012345678', role: 'subscriber', status: 'incomplete', governorate: 'Cairo', entityType: 'individual', tierId: 'human_doctor_gp' };
-    users.push(user);
-} user.tierId = tierId; user.fee = feeFor(tierId); user.entityType = entityType; recordAudit(user.email, user.role, 'TIER_SELECTED', tierId); ok(res, { tier, amount: feeFor(tierId), currency: 'EGP', progress: 75 }); }));
-const documentUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 1 } }).single('file');
+    const user = users.find((u) => u.email === email);
+    if (!user || (!env.DEMO_MODE && password.length < 8))
+        throw new AppError(401, 'INVALID_CREDENTIALS', 'Email or password is incorrect');
+    const session = { id: user.id, name: user.name, role: user.role, email: user.email };
+    res.cookie('mlrf_refresh', 'demo-refresh-token', {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: env.NODE_ENV === 'production',
+        path: '/api/v1/auth',
+        maxAge: 7 * 86400000,
+    });
+    recordAudit(user.email, user.role, 'LOGIN', 'session');
+    ok(res, { accessToken: signAccess(session), user: publicUser(user) });
+}));
+apiRouter.post('/auth/refresh', (_req, _res) => {
+    throw new AppError(401, 'REFRESH_UNAVAILABLE', 'Demo refresh session expired; sign in again');
+});
+apiRouter.post('/auth/logout', (req, res) => {
+    res.clearCookie('mlrf_refresh', { path: '/api/v1/auth' });
+    ok(res, { loggedOut: true });
+});
+apiRouter.get('/auth/me', requireAuth, (req, res) => ok(res, { user: req.user }));
+apiRouter.post('/auth/demo/switch-role', asyncHandler(async (req, res) => {
+    if (!env.DEMO_MODE)
+        throw new AppError(404, 'NOT_FOUND', 'Route not found');
+    const role = z.enum(ROLES).parse(req.body.role);
+    if (dbReady()) {
+        try {
+            const user = await UserModel.findOne({ role }).sort({ createdAt: 1 });
+            if (user) {
+                await persistAudit(user.email, user.role, 'DEMO_ROLE_SWITCH', 'session', String(user._id));
+                ok(res, {
+                    accessToken: signAccess({
+                        id: String(user._id),
+                        name: user.name,
+                        role: user.role,
+                        email: user.email,
+                    }),
+                    user: publicUser(user),
+                });
+                return;
+            }
+        }
+        catch (e) {
+            console.warn('[Demo Switch-Role] DB query failed, falling back to in-memory store:', e);
+        }
+    }
+    const user = users.find((u) => u.role === role);
+    if (!user)
+        throw new AppError(404, 'ROLE_USER_NOT_FOUND', 'No demo user for this role');
+    recordAudit(user.email, user.role, 'DEMO_ROLE_SWITCH', 'session');
+    ok(res, {
+        accessToken: signAccess({ id: user.id, name: user.name, role: user.role, email: user.email }),
+        user: publicUser(user),
+    });
+}));
+apiRouter.get('/specialty-tiers', (_req, res) => ok(res, DEMO_TIERS));
+apiRouter.get('/subscriber/dashboard', requireAuth, asyncHandler(async (req, res) => {
+    if (dbReady()) {
+        let user = await UserModel.findById(req.user?.id);
+        if (!user && req.user?.email) {
+            user = await UserModel.findOne({ email: req.user.email });
+        }
+        if (!user &&
+            (req.user?.id === 'subscriber-1' || req.user?.email === 'subscriber@mlrf.demo')) {
+            user = await UserModel.findOne({ email: 'subscriber@mlrf.demo' });
+        }
+        if (!user) {
+            const fallbackId = req.user?.id || 'subscriber-1';
+            user = {
+                _id: fallbackId,
+                id: fallbackId,
+                name: req.user?.name || 'د. أحمد محمد محمود',
+                email: req.user?.email || 'subscriber@mlrf.demo',
+                phone: '01012345678',
+                role: 'subscriber',
+                status: 'incomplete',
+                toObject: () => ({
+                    id: fallbackId,
+                    name: req.user?.name || 'د. أحمد محمد محمود',
+                    email: req.user?.email || 'subscriber@mlrf.demo',
+                    phone: '01012345678',
+                    role: 'subscriber',
+                    status: 'incomplete',
+                }),
+            };
+        }
+        const profile = await SubscriberProfileModel.findOne({ userId: user._id });
+        const subscription = await SubscriptionModel.findOne({ userId: user._id })
+            .sort({ createdAt: -1 })
+            .populate('tierId');
+        const progress = user.status === 'active' ? 100 : subscription ? 75 : profile ? 50 : 25;
+        ok(res, {
+            progress,
+            nextStep: progress < 50
+                ? 'professional-info'
+                : progress < 75
+                    ? 'specialty-selection'
+                    : progress < 100
+                        ? 'payment'
+                        : 'certificate',
+            status: user.status,
+            user: publicUser({
+                ...user.toObject(),
+                governorate: profile?.governorate,
+                entityType: profile?.entityType,
+            }),
+            subscription,
+        });
+        return;
+    }
+    let user = users.find((u) => u.id === req.user?.id || u.email === req.user?.email || u.email === 'subscriber@mlrf.demo');
+    if (!user) {
+        user = {
+            id: req.user?.id || 'subscriber-1',
+            name: req.user?.name || 'د. أحمد محمد محمود',
+            email: req.user?.email || 'subscriber@mlrf.demo',
+            phone: '01012345678',
+            role: 'subscriber',
+            status: 'incomplete',
+            governorate: 'Cairo',
+            entityType: 'individual',
+            tierId: 'human_doctor_gp',
+        };
+        users.push(user);
+    }
+    const progress = user?.status === 'active' ? 100 : user?.tierId ? 75 : user?.governorate !== 'Cairo' ? 50 : 25;
+    ok(res, {
+        progress,
+        nextStep: progress < 50
+            ? 'professional-info'
+            : progress < 75
+                ? 'specialty-selection'
+                : progress < 100
+                    ? 'payment'
+                    : 'certificate',
+        status: user?.status ?? 'incomplete',
+        user: user ? publicUser(user) : null,
+        certificate: certificates.find((c) => c.userId === user?.id) ?? null,
+    });
+}));
+apiRouter.put('/subscriber/profile', requireAuth, asyncHandler(async (req, res) => {
+    const input = professionalProfileSchema.parse(req.body);
+    if (dbReady()) {
+        let user = await UserModel.findById(req.user?.id);
+        if (!user && req.user?.email) {
+            user = await UserModel.findOne({ email: req.user.email });
+        }
+        if (!user &&
+            (req.user?.id === 'subscriber-1' ||
+                req.user?.email === 'subscriber@mlrf.demo' ||
+                input.nationalId === '29901011234567')) {
+            user = await UserModel.findOne({ email: 'subscriber@mlrf.demo' });
+        }
+        if (!user) {
+            const newUserId = req.user?.id || crypto.randomUUID();
+            try {
+                user = await UserModel.create({
+                    id: newUserId,
+                    name: req.user?.name || 'د. أحمد محمد محمود',
+                    email: req.user?.email || 'subscriber@mlrf.demo',
+                    phone: '01012345678',
+                    passwordHash: '$argon2id$v=19$m=65536,t=3,p=1$1Eh/YDKkcGKf0kO4ujYUVw$7SZRaU+ML9SO13+68KZ/PqkJm/eEU80dU8Hw19sJNco',
+                    role: 'subscriber',
+                    status: 'incomplete',
+                });
+            }
+            catch {
+                user =
+                    (await UserModel.findOne({ email: 'subscriber@mlrf.demo' })) ||
+                        {
+                            _id: newUserId,
+                            id: newUserId,
+                            name: req.user?.name || 'د. أحمد محمد محمود',
+                            email: req.user?.email || 'subscriber@mlrf.demo',
+                            phone: '01012345678',
+                            role: 'subscriber',
+                            status: 'incomplete',
+                            toObject: () => ({
+                                id: newUserId,
+                                name: req.user?.name || 'د. أحمد محمد محمود',
+                                email: req.user?.email || 'subscriber@mlrf.demo',
+                                role: 'subscriber',
+                                status: 'incomplete',
+                            }),
+                            save: async () => { },
+                        };
+            }
+        }
+        if (input.entityType === 'individual' && !input.nationalId && !input.syndicateId)
+            input.nationalId = '29901011234567';
+        let profile;
+        try {
+            if (input.nationalId) {
+                profile = await SubscriberProfileModel.findOne({ nationalId: input.nationalId });
+            }
+            if (!profile) {
+                profile = await SubscriberProfileModel.findOne({ userId: user._id });
+            }
+            if (profile) {
+                profile.userId = user._id;
+                profile.entityType = input.entityType;
+                if (input.nationalId)
+                    profile.nationalId = input.nationalId;
+                if (input.syndicateId)
+                    profile.syndicateId = input.syndicateId;
+                if (input.facilityLicense)
+                    profile.facilityLicense = input.facilityLicense;
+                profile.governorate = input.governorate;
+                profile.completionPercent = 50;
+                await profile.save();
+            }
+            else {
+                profile = await SubscriberProfileModel.findOneAndUpdate({ userId: user._id }, {
+                    $set: {
+                        userId: user._id,
+                        entityType: input.entityType,
+                        nationalId: input.nationalId,
+                        syndicateId: input.syndicateId,
+                        facilityLicense: input.facilityLicense,
+                        governorate: input.governorate,
+                        completionPercent: 50,
+                    },
+                }, { upsert: true, new: true, runValidators: true });
+            }
+            user.status = 'incomplete';
+            if (typeof user.save === 'function')
+                await user.save();
+        }
+        catch {
+            profile = { governorate: input.governorate, entityType: input.entityType, _id: user._id };
+        }
+        if (user.email) {
+            try {
+                await persistAudit(user.email, user.role, 'PROFILE_UPDATED', 'subscriber-profile', String(profile?._id || user._id));
+            }
+            catch {
+                /* ignore audit error */
+            }
+        }
+        ok(res, {
+            user: publicUser({
+                ...user.toObject(),
+                governorate: profile?.governorate || input.governorate,
+                entityType: profile?.entityType || input.entityType,
+            }),
+            progress: 50,
+        });
+        return;
+    }
+    let user = users.find((u) => u.id === req.user?.id || u.email === req.user?.email || u.email === 'subscriber@mlrf.demo');
+    if (!user) {
+        user = {
+            id: req.user?.id || 'subscriber-1',
+            name: req.user?.name || 'د. أحمد محمد محمود',
+            email: req.user?.email || 'subscriber@mlrf.demo',
+            phone: '01012345678',
+            role: 'subscriber',
+            status: 'incomplete',
+            governorate: input.governorate,
+            entityType: input.entityType,
+            tierId: 'human_doctor_gp',
+        };
+        users.push(user);
+    }
+    Object.assign(user, {
+        governorate: input.governorate,
+        entityType: input.entityType,
+        status: 'incomplete',
+    });
+    recordAudit(user.email, user.role, 'PROFILE_UPDATED', 'subscriber-profile');
+    ok(res, { user: publicUser(user), progress: 50 });
+}));
+apiRouter.post('/subscriber/select-tier', requireAuth, asyncHandler(async (req, res) => {
+    const { tierId, entityType } = tierSchema.parse(req.body);
+    if (dbReady()) {
+        let user = await UserModel.findById(req.user?.id);
+        if (!user && req.user?.email) {
+            user = await UserModel.findOne({ email: req.user.email });
+        }
+        if (!user &&
+            (req.user?.id === 'subscriber-1' || req.user?.email === 'subscriber@mlrf.demo')) {
+            user = await UserModel.findOne({ email: 'subscriber@mlrf.demo' });
+        }
+        const tierRecord = await SpecialtyTierModel.findOne({
+            code: tierId,
+            entityType,
+            active: true,
+        });
+        if (!user)
+            throw new AppError(404, 'USER_NOT_FOUND', 'User not found');
+        if (!tierRecord)
+            throw new AppError(400, 'TIER_NOT_FOUND', 'Specialty tier does not match entity type');
+        let profile = await SubscriberProfileModel.findOne({ userId: user._id });
+        if (!profile) {
+            try {
+                profile = await SubscriberProfileModel.create({
+                    userId: user._id,
+                    entityType,
+                    nationalId: '29901011234567',
+                    governorate: 'Cairo',
+                    completionPercent: 50,
+                });
+            }
+            catch {
+                profile =
+                    (await SubscriberProfileModel.findOne({ nationalId: '29901011234567' })) ||
+                        { userId: user._id, entityType, completionPercent: 50, save: async () => { } };
+            }
+        }
+        const fiscalYear = new Date().getFullYear();
+        const subscription = await SubscriptionModel.findOneAndUpdate({ userId: user._id, fiscalYear }, {
+            $set: {
+                userId: user._id,
+                tierId: tierRecord._id,
+                fiscalYear,
+                amountDue: tierRecord.fee,
+                status: 'pending_payment',
+                renewalStatus: 'new',
+            },
+        }, { upsert: true, new: true, runValidators: true });
+        profile.entityType = entityType;
+        profile.completionPercent = 75;
+        if (typeof profile.save === 'function')
+            await profile.save();
+        await persistAudit(user.email, user.role, 'TIER_SELECTED', 'subscription', String(subscription._id));
+        ok(res, {
+            tier: {
+                id: tierRecord.code,
+                name: tierRecord.name,
+                nameAr: tierRecord.nameAr,
+                entityType: tierRecord.entityType,
+                fee: tierRecord.fee,
+                risk: tierRecord.risk,
+            },
+            amount: tierRecord.fee,
+            currency: 'EGP',
+            progress: 75,
+            subscriptionId: String(subscription._id),
+        });
+        return;
+    }
+    const tier = DEMO_TIERS.find((t) => t.id === tierId && t.entityType === entityType);
+    if (!tier)
+        throw new AppError(400, 'TIER_NOT_FOUND', 'Specialty tier does not match entity type');
+    let user = users.find((u) => u.id === req.user?.id || u.email === req.user?.email || u.email === 'subscriber@mlrf.demo');
+    if (!user) {
+        user = {
+            id: req.user?.id || 'subscriber-1',
+            name: 'د. أحمد محمد محمود',
+            email: 'subscriber@mlrf.demo',
+            phone: '01012345678',
+            role: 'subscriber',
+            status: 'incomplete',
+            governorate: 'Cairo',
+            entityType: 'individual',
+            tierId: 'human_doctor_gp',
+        };
+        users.push(user);
+    }
+    user.tierId = tierId;
+    user.fee = feeFor(tierId);
+    user.entityType = entityType;
+    recordAudit(user.email, user.role, 'TIER_SELECTED', tierId);
+    ok(res, { tier, amount: feeFor(tierId), currency: 'EGP', progress: 75 });
+}));
+const documentUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+}).single('file');
 const documentStorage = new LocalDiskStorageProvider();
 apiRouter.post('/subscriber/documents', requireAuth, documentUpload, asyncHandler(async (req, res) => {
     const file = req.file;
@@ -243,35 +561,71 @@ apiRouter.post('/subscriber/documents', requireAuth, documentUpload, asyncHandle
         throw new AppError(400, 'FILE_TYPE_INVALID', 'Only genuine PDF, JPG and PNG documents are accepted');
     let stored;
     try {
-        stored = await documentStorage.put({ buffer: file.buffer, mimeType: detected, originalName: file.originalname });
+        stored = await documentStorage.put({
+            buffer: file.buffer,
+            mimeType: detected,
+            originalName: file.originalname,
+        });
     }
     catch (error) {
         throw new AppError(400, 'FILE_REJECTED', error instanceof Error ? error.message : 'File rejected');
     }
-    const user = users.find(u => u.id === req.user?.id);
+    const user = users.find((u) => u.id === req.user?.id);
     if (!user)
         throw new AppError(404, 'USER_NOT_FOUND', 'User not found');
     recordAudit(user.email, user.role, 'DOCUMENT_UPLOADED', stored.key);
-    ok(res, { uploaded: true, document: stored, storage: 'local-disk', note: 'Demo storage; configure private object storage and malware scanning before production' }, 201);
+    ok(res, {
+        uploaded: true,
+        document: stored,
+        storage: 'local-disk',
+        note: 'Demo storage; configure private object storage and malware scanning before production',
+    }, 201);
 }));
 apiRouter.post('/payments/initiate', requireAuth, asyncHandler(async (req, res) => {
     if (dbReady()) {
         const user = await UserModel.findById(req.user?.id);
         if (!user)
             throw new AppError(404, 'USER_NOT_FOUND', 'User not found');
-        const subscription = await SubscriptionModel.findOne({ userId: user._id, status: 'pending_payment' }).sort({ createdAt: -1 });
+        const subscription = await SubscriptionModel.findOne({
+            userId: user._id,
+            status: 'pending_payment',
+        }).sort({ createdAt: -1 });
         if (!subscription)
             throw new AppError(400, 'TIER_REQUIRED', 'Select a specialty before paying');
         const gatewayReference = crypto.randomUUID();
-        const payment = await PaymentModel.create({ userId: user._id, subscriptionId: subscription._id, amount: subscription.amountDue, currency: 'EGP', channel: 'gateway', status: 'pending', gatewayReference });
+        const payment = await PaymentModel.create({
+            userId: user._id,
+            subscriptionId: subscription._id,
+            amount: subscription.amountDue,
+            currency: 'EGP',
+            channel: 'gateway',
+            status: 'pending',
+            gatewayReference,
+        });
         await persistAudit(user.email, user.role, 'PAYMENT_INITIATED', 'payment', String(payment._id));
-        ok(res, { payment: { id: String(payment._id), amount: payment.amount, currency: payment.currency, status: payment.status, channel: payment.channel }, redirectUrl: `${env.PUBLIC_WEB_URL}/mock-bank/${payment._id}` }, 201);
+        ok(res, {
+            payment: {
+                id: String(payment._id),
+                amount: payment.amount,
+                currency: payment.currency,
+                status: payment.status,
+                channel: payment.channel,
+            },
+            redirectUrl: `${env.PUBLIC_WEB_URL}/mock-bank/${payment._id}`,
+        }, 201);
         return;
     }
-    const user = users.find(u => u.id === req.user?.id);
+    const user = users.find((u) => u.id === req.user?.id);
     if (!user?.tierId)
         throw new AppError(400, 'TIER_REQUIRED', 'Select a specialty before paying');
-    const payment = { id: crypto.randomUUID(), userId: user.id, amount: feeFor(user.tierId), status: 'pending', channel: 'gateway', createdAt: new Date().toISOString() };
+    const payment = {
+        id: crypto.randomUUID(),
+        userId: user.id,
+        amount: feeFor(user.tierId),
+        status: 'pending',
+        channel: 'gateway',
+        createdAt: new Date().toISOString(),
+    };
     payments.unshift(payment);
     recordAudit(user.email, user.role, 'PAYMENT_INITIATED', payment.id);
     ok(res, { payment, redirectUrl: `${env.PUBLIC_WEB_URL}/mock-bank/${payment.id}` }, 201);
@@ -282,44 +636,87 @@ apiRouter.post('/payments/:id/simulate', requireAuth, asyncHandler(async (req, r
         const payment = await PaymentModel.findById(req.params.id);
         if (!payment)
             throw new AppError(404, 'PAYMENT_NOT_FOUND', 'Payment not found');
-        if (String(payment.userId) !== req.user?.id && !ROLE_PERMISSIONS[req.user.role]?.includes('payments:read'))
+        if (String(payment.userId) !== req.user?.id &&
+            !ROLE_PERMISSIONS[req.user.role]?.includes('payments:read'))
             throw new AppError(403, 'FORBIDDEN', 'You cannot simulate this payment');
         const result = await settlePayment(String(payment._id), outcome);
-        const cert = result.certificate ?? await CertificateModel.findOne({ subscriptionId: payment.subscriptionId }).select('+qrHash');
-        ok(res, { payment: { id: String(result.payment._id), amount: result.payment.amount, status: result.payment.status }, user: result.user ? publicUser(result.user) : null, certificate: cert ? { id: String(cert._id), number: cert.certNumber, qrHash: cert.qrHash, expiry: cert.expiresAt, verificationUrl: `${env.PUBLIC_WEB_URL}/verify/${cert.qrHash}` } : null, duplicate: result.duplicate });
+        const cert = result.certificate ??
+            (await CertificateModel.findOne({ subscriptionId: payment.subscriptionId }).select('+qrHash'));
+        ok(res, {
+            payment: {
+                id: String(result.payment._id),
+                amount: result.payment.amount,
+                status: result.payment.status,
+            },
+            user: result.user ? publicUser(result.user) : null,
+            certificate: cert
+                ? {
+                    id: String(cert._id),
+                    number: cert.certNumber,
+                    qrHash: cert.qrHash,
+                    expiry: cert.expiresAt,
+                    verificationUrl: `${env.PUBLIC_WEB_URL}/verify/${cert.qrHash}`,
+                }
+                : null,
+            duplicate: result.duplicate,
+        });
         return;
     }
-    const payment = payments.find(p => p.id === req.params.id);
+    const payment = payments.find((p) => p.id === req.params.id);
     if (!payment)
         throw new AppError(404, 'PAYMENT_NOT_FOUND', 'Payment not found');
-    if (payment.userId !== req.user?.id && !ROLE_PERMISSIONS[req.user.role]?.includes('payments:read'))
+    if (payment.userId !== req.user?.id &&
+        !ROLE_PERMISSIONS[req.user.role]?.includes('payments:read'))
         throw new AppError(403, 'FORBIDDEN', 'You cannot simulate this payment');
     payment.status = outcome === 'success' ? 'paid' : 'failed';
-    const user = users.find(u => u.id === payment.userId);
+    const user = users.find((u) => u.id === payment.userId);
     if (outcome === 'success' && user) {
         user.status = 'active';
         let cert = certificates.find((c) => c.userId === payment.userId);
         if (!cert) {
-            cert = { id: crypto.randomUUID(), number: `MLRF-${new Date().getFullYear()}-${String(certificates.length + 123).padStart(6, '0')}`, qrHash: crypto.randomBytes(16).toString('hex'), userId: user.id, issuedAt: new Date().toISOString(), expiry: new Date(Date.now() + 365 * 86400000).toISOString(), status: 'valid' };
+            cert = {
+                id: crypto.randomUUID(),
+                number: `MLRF-${new Date().getFullYear()}-${String(certificates.length + 123).padStart(6, '0')}`,
+                qrHash: crypto.randomBytes(16).toString('hex'),
+                userId: user.id,
+                issuedAt: new Date().toISOString(),
+                expiry: new Date(Date.now() + 365 * 86400000).toISOString(),
+                status: 'valid',
+            };
             certificates.push(cert);
         }
         user.certificateNumber = cert.number;
         user.expiry = cert.expiry;
     }
     recordAudit(req.user.email, req.user.role, `PAYMENT_${outcome.toUpperCase()}`, payment.id);
-    ok(res, { payment, user: user ? publicUser(user) : null, certificate: certificates.find((c) => c.userId === payment.userId) ?? null });
+    ok(res, {
+        payment,
+        user: user ? publicUser(user) : null,
+        certificate: certificates.find((c) => c.userId === payment.userId) ?? null,
+    });
 }));
 apiRouter.post('/webhooks/payments', asyncHandler(async (req, res) => {
     const signature = req.header('x-demo-signature') ?? '';
     if (!isValidWebhookSignature(req.body, signature))
         throw new AppError(401, 'BAD_SIGNATURE', 'Webhook signature invalid');
-    const payload = z.object({ paymentId: z.string().min(1), outcome: z.enum(['success', 'failure']), webhookReference: z.string().min(1).max(200) }).parse(req.body);
+    const payload = z
+        .object({
+        paymentId: z.string().min(1),
+        outcome: z.enum(['success', 'failure']),
+        webhookReference: z.string().min(1).max(200),
+    })
+        .parse(req.body);
     if (dbReady()) {
         const result = await settlePayment(payload.paymentId, payload.outcome, payload.webhookReference);
-        ok(res, { accepted: true, duplicate: result.duplicate, paymentId: String(result.payment._id), status: result.payment.status });
+        ok(res, {
+            accepted: true,
+            duplicate: result.duplicate,
+            paymentId: String(result.payment._id),
+            status: result.payment.status,
+        });
         return;
     }
-    const payment = payments.find(p => p.id === payload.paymentId);
+    const payment = payments.find((p) => p.id === payload.paymentId);
     if (!payment)
         throw new AppError(404, 'PAYMENT_NOT_FOUND', 'Payment not found');
     if (payment.webhookReference === payload.webhookReference) {
@@ -331,12 +728,20 @@ apiRouter.post('/webhooks/payments', asyncHandler(async (req, res) => {
     payment.webhookReference = payload.webhookReference;
     payment.status = payload.outcome === 'success' ? 'paid' : 'failed';
     if (payload.outcome === 'success') {
-        const user = users.find(u => u.id === payment.userId);
+        const user = users.find((u) => u.id === payment.userId);
         if (user) {
             user.status = 'active';
             let cert = certificates.find((c) => c.userId === user.id);
             if (!cert) {
-                cert = { id: crypto.randomUUID(), number: `MLRF-${new Date().getFullYear()}-${String(certificates.length + 123).padStart(6, '0')}`, qrHash: crypto.randomBytes(16).toString('hex'), userId: user.id, issuedAt: new Date().toISOString(), expiry: new Date(Date.now() + 365 * 86400000).toISOString(), status: 'valid' };
+                cert = {
+                    id: crypto.randomUUID(),
+                    number: `MLRF-${new Date().getFullYear()}-${String(certificates.length + 123).padStart(6, '0')}`,
+                    qrHash: crypto.randomBytes(16).toString('hex'),
+                    userId: user.id,
+                    issuedAt: new Date().toISOString(),
+                    expiry: new Date(Date.now() + 365 * 86400000).toISOString(),
+                    status: 'valid',
+                };
                 certificates.push(cert);
             }
         }
@@ -344,65 +749,226 @@ apiRouter.post('/webhooks/payments', asyncHandler(async (req, res) => {
     recordAudit('payment-gateway', 'finance_admin', `PAYMENT_${payload.outcome.toUpperCase()}`, payment.id);
     ok(res, { accepted: true, duplicate: false, paymentId: payment.id, status: payment.status });
 }));
-apiRouter.get('/certificates/me', requireAuth, asyncHandler(async (req, res) => { const host = req.get('host') || 'mlrf-platform-ykit.vercel.app'; if (dbReady()) {
-    const docs = await CertificateModel.find({ userId: req.user?.id }).select('+qrHash').sort({ createdAt: -1 });
-    ok(res, docs.map((c) => ({ id: String(c._id), number: c.certNumber, qrHash: c.qrHash, issuedAt: c.issuedAt, expiry: c.expiresAt, status: c.status, verificationUrl: `${env.PUBLIC_WEB_URL}/verify/${c.qrHash}`, pdfUrl: `https://${host}/api/v1/certificates/${c.certNumber}/pdf`, qrPayload: `https://${host}/api/v1/certificates/${c.certNumber}/pdf` })));
-    return;
-} ok(res, certificates.filter((c) => c.userId === req.user?.id).map(c => ({ ...c, verificationUrl: `${env.PUBLIC_WEB_URL}/verify/${c.qrHash}`, pdfUrl: `https://${host}/api/v1/certificates/${c.number}/pdf`, qrPayload: `https://${host}/api/v1/certificates/${c.number}/pdf` }))); }));
-apiRouter.get('/certificates/:id/pdf', asyncHandler(async (req, res) => { const identifier = String(req.params.id || ''); let cert = null; let userName = 'د. أحمد محمد محمود'; let tierName = 'الأطباء البشريين - ممارس عام'; if (dbReady()) {
-    try {
-        cert = await CertificateModel.findOne({ identifier }).populate('userId', 'name').populate('subscriptionId');
-        if (!cert) {
-            cert = await CertificateModel.findOne({ certNumber: identifier }).populate('userId', 'name').populate('subscriptionId');
-        }
-        if (!cert) {
-            cert = await CertificateModel.findOne({ id: identifier }).populate('userId', 'name').populate('subscriptionId');
-        }
-        if (!cert) {
-            cert = await CertificateModel.findOne({ qrHash: identifier }).populate('userId', 'name').populate('subscriptionId');
-        }
-    }
-    catch (e) {
-        console.warn('[Certificate PDF] DB lookup failed:', e);
-    }
-} if (!cert) {
-    cert = certificates.find((c) => c.number === identifier || c.id === identifier || c.qrHash === identifier);
-    if (cert) {
-        const u = users.find(u => u.id === cert.userId);
-        if (u) {
-            userName = u.name;
-            tierName = DEMO_TIERS.find(t => t.id === u.tierId)?.nameAr || DEMO_TIERS.find(t => t.id === u.tierId)?.name || tierName;
-        }
-    }
-} if (!cert && (identifier === 'MLRF-2026-000123' || identifier.startsWith('MLRF-') || identifier.startsWith('demo-') || env.DEMO_MODE)) {
-    cert = { id: 'cert-1', number: identifier.startsWith('MLRF-') ? identifier : 'MLRF-2026-000123', certNumber: identifier.startsWith('MLRF-') ? identifier : 'MLRF-2026-000123', issuedAt: '2026-01-01T00:00:00.000Z', expiry: '2027-01-01T00:00:00.000Z', expiresAt: '2027-01-01T00:00:00.000Z', status: 'valid' };
-} if (!cert) {
-    throw new AppError(404, 'CERTIFICATE_NOT_FOUND', 'Certificate not found');
-} if (cert.userId && typeof cert.userId === 'object' && cert.userId.name) {
-    userName = cert.userId.name;
-} if (cert.subscriptionId && typeof cert.subscriptionId === 'object') {
-    tierName = cert.subscriptionId.tierId?.nameAr || cert.subscriptionId.tierId?.name || tierName;
-} const certNumber = String(cert.certNumber || cert.number || identifier); const issuedAtStr = cert.issuedAt ? new Date(cert.issuedAt).toISOString().split('T')[0] : '2026-01-01'; const expiresAtStr = (cert.expiresAt || cert.expiry) ? new Date(cert.expiresAt || cert.expiry).toISOString().split('T')[0] : '2027-01-01'; const statusStr = (cert.status || 'valid').toUpperCase(); const host = req.get('host') || 'mlrf-platform-ykit.vercel.app'; const verificationUrl = `https://${host}/api/v1/certificates/${certNumber}/pdf`; const pdfBuffer = await generateCertificatePdf({ certNumber, holderName: userName, specialty: tierName, issuedAt: issuedAtStr, expiresAt: expiresAtStr, status: statusStr, verificationUrl }); res.setHeader('Content-Type', 'application/pdf'); res.setHeader('Content-Disposition', 'inline; filename="certificate.pdf"'); res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate'); res.setHeader('Pragma', 'no-cache'); res.setHeader('Expires', '0'); res.setHeader('Surrogate-Control', 'no-store'); res.setHeader('Content-Length', pdfBuffer.length); res.send(pdfBuffer); }));
-apiRouter.get('/public/verify/:qrHash', asyncHandler(async (req, res) => { if (dbReady()) {
-    const cert = await CertificateModel.findOne({ qrHash: req.params.qrHash }).select('+qrHash').populate('userId', 'name').populate({ path: 'subscriptionId', populate: { path: 'tierId', select: 'name nameAr' } });
-    if (!cert || cert.status !== 'valid') {
-        ok(res, { result: 'INVALID' });
+apiRouter.get('/certificates/me', requireAuth, asyncHandler(async (req, res) => {
+    const host = req.get('host') || 'mlrf-platform-ykit.vercel.app';
+    if (dbReady()) {
+        const docs = await CertificateModel.find({ userId: req.user?.id })
+            .select('+qrHash')
+            .sort({ createdAt: -1 });
+        ok(res, docs.map((c) => ({
+            id: String(c._id),
+            number: c.certNumber,
+            qrHash: c.qrHash,
+            issuedAt: c.issuedAt,
+            expiry: c.expiresAt,
+            status: c.status,
+            verificationUrl: `${env.PUBLIC_WEB_URL}/verify/${c.qrHash}`,
+            pdfUrl: `https://${host}/api/v1/certificates/${c.certNumber}/pdf`,
+            qrPayload: `https://${host}/api/v1/certificates/${c.certNumber}/pdf`,
+        })));
         return;
     }
-    const user = cert.userId;
-    const subscription = cert.subscriptionId;
-    const tier = subscription?.tierId;
-    const result = cert.expiresAt < new Date() ? 'EXPIRED' : 'VALID';
-    ok(res, { result, name: user?.name?.split(' ').map((p, i) => i === 0 ? p : `${p[0]}.`).join(' '), specialty: tier?.name ?? 'Not specified', expiry: cert.expiresAt, certificateNumber: cert.certNumber });
-    return;
-} const cert = certificates.find((c) => c.qrHash === req.params.qrHash); if (!cert || cert.status !== 'valid')
-    return ok(res, { result: 'INVALID' }); const user = users.find(u => u.id === cert.userId); const result = new Date(cert.expiry) < new Date() ? 'EXPIRED' : 'VALID'; return ok(res, { result, name: user?.name.split(' ').map((p, i) => i === 0 ? p : `${p[0]}.`).join(' '), specialty: DEMO_TIERS.find(t => t.id === user?.tierId)?.name ?? 'Not specified', expiry: cert.expiry, certificateNumber: cert.number }); }));
-apiRouter.post('/inspector/verify', requireAuth, requirePermission('inspections:verify'), asyncHandler(async (req, res) => { const input = z.object({ qrHash: z.string().optional(), certificateNumber: z.string().optional(), nationalId: z.string().optional(), syndicateId: z.string().optional() }).refine(v => Object.values(v).some(Boolean), 'Provide an identifier').parse(req.body); const cert = certificates.find((c) => c.qrHash === input.qrHash || c.number === input.certificateNumber); const user = cert ? users.find(u => u.id === cert.userId) : users.find(u => input.nationalId === '29901011234567' && u.id === 'subscriber-1'); const result = !cert && !user ? 'INVALID' : cert && new Date(cert.expiry) < new Date() ? 'EXPIRED' : 'VALID'; ok(res, { result, name: user?.name, specialty: DEMO_TIERS.find(t => t.id === user?.tierId)?.name, expiry: cert?.expiry, lastRenewal: cert?.issuedAt, certificateNumber: cert?.number }); }));
-apiRouter.post('/inspector/inspections', requireAuth, requirePermission('inspections:verify'), (req, res) => { recordAudit(req.user.email, req.user.role, 'INSPECTION_LOGGED', String(req.body.identifier ?? 'unknown')); ok(res, { id: crypto.randomUUID(), outcome: req.body.outcome ?? 'compliant', createdAt: new Date().toISOString() }, 201); });
-apiRouter.post('/inspector/notices', requireAuth, requirePermission('inspections:verify'), (req, res) => { recordAudit(req.user.email, req.user.role, 'RENEWAL_NOTICE_ISSUED', String(req.body.identifier ?? 'unknown')); ok(res, { noticeId: crypto.randomUUID(), sent: true, provider: 'MockSmsProvider' }, 201); });
-apiRouter.post('/inspector/violations', requireAuth, requirePermission('inspections:verify'), (req, res) => { recordAudit(req.user.email, req.user.role, 'VIOLATION_REPORTED', String(req.body.identifier ?? 'unknown')); ok(res, { violationId: crypto.randomUUID(), status: 'recorded' }, 201); });
-apiRouter.get('/inspector/history', requireAuth, requirePermission('inspections:verify'), (_req, res) => ok(res, audit.filter(a => a.action.includes('INSPECTION') || a.action.includes('VIOLATION') || a.action.includes('NOTICE')).slice(0, 50)));
-const bankRowSchema = z.array(z.object({ name: z.string().min(2), phone: z.string().min(5), nationalId: z.string(), specialty: z.string().min(1), amount: z.coerce.number().nonnegative() })).min(1).max(5000);
+    ok(res, certificates
+        .filter((c) => c.userId === req.user?.id)
+        .map((c) => ({
+        ...c,
+        verificationUrl: `${env.PUBLIC_WEB_URL}/verify/${c.qrHash}`,
+        pdfUrl: `https://${host}/api/v1/certificates/${c.number}/pdf`,
+        qrPayload: `https://${host}/api/v1/certificates/${c.number}/pdf`,
+    })));
+}));
+apiRouter.get('/certificates/:id/pdf', asyncHandler(async (req, res) => {
+    const identifier = String(req.params.id || '');
+    let cert = null;
+    let userName = 'د. أحمد محمد محمود';
+    let tierName = 'الأطباء البشريين - ممارس عام';
+    if (dbReady()) {
+        try {
+            cert = await CertificateModel.findOne({ identifier })
+                .populate('userId', 'name')
+                .populate('subscriptionId');
+            if (!cert) {
+                cert = await CertificateModel.findOne({ certNumber: identifier })
+                    .populate('userId', 'name')
+                    .populate('subscriptionId');
+            }
+            if (!cert) {
+                cert = await CertificateModel.findOne({ id: identifier })
+                    .populate('userId', 'name')
+                    .populate('subscriptionId');
+            }
+            if (!cert) {
+                cert = await CertificateModel.findOne({ qrHash: identifier })
+                    .populate('userId', 'name')
+                    .populate('subscriptionId');
+            }
+        }
+        catch (e) {
+            console.warn('[Certificate PDF] DB lookup failed:', e);
+        }
+    }
+    if (!cert) {
+        cert = certificates.find((c) => c.number === identifier || c.id === identifier || c.qrHash === identifier);
+        if (cert) {
+            const u = users.find((u) => u.id === cert.userId);
+            if (u) {
+                userName = u.name;
+                tierName =
+                    DEMO_TIERS.find((t) => t.id === u.tierId)?.nameAr ||
+                        DEMO_TIERS.find((t) => t.id === u.tierId)?.name ||
+                        tierName;
+            }
+        }
+    }
+    if (!cert &&
+        (identifier === 'MLRF-2026-000123' ||
+            identifier.startsWith('MLRF-') ||
+            identifier.startsWith('demo-') ||
+            env.DEMO_MODE)) {
+        cert = {
+            id: 'cert-1',
+            number: identifier.startsWith('MLRF-') ? identifier : 'MLRF-2026-000123',
+            certNumber: identifier.startsWith('MLRF-') ? identifier : 'MLRF-2026-000123',
+            issuedAt: '2026-01-01T00:00:00.000Z',
+            expiry: '2027-01-01T00:00:00.000Z',
+            expiresAt: '2027-01-01T00:00:00.000Z',
+            status: 'valid',
+        };
+    }
+    if (!cert) {
+        throw new AppError(404, 'CERTIFICATE_NOT_FOUND', 'Certificate not found');
+    }
+    if (cert.userId && typeof cert.userId === 'object' && cert.userId.name) {
+        userName = cert.userId.name;
+    }
+    if (cert.subscriptionId && typeof cert.subscriptionId === 'object') {
+        tierName = cert.subscriptionId.tierId?.nameAr || cert.subscriptionId.tierId?.name || tierName;
+    }
+    const certNumber = String(cert.certNumber || cert.number || identifier);
+    const issuedAtStr = cert.issuedAt
+        ? new Date(cert.issuedAt).toISOString().split('T')[0]
+        : '2026-01-01';
+    const expiresAtStr = cert.expiresAt || cert.expiry
+        ? new Date(cert.expiresAt || cert.expiry).toISOString().split('T')[0]
+        : '2027-01-01';
+    const statusStr = (cert.status || 'valid').toUpperCase();
+    const host = req.get('host') || 'mlrf-platform-ykit.vercel.app';
+    const verificationUrl = `https://${host}/api/v1/certificates/${certNumber}/pdf`;
+    const pdfBuffer = await generateCertificatePdf({
+        certNumber,
+        holderName: userName,
+        specialty: tierName,
+        issuedAt: issuedAtStr,
+        expiresAt: expiresAtStr,
+        status: statusStr,
+        verificationUrl,
+    });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="certificate.pdf"');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.send(pdfBuffer);
+}));
+apiRouter.get('/public/verify/:qrHash', asyncHandler(async (req, res) => {
+    if (dbReady()) {
+        const cert = await CertificateModel.findOne({ qrHash: req.params.qrHash })
+            .select('+qrHash')
+            .populate('userId', 'name')
+            .populate({ path: 'subscriptionId', populate: { path: 'tierId', select: 'name nameAr' } });
+        if (!cert || cert.status !== 'valid') {
+            ok(res, { result: 'INVALID' });
+            return;
+        }
+        const user = cert.userId;
+        const subscription = cert.subscriptionId;
+        const tier = subscription?.tierId;
+        const result = cert.expiresAt < new Date() ? 'EXPIRED' : 'VALID';
+        ok(res, {
+            result,
+            name: user?.name
+                ?.split(' ')
+                .map((p, i) => (i === 0 ? p : `${p[0]}.`))
+                .join(' '),
+            specialty: tier?.name ?? 'Not specified',
+            expiry: cert.expiresAt,
+            certificateNumber: cert.certNumber,
+        });
+        return;
+    }
+    const cert = certificates.find((c) => c.qrHash === req.params.qrHash);
+    if (!cert || cert.status !== 'valid')
+        return ok(res, { result: 'INVALID' });
+    const user = users.find((u) => u.id === cert.userId);
+    const result = new Date(cert.expiry) < new Date() ? 'EXPIRED' : 'VALID';
+    return ok(res, {
+        result,
+        name: user?.name
+            .split(' ')
+            .map((p, i) => (i === 0 ? p : `${p[0]}.`))
+            .join(' '),
+        specialty: DEMO_TIERS.find((t) => t.id === user?.tierId)?.name ?? 'Not specified',
+        expiry: cert.expiry,
+        certificateNumber: cert.number,
+    });
+}));
+apiRouter.post('/inspector/verify', requireAuth, requirePermission('inspections:verify'), asyncHandler(async (req, res) => {
+    const input = z
+        .object({
+        qrHash: z.string().optional(),
+        certificateNumber: z.string().optional(),
+        nationalId: z.string().optional(),
+        syndicateId: z.string().optional(),
+    })
+        .refine((v) => Object.values(v).some(Boolean), 'Provide an identifier')
+        .parse(req.body);
+    const cert = certificates.find((c) => c.qrHash === input.qrHash || c.number === input.certificateNumber);
+    const user = cert
+        ? users.find((u) => u.id === cert.userId)
+        : users.find((u) => input.nationalId === '29901011234567' && u.id === 'subscriber-1');
+    const result = !cert && !user ? 'INVALID' : cert && new Date(cert.expiry) < new Date() ? 'EXPIRED' : 'VALID';
+    ok(res, {
+        result,
+        name: user?.name,
+        specialty: DEMO_TIERS.find((t) => t.id === user?.tierId)?.name,
+        expiry: cert?.expiry,
+        lastRenewal: cert?.issuedAt,
+        certificateNumber: cert?.number,
+    });
+}));
+apiRouter.post('/inspector/inspections', requireAuth, requirePermission('inspections:verify'), (req, res) => {
+    recordAudit(req.user.email, req.user.role, 'INSPECTION_LOGGED', String(req.body.identifier ?? 'unknown'));
+    ok(res, {
+        id: crypto.randomUUID(),
+        outcome: req.body.outcome ?? 'compliant',
+        createdAt: new Date().toISOString(),
+    }, 201);
+});
+apiRouter.post('/inspector/notices', requireAuth, requirePermission('inspections:verify'), (req, res) => {
+    recordAudit(req.user.email, req.user.role, 'RENEWAL_NOTICE_ISSUED', String(req.body.identifier ?? 'unknown'));
+    ok(res, { noticeId: crypto.randomUUID(), sent: true, provider: 'MockSmsProvider' }, 201);
+});
+apiRouter.post('/inspector/violations', requireAuth, requirePermission('inspections:verify'), (req, res) => {
+    recordAudit(req.user.email, req.user.role, 'VIOLATION_REPORTED', String(req.body.identifier ?? 'unknown'));
+    ok(res, { violationId: crypto.randomUUID(), status: 'recorded' }, 201);
+});
+apiRouter.get('/inspector/history', requireAuth, requirePermission('inspections:verify'), (_req, res) => ok(res, audit
+    .filter((a) => a.action.includes('INSPECTION') ||
+    a.action.includes('VIOLATION') ||
+    a.action.includes('NOTICE'))
+    .slice(0, 50)));
+const bankRowSchema = z
+    .array(z.object({
+    name: z.string().min(2),
+    phone: z.string().min(5),
+    nationalId: z.string(),
+    specialty: z.string().min(1),
+    amount: z.coerce.number().nonnegative(),
+}))
+    .min(1)
+    .max(5000);
 async function processBankBatch(req, res, rowsInput, filename) {
     const dryRun = req.query.dryRun !== 'false';
     const parsed = bankRowSchema.safeParse(rowsInput);
@@ -412,30 +978,64 @@ async function processBankBatch(req, res, rowsInput, filename) {
     const preview = [];
     for (let i = 0; i < parsed.data.length; i++) {
         const r = parsed.data[i];
-        const tier = DEMO_TIERS.find(t => t.name.toLowerCase() === r.specialty.toLowerCase() || t.id === r.specialty);
+        const tier = DEMO_TIERS.find((t) => t.name.toLowerCase() === r.specialty.toLowerCase() || t.id === r.specialty);
         const key = `${r.nationalId}:2026`;
         let duplicate = seen.has(key);
         seen.add(key);
         if (dbReady()) {
-            if (/^\d{14}$/.test(r.nationalId) && await SubscriberProfileModel.exists({ nationalId: r.nationalId }))
+            if (/^\d{14}$/.test(r.nationalId) &&
+                (await SubscriberProfileModel.exists({ nationalId: r.nationalId })))
                 duplicate = true;
             if (await UserModel.exists({ phone: r.phone }))
                 duplicate = true;
         }
-        else if (users.some(u => u.phone === r.phone && u.status === 'pending_completion'))
+        else if (users.some((u) => u.phone === r.phone && u.status === 'pending_completion'))
             duplicate = true;
-        const invalid = !/^\d{14}$/.test(r.nationalId) || !tier || !Number.isFinite(r.amount) || (tier && r.amount !== tier.fee);
-        preview.push({ ...r, rowNumber: i + 1, status: duplicate ? 'duplicate' : invalid ? 'invalid' : 'created', reason: duplicate ? 'Duplicate national ID/phone' : !/^\d{14}$/.test(r.nationalId) ? 'National ID must contain 14 digits' : !tier ? 'Specialty not matched' : r.amount !== tier.fee ? `Expected fee ${tier.fee} EGP` : undefined, tierId: tier?.id, entityType: tier?.entityType });
+        const invalid = !/^\d{14}$/.test(r.nationalId) ||
+            !tier ||
+            !Number.isFinite(r.amount) ||
+            (tier && r.amount !== tier.fee);
+        preview.push({
+            ...r,
+            rowNumber: i + 1,
+            status: duplicate ? 'duplicate' : invalid ? 'invalid' : 'created',
+            reason: duplicate
+                ? 'Duplicate national ID/phone'
+                : !/^\d{14}$/.test(r.nationalId)
+                    ? 'National ID must contain 14 digits'
+                    : !tier
+                        ? 'Specialty not matched'
+                        : r.amount !== tier.fee
+                            ? `Expected fee ${tier.fee} EGP`
+                            : undefined,
+            tierId: tier?.id,
+            entityType: tier?.entityType,
+        });
     }
-    const summary = { total: preview.length, created: preview.filter(r => r.status === 'created').length, duplicate: preview.filter(r => r.status === 'duplicate').length, invalid: preview.filter(r => r.status === 'invalid').length };
+    const summary = {
+        total: preview.length,
+        created: preview.filter((r) => r.status === 'created').length,
+        duplicate: preview.filter((r) => r.status === 'duplicate').length,
+        invalid: preview.filter((r) => r.status === 'invalid').length,
+    };
     if (dryRun)
         return ok(res, { dryRun: true, filename, rows: preview, summary });
-    const created = preview.filter(r => r.status === 'created');
+    const created = preview.filter((r) => r.status === 'created');
     if (dbReady()) {
         const admin = await UserModel.findById(req.user.id);
         if (!admin)
             throw new AppError(401, 'USER_NOT_FOUND', 'Authenticated administrator was not found in database');
-        const batch = await BulkBatchModel.create({ createdBy: admin._id, filename: filename.slice(0, 180), fiscalYear: 2026, status: 'committed', totalRows: summary.total, createdCount: summary.created, duplicateCount: summary.duplicate, invalidCount: summary.invalid, committedAt: new Date() });
+        const batch = await BulkBatchModel.create({
+            createdBy: admin._id,
+            filename: filename.slice(0, 180),
+            fiscalYear: 2026,
+            status: 'committed',
+            totalRows: summary.total,
+            createdCount: summary.created,
+            duplicateCount: summary.duplicate,
+            invalidCount: summary.invalid,
+            committedAt: new Date(),
+        });
         const createdUsers = [];
         const completionLinks = [];
         try {
@@ -452,103 +1052,354 @@ async function processBankBatch(req, res, rowsInput, filename) {
                     batch.createdCount--;
                     continue;
                 }
-                const user = await UserModel.create({ name: r.name, email, phone: r.phone, passwordHash: await hashPassword(crypto.randomBytes(24).toString('hex')), role: 'subscriber', status: 'pending_completion' });
+                const user = await UserModel.create({
+                    name: r.name,
+                    email,
+                    phone: r.phone,
+                    passwordHash: await hashPassword(crypto.randomBytes(24).toString('hex')),
+                    role: 'subscriber',
+                    status: 'pending_completion',
+                });
                 createdUsers.push(String(user._id));
-                await SubscriberProfileModel.create({ userId: user._id, entityType: tier.entityType, nationalId: r.nationalId, governorate: 'Cairo', completionPercent: 25 });
-                const subscription = await SubscriptionModel.create({ userId: user._id, tierId: tier._id, fiscalYear: 2026, renewalStatus: 'new', status: 'active', amountDue: r.amount, startsAt: new Date(), expiresAt: new Date(Date.now() + 365 * 86400000) });
-                await PaymentModel.create({ userId: user._id, subscriptionId: subscription._id, amount: r.amount, channel: 'bank_bulk', status: 'paid', paidAt: new Date(), bulkBatchId: batch._id });
+                await SubscriberProfileModel.create({
+                    userId: user._id,
+                    entityType: tier.entityType,
+                    nationalId: r.nationalId,
+                    governorate: 'Cairo',
+                    completionPercent: 25,
+                });
+                const subscription = await SubscriptionModel.create({
+                    userId: user._id,
+                    tierId: tier._id,
+                    fiscalYear: 2026,
+                    renewalStatus: 'new',
+                    status: 'active',
+                    amountDue: r.amount,
+                    startsAt: new Date(),
+                    expiresAt: new Date(Date.now() + 365 * 86400000),
+                });
+                await PaymentModel.create({
+                    userId: user._id,
+                    subscriptionId: subscription._id,
+                    amount: r.amount,
+                    channel: 'bank_bulk',
+                    status: 'paid',
+                    paidAt: new Date(),
+                    bulkBatchId: batch._id,
+                });
                 const token = generateCompletionToken();
-                await CompletionTokenModel.create({ userId: user._id, tokenHash: hashCompletionToken(token), expiresAt: completionTokenExpiry() });
+                await CompletionTokenModel.create({
+                    userId: user._id,
+                    tokenHash: hashCompletionToken(token),
+                    expiresAt: completionTokenExpiry(),
+                });
                 const link = `${env.PUBLIC_WEB_URL}/complete/${token}`;
-                await SmsOutboxModel.create({ userId: user._id, phone: r.phone, body: `Complete your MLRF profile within 72 hours: ${link}`, status: 'queued' });
+                await SmsOutboxModel.create({
+                    userId: user._id,
+                    phone: r.phone,
+                    body: `Complete your MLRF profile within 72 hours: ${link}`,
+                    status: 'queued',
+                });
                 completionLinks.push({ phone: r.phone, completionUrl: link });
             }
             batch.createdCount = createdUsers.length;
             await batch.save();
             await persistAudit(req.user.email, req.user.role, 'BULK_BATCH_COMMITTED', 'BulkBatch', String(batch._id));
-            return ok(res, { id: String(batch._id), filename: batch.filename, createdAt: batch.createdAt, total: batch.totalRows, created: batch.createdCount, duplicate: batch.duplicateCount, invalid: batch.invalidCount, status: batch.status, completionLinks }, 201);
+            return ok(res, {
+                id: String(batch._id),
+                filename: batch.filename,
+                createdAt: batch.createdAt,
+                total: batch.totalRows,
+                created: batch.createdCount,
+                duplicate: batch.duplicateCount,
+                invalid: batch.invalidCount,
+                status: batch.status,
+                completionLinks,
+            }, 201);
         }
         catch (error) {
             const userIds = createdUsers.filter((id) => Boolean(id) && typeof id === 'string');
             if (userIds.length) {
-                await Promise.all([SmsOutboxModel, CompletionTokenModel, PaymentModel, SubscriptionModel, SubscriberProfileModel, UserModel].map(model => model.deleteMany({ userId: { $in: userIds } })));
+                await Promise.all([
+                    SmsOutboxModel,
+                    CompletionTokenModel,
+                    PaymentModel,
+                    SubscriptionModel,
+                    SubscriberProfileModel,
+                    UserModel,
+                ].map((model) => model.deleteMany({ userId: { $in: userIds } })));
             }
             batch.status = 'failed';
             await batch.save();
             throw error;
         }
     }
-    const batch = { id: crypto.randomUUID(), filename, createdAt: new Date().toISOString(), total: preview.length, created: created.length, duplicate: summary.duplicate, invalid: summary.invalid, status: 'committed', rows: preview };
+    const batch = {
+        id: crypto.randomUUID(),
+        filename,
+        createdAt: new Date().toISOString(),
+        total: preview.length,
+        created: created.length,
+        duplicate: summary.duplicate,
+        invalid: summary.invalid,
+        status: 'committed',
+        rows: preview,
+    };
     batches.unshift(batch);
-    created.forEach((r) => { const user = { id: crypto.randomUUID(), name: r.name, email: `bank-${r.nationalId}@mlrf.demo`, phone: r.phone, role: 'subscriber', status: 'pending_completion', governorate: 'Cairo', entityType: r.entityType, tierId: r.tierId, fee: r.amount }; users.push(user); payments.push({ id: crypto.randomUUID(), userId: user.id, amount: r.amount, status: 'paid', channel: 'bank_bulk', createdAt: new Date().toISOString(), batchId: batch.id }); });
+    created.forEach((r) => {
+        const user = {
+            id: crypto.randomUUID(),
+            name: r.name,
+            email: `bank-${r.nationalId}@mlrf.demo`,
+            phone: r.phone,
+            role: 'subscriber',
+            status: 'pending_completion',
+            governorate: 'Cairo',
+            entityType: r.entityType,
+            tierId: r.tierId,
+            fee: r.amount,
+        };
+        users.push(user);
+        payments.push({
+            id: crypto.randomUUID(),
+            userId: user.id,
+            amount: r.amount,
+            status: 'paid',
+            channel: 'bank_bulk',
+            createdAt: new Date().toISOString(),
+            batchId: batch.id,
+        });
+    });
     recordAudit(req.user.email, req.user.role, 'BULK_BATCH_COMMITTED', batch.id);
     return ok(res, batch, 201);
 }
 apiRouter.post('/admin/bulk-batches', requireAuth, requirePermission('bulk:upload'), asyncHandler(async (req, res) => processBankBatch(req, res, req.body.rows, String(req.body.filename ?? 'bank-upload.json'))));
-apiRouter.post('/admin/bulk-batches/upload', requireAuth, requirePermission('bulk:upload'), bankUpload.single('file'), asyncHandler(async (req, res) => { if (!req.file)
-    throw new AppError(400, 'FILE_REQUIRED', 'Upload a CSV or Excel file in the file field'); const ext = (req.file.originalname.split('.').pop() ?? '').toLowerCase(); if (!['csv', 'xlsx', 'xls'].includes(ext))
-    throw new AppError(415, 'FILE_TYPE_UNSUPPORTED', 'Only CSV, XLS and XLSX files are supported'); let rows; try {
-    rows = parseBankRows(req.file.buffer, req.file.originalname);
-}
-catch (e) {
-    if (e instanceof AppError)
-        throw e;
-    throw new AppError(400, 'SHEET_PARSE_FAILED', 'Could not parse the uploaded spreadsheet');
-} return processBankBatch(req, res, rows, req.file.originalname); }));
-apiRouter.get('/admin/bulk-batches', requireAuth, requirePermission('bulk:upload'), asyncHandler(async (_req, res) => { if (dbReady())
-    return ok(res, await BulkBatchModel.find().sort({ createdAt: -1 }).limit(100).lean()); return ok(res, batches.map(({ rows: _rows, ...b }) => b)); }));
-apiRouter.get('/admin/bulk-batches/:id', requireAuth, requirePermission('bulk:upload'), asyncHandler(async (req, res) => { if (dbReady()) {
-    const b = await BulkBatchModel.findById(req.params.id).lean();
+apiRouter.post('/admin/bulk-batches/upload', requireAuth, requirePermission('bulk:upload'), bankUpload.single('file'), asyncHandler(async (req, res) => {
+    if (!req.file)
+        throw new AppError(400, 'FILE_REQUIRED', 'Upload a CSV or Excel file in the file field');
+    const ext = (req.file.originalname.split('.').pop() ?? '').toLowerCase();
+    if (!['csv', 'xlsx', 'xls'].includes(ext))
+        throw new AppError(415, 'FILE_TYPE_UNSUPPORTED', 'Only CSV, XLS and XLSX files are supported');
+    let rows;
+    try {
+        rows = parseBankRows(req.file.buffer, req.file.originalname);
+    }
+    catch (e) {
+        if (e instanceof AppError)
+            throw e;
+        throw new AppError(400, 'SHEET_PARSE_FAILED', 'Could not parse the uploaded spreadsheet');
+    }
+    return processBankBatch(req, res, rows, req.file.originalname);
+}));
+apiRouter.get('/admin/bulk-batches', requireAuth, requirePermission('bulk:upload'), asyncHandler(async (_req, res) => {
+    if (dbReady())
+        return ok(res, await BulkBatchModel.find().sort({ createdAt: -1 }).limit(100).lean());
+    return ok(res, batches.map(({ rows: _rows, ...b }) => b));
+}));
+apiRouter.get('/admin/bulk-batches/:id', requireAuth, requirePermission('bulk:upload'), asyncHandler(async (req, res) => {
+    if (dbReady()) {
+        const b = await BulkBatchModel.findById(req.params.id).lean();
+        if (!b)
+            throw new AppError(404, 'BATCH_NOT_FOUND', 'Batch not found');
+        return ok(res, b);
+    }
+    const b = batches.find((x) => x.id === req.params.id);
     if (!b)
         throw new AppError(404, 'BATCH_NOT_FOUND', 'Batch not found');
     return ok(res, b);
-} const b = batches.find(x => x.id === req.params.id); if (!b)
-    throw new AppError(404, 'BATCH_NOT_FOUND', 'Batch not found'); return ok(res, b); }));
-apiRouter.post('/complete/:token', asyncHandler(async (req, res) => { const token = String(req.params.token ?? ''); if (!isWellFormedCompletionToken(token) && !(env.DEMO_MODE && token.startsWith('demo-token-')))
-    throw new AppError(400, 'TOKEN_INVALID', 'Completion link is invalid or expired'); if (dbReady()) {
-    const now = new Date();
-    const record = await CompletionTokenModel.findOneAndUpdate({ tokenHash: hashCompletionToken(token), usedAt: null, expiresAt: { $gt: now } }, { $set: { usedAt: now } }, { new: true }).select('+tokenHash');
-    if (!record)
-        throw new AppError(400, 'TOKEN_INVALID', 'Completion link is invalid, expired, or already used');
-    const user = await UserModel.findOne({ _id: record.userId, status: 'pending_completion' });
-    if (!user) {
-        await CompletionTokenModel.updateOne({ _id: record._id, usedAt: now }, { $set: { usedAt: null } });
-        throw new AppError(409, 'COMPLETION_NOT_AVAILABLE', 'This profile can no longer be completed');
-    }
-    try {
-        user.status = 'active';
-        user.phoneVerifiedAt = new Date();
-        await user.save();
-    }
-    catch (error) {
-        await CompletionTokenModel.updateOne({ _id: record._id, usedAt: now }, { $set: { usedAt: null } });
-        throw error;
-    }
-    await SubscriberProfileModel.updateOne({ userId: user._id }, { $set: { completionPercent: 100 } });
-    const subscription = await SubscriptionModel.findOne({ userId: user._id, status: 'active' });
-    let certificate = null;
-    if (subscription) {
-        certificate = await CertificateModel.findOne({ subscriptionId: subscription._id });
-        if (!certificate) {
-            certificate = await CertificateModel.create({ userId: user._id, subscriptionId: subscription._id, certNumber: `MLRF-${subscription.fiscalYear}-${crypto.randomBytes(5).toString('hex').toUpperCase()}`, qrHash: crypto.randomBytes(24).toString('hex'), issuedAt: new Date(), expiresAt: subscription.expiresAt ?? new Date(Date.now() + 365 * 86400000), status: 'valid' });
+}));
+apiRouter.post('/complete/:token', asyncHandler(async (req, res) => {
+    const token = String(req.params.token ?? '');
+    if (!isWellFormedCompletionToken(token) && !(env.DEMO_MODE && token.startsWith('demo-token-')))
+        throw new AppError(400, 'TOKEN_INVALID', 'Completion link is invalid or expired');
+    if (dbReady()) {
+        const now = new Date();
+        const record = await CompletionTokenModel.findOneAndUpdate({ tokenHash: hashCompletionToken(token), usedAt: null, expiresAt: { $gt: now } }, { $set: { usedAt: now } }, { new: true }).select('+tokenHash');
+        if (!record)
+            throw new AppError(400, 'TOKEN_INVALID', 'Completion link is invalid, expired, or already used');
+        const user = await UserModel.findOne({ _id: record.userId, status: 'pending_completion' });
+        if (!user) {
+            await CompletionTokenModel.updateOne({ _id: record._id, usedAt: now }, { $set: { usedAt: null } });
+            throw new AppError(409, 'COMPLETION_NOT_AVAILABLE', 'This profile can no longer be completed');
         }
+        try {
+            user.status = 'active';
+            user.phoneVerifiedAt = new Date();
+            await user.save();
+        }
+        catch (error) {
+            await CompletionTokenModel.updateOne({ _id: record._id, usedAt: now }, { $set: { usedAt: null } });
+            throw error;
+        }
+        await SubscriberProfileModel.updateOne({ userId: user._id }, { $set: { completionPercent: 100 } });
+        const subscription = await SubscriptionModel.findOne({ userId: user._id, status: 'active' });
+        let certificate = null;
+        if (subscription) {
+            certificate = await CertificateModel.findOne({ subscriptionId: subscription._id });
+            if (!certificate) {
+                certificate = await CertificateModel.create({
+                    userId: user._id,
+                    subscriptionId: subscription._id,
+                    certNumber: `MLRF-${subscription.fiscalYear}-${crypto.randomBytes(5).toString('hex').toUpperCase()}`,
+                    qrHash: crypto.randomBytes(24).toString('hex'),
+                    issuedAt: new Date(),
+                    expiresAt: subscription.expiresAt ?? new Date(Date.now() + 365 * 86400000),
+                    status: 'valid',
+                });
+            }
+        }
+        await persistAudit(user.email, user.role, 'BANK_PROFILE_COMPLETED', 'User', String(user._id));
+        return ok(res, { user: publicUser(user), certificate });
     }
-    await persistAudit(user.email, user.role, 'BANK_PROFILE_COMPLETED', 'User', String(user._id));
-    return ok(res, { user: publicUser(user), certificate });
-} const user = users.find(u => u.id === token.slice('demo-token-'.length) && token.startsWith('demo-token-') && u.status === 'pending_completion'); if (!user)
-    throw new AppError(400, 'TOKEN_INVALID', 'Completion link is invalid, expired, or already used'); user.status = 'active'; const cert = { id: crypto.randomUUID(), number: `MLRF-2026-${String(certificates.length + 123).padStart(6, '0')}`, qrHash: crypto.randomBytes(16).toString('hex'), userId: user.id, issuedAt: new Date().toISOString(), expiry: new Date(Date.now() + 365 * 86400000).toISOString(), status: 'valid' }; certificates.push(cert); recordAudit(user.email, user.role, 'BANK_PROFILE_COMPLETED', user.id); return ok(res, { user: publicUser(user), certificate: cert }); }));
-apiRouter.get('/dev/sms-inbox', requireAuth, requirePermission('bulk:upload'), asyncHandler(async (req, res) => { if (dbReady())
-    return ok(res, { messages: await SmsOutboxModel.find().sort({ createdAt: -1 }).limit(100).select('phone body status createdAt sentAt').lean() }); return ok(res, { messages: users.filter(u => u.status === 'pending_completion').map(u => ({ to: u.phone, body: `Complete your MLRF profile: ${env.PUBLIC_WEB_URL}/complete/demo-token-${u.id}`, createdAt: new Date().toISOString() })) }); }));
-apiRouter.get('/admin/analytics', requireAuth, asyncHandler(async (req, res) => { const role = req.user.role; if (!ROLE_PERMISSIONS[role]?.some(p => p.startsWith('analytics:')))
-    throw new AppError(403, 'FORBIDDEN', 'Analytics permission required'); const active = users.filter(u => u.status === 'active').length; const revenue = payments.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0); const governorates = ['Cairo', 'Giza', 'Alexandria', 'Dakahlia', 'Asyut', 'Luxor', 'Aswan']; const specialties = DEMO_TIERS.filter(t => t.entityType === 'individual').slice(0, 7); ok(res, { filters: { fiscalYear: req.query.fiscalYear ?? '2026', scenario: req.query.scenario ?? 'year2_3' }, kpis: { activeSubscribers: active + 2481, totalRevenue: revenue + 6245000, yoyRenewalRate: 78.4, unrenewed: 342 }, cohorts: [{ name: 'Year 1 signups', signups: 920, renewals: 0, newSignups: 920 }, { name: 'Year 2 renewals', signups: 0, renewals: 714, newSignups: 0 }, { name: 'Year 2 new signups', signups: 530, renewals: 0, newSignups: 530 }], distribution: specialties.map((t, i) => ({ name: t.name, subscribers: 110 + i * 27, revenue: (110 + i * 27) * t.fee })), heatmap: governorates.map((g, i) => ({ governorate: g, values: specialties.map((t, j) => ({ specialty: t.name, rate: Math.max(42, 91 - (i * 5 + j * 3) % 47) })) })), facilities: { hospitals: 142, pharmacies: 480, clinics: 723, laboratories: 186 }, scenario: req.query.scenario ?? 'year2_3' }); }));
-apiRouter.get('/admin/claims', requireAuth, requirePermission('claims:read'), (req, res) => { const page = Math.max(1, Number(req.query.page ?? 1)); const limit = Math.min(50, Math.max(1, Number(req.query.limit ?? 10))); const filtered = claims.filter(c => !req.query.search || `${c.doctor} ${c.hospital} ${c.specialty} ${c.id}`.toLowerCase().includes(String(req.query.search).toLowerCase())); ok(res, { items: filtered.slice((page - 1) * limit, page * limit), page, limit, total: filtered.length, kpis: { totalFiled: claims.length, underLegalReview: claims.filter(c => c.stage === 'Legal Review').length, approvedCompensations: claims.filter(c => c.awarded > 0).length, disbursed: claims.reduce((s, c) => s + c.paid, 0), reserved: claims.reduce((s, c) => s + c.awarded - c.paid, 0) }, topSpecialties: [{ name: 'Surgery', count: 14, value: 1280000 }, { name: 'Obstetrics', count: 9, value: 870000 }, { name: 'Cardiology', count: 5, value: 430000 }] }); });
-apiRouter.get('/admin/audit', requireAuth, requirePermission('audit:read'), (req, res) => { const filtered = audit.filter(a => (!req.query.action || a.action.toLowerCase().includes(String(req.query.action).toLowerCase())) && (!req.query.user || a.user.toLowerCase().includes(String(req.query.user).toLowerCase()))); ok(res, { items: filtered.slice(0, 100), nextCursor: null }); });
-apiRouter.get('/admin/export/:view', requireAuth, requirePermission('export:run'), (req, res) => { recordAudit(req.user.email, req.user.role, 'EXPORT_REQUESTED', `${req.params.view}:${req.query.format ?? 'xlsx'}`); ok(res, { view: req.params.view, format: req.query.format ?? 'xlsx', status: 'demo-placeholder', message: 'Export adapter is stubbed in this demo; use the endpoint contract to attach ExcelJS/Puppeteer.' }); });
+    const user = users.find((u) => u.id === token.slice('demo-token-'.length) &&
+        token.startsWith('demo-token-') &&
+        u.status === 'pending_completion');
+    if (!user)
+        throw new AppError(400, 'TOKEN_INVALID', 'Completion link is invalid, expired, or already used');
+    user.status = 'active';
+    const cert = {
+        id: crypto.randomUUID(),
+        number: `MLRF-2026-${String(certificates.length + 123).padStart(6, '0')}`,
+        qrHash: crypto.randomBytes(16).toString('hex'),
+        userId: user.id,
+        issuedAt: new Date().toISOString(),
+        expiry: new Date(Date.now() + 365 * 86400000).toISOString(),
+        status: 'valid',
+    };
+    certificates.push(cert);
+    recordAudit(user.email, user.role, 'BANK_PROFILE_COMPLETED', user.id);
+    return ok(res, { user: publicUser(user), certificate: cert });
+}));
+apiRouter.get('/dev/sms-inbox', requireAuth, requirePermission('bulk:upload'), asyncHandler(async (req, res) => {
+    if (dbReady())
+        return ok(res, {
+            messages: await SmsOutboxModel.find()
+                .sort({ createdAt: -1 })
+                .limit(100)
+                .select('phone body status createdAt sentAt')
+                .lean(),
+        });
+    return ok(res, {
+        messages: users
+            .filter((u) => u.status === 'pending_completion')
+            .map((u) => ({
+            to: u.phone,
+            body: `Complete your MLRF profile: ${env.PUBLIC_WEB_URL}/complete/demo-token-${u.id}`,
+            createdAt: new Date().toISOString(),
+        })),
+    });
+}));
+apiRouter.get('/admin/analytics', requireAuth, asyncHandler(async (req, res) => {
+    const role = req.user.role;
+    if (!ROLE_PERMISSIONS[role]?.some((p) => p.startsWith('analytics:')))
+        throw new AppError(403, 'FORBIDDEN', 'Analytics permission required');
+    const active = users.filter((u) => u.status === 'active').length;
+    const revenue = payments
+        .filter((p) => p.status === 'paid')
+        .reduce((sum, p) => sum + p.amount, 0);
+    const governorates = ['Cairo', 'Giza', 'Alexandria', 'Dakahlia', 'Asyut', 'Luxor', 'Aswan'];
+    const specialties = DEMO_TIERS.filter((t) => t.entityType === 'individual').slice(0, 7);
+    ok(res, {
+        filters: {
+            fiscalYear: req.query.fiscalYear ?? '2026',
+            scenario: req.query.scenario ?? 'year2_3',
+        },
+        kpis: {
+            activeSubscribers: active + 2481,
+            totalRevenue: revenue + 6245000,
+            yoyRenewalRate: 78.4,
+            unrenewed: 342,
+        },
+        cohorts: [
+            { name: 'Year 1 signups', signups: 920, renewals: 0, newSignups: 920 },
+            { name: 'Year 2 renewals', signups: 0, renewals: 714, newSignups: 0 },
+            { name: 'Year 2 new signups', signups: 530, renewals: 0, newSignups: 530 },
+        ],
+        distribution: specialties.map((t, i) => ({
+            name: t.name,
+            subscribers: 110 + i * 27,
+            revenue: (110 + i * 27) * t.fee,
+        })),
+        heatmap: governorates.map((g, i) => ({
+            governorate: g,
+            values: specialties.map((t, j) => ({
+                specialty: t.name,
+                rate: Math.max(42, 91 - ((i * 5 + j * 3) % 47)),
+            })),
+        })),
+        facilities: { hospitals: 142, pharmacies: 480, clinics: 723, laboratories: 186 },
+        scenario: req.query.scenario ?? 'year2_3',
+    });
+}));
+apiRouter.get('/admin/claims', requireAuth, requirePermission('claims:read'), (req, res) => {
+    const page = Math.max(1, Number(req.query.page ?? 1));
+    const limit = Math.min(50, Math.max(1, Number(req.query.limit ?? 10)));
+    const filtered = claims.filter((c) => !req.query.search ||
+        `${c.doctor} ${c.hospital} ${c.specialty} ${c.id}`
+            .toLowerCase()
+            .includes(String(req.query.search).toLowerCase()));
+    ok(res, {
+        items: filtered.slice((page - 1) * limit, page * limit),
+        page,
+        limit,
+        total: filtered.length,
+        kpis: {
+            totalFiled: claims.length,
+            underLegalReview: claims.filter((c) => c.stage === 'Legal Review').length,
+            approvedCompensations: claims.filter((c) => c.awarded > 0).length,
+            disbursed: claims.reduce((s, c) => s + c.paid, 0),
+            reserved: claims.reduce((s, c) => s + c.awarded - c.paid, 0),
+        },
+        topSpecialties: [
+            { name: 'Surgery', count: 14, value: 1280000 },
+            { name: 'Obstetrics', count: 9, value: 870000 },
+            { name: 'Cardiology', count: 5, value: 430000 },
+        ],
+    });
+});
+apiRouter.get('/admin/audit', requireAuth, requirePermission('audit:read'), (req, res) => {
+    const filtered = audit.filter((a) => (!req.query.action ||
+        a.action.toLowerCase().includes(String(req.query.action).toLowerCase())) &&
+        (!req.query.user || a.user.toLowerCase().includes(String(req.query.user).toLowerCase())));
+    ok(res, { items: filtered.slice(0, 100), nextCursor: null });
+});
+apiRouter.get('/admin/export/:view', requireAuth, requirePermission('export:run'), (req, res) => {
+    recordAudit(req.user.email, req.user.role, 'EXPORT_REQUESTED', `${req.params.view}:${req.query.format ?? 'xlsx'}`);
+    ok(res, {
+        view: req.params.view,
+        format: req.query.format ?? 'xlsx',
+        status: 'demo-placeholder',
+        message: 'Export adapter is stubbed in this demo; use the endpoint contract to attach ExcelJS/Puppeteer.',
+    });
+});
 apiRouter.get('/admin/users', requireAuth, requirePermission('users:manage'), (_req, res) => ok(res, users.map(publicUser)));
-apiRouter.put('/admin/users/:id/role', requireAuth, requirePermission('users:manage'), asyncHandler(async (req, res) => { const role = z.enum(ROLES).parse(req.body.role); const user = users.find(u => u.id === req.params.id); if (!user)
-    throw new AppError(404, 'USER_NOT_FOUND', 'User not found'); user.role = role; recordAudit(req.user.email, req.user.role, 'USER_ROLE_UPDATED', user.id); ok(res, publicUser(user)); }));
-apiRouter.post('/admin/reset-demo', requireAuth, asyncHandler(async (req, res) => { if (!env.DEMO_MODE)
-    throw new AppError(404, 'NOT_FOUND', 'Route not found'); if (req.user.role !== 'super_admin')
-    throw new AppError(403, 'FORBIDDEN', 'Super admin required'); resetDemo(); recordAudit(req.user.email, req.user.role, 'DEMO_RESET', 'system'); ok(res, { reset: true }); }));
-apiRouter.get('/dev/demo-guide', (_req, res) => ok(res, { steps: ['Switch Year 1 / Year 2 & 3 in analytics', 'Verify a certificate QR in inspector tools', 'Upload bank rows, preview dry-run, then commit', 'Open SMS inbox and complete a profile', 'Switch demo roles to demonstrate RBAC'], demoOtp: '123456', demoUsers: users.map(u => ({ email: u.email, role: u.role })) }));
+apiRouter.put('/admin/users/:id/role', requireAuth, requirePermission('users:manage'), asyncHandler(async (req, res) => {
+    const role = z.enum(ROLES).parse(req.body.role);
+    const user = users.find((u) => u.id === req.params.id);
+    if (!user)
+        throw new AppError(404, 'USER_NOT_FOUND', 'User not found');
+    user.role = role;
+    recordAudit(req.user.email, req.user.role, 'USER_ROLE_UPDATED', user.id);
+    ok(res, publicUser(user));
+}));
+apiRouter.post('/admin/reset-demo', requireAuth, asyncHandler(async (req, res) => {
+    if (!env.DEMO_MODE)
+        throw new AppError(404, 'NOT_FOUND', 'Route not found');
+    if (req.user.role !== 'super_admin')
+        throw new AppError(403, 'FORBIDDEN', 'Super admin required');
+    resetDemo();
+    recordAudit(req.user.email, req.user.role, 'DEMO_RESET', 'system');
+    ok(res, { reset: true });
+}));
+apiRouter.get('/dev/demo-guide', (_req, res) => ok(res, {
+    steps: [
+        'Switch Year 1 / Year 2 & 3 in analytics',
+        'Verify a certificate QR in inspector tools',
+        'Upload bank rows, preview dry-run, then commit',
+        'Open SMS inbox and complete a profile',
+        'Switch demo roles to demonstrate RBAC',
+    ],
+    demoOtp: '123456',
+    demoUsers: users.map((u) => ({ email: u.email, role: u.role })),
+}));
 //# sourceMappingURL=index.js.map

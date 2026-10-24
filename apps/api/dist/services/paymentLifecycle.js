@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { AppError } from '../middleware/errors.js';
-import { CertificateModel, PaymentModel, SubscriptionModel, UserModel, AuditLogModel } from '../models/index.js';
+import { CertificateModel, PaymentModel, SubscriptionModel, UserModel, AuditLogModel, } from '../models/index.js';
 import { env } from '../config/env.js';
 function makeCertificateNumber() {
     const year = new Date().getFullYear();
@@ -77,7 +77,8 @@ export async function settlePayment(paymentId, outcome, webhookReference) {
         if (webhookReference)
             payment.webhookReference = webhookReference;
         await payment.save();
-        await AuditLogModel.create([{
+        await AuditLogModel.create([
+            {
                 userId: payment.userId,
                 userLabel: 'payment-gateway',
                 role: 'finance_admin',
@@ -86,7 +87,8 @@ export async function settlePayment(paymentId, outcome, webhookReference) {
                 entityId: String(payment._id ?? payment.id),
                 ipAddress: 'gateway',
                 userAgent: 'mock-gateway',
-            }]);
+            },
+        ]);
         return { payment, duplicate: false };
     }
     const subscription = await SubscriptionModel.findById(payment.subscriptionId);
@@ -108,7 +110,8 @@ export async function settlePayment(paymentId, outcome, webhookReference) {
     user.status = 'active';
     await user.save();
     const certificate = await issueCertificate(user._id ?? user.id, subscription._id ?? subscription.id);
-    await AuditLogModel.create([{
+    await AuditLogModel.create([
+        {
             userId: user._id ?? user.id,
             userLabel: user.email,
             role: user.role,
@@ -117,12 +120,16 @@ export async function settlePayment(paymentId, outcome, webhookReference) {
             entityId: String(payment._id ?? payment.id),
             ipAddress: 'gateway',
             userAgent: 'mock-gateway',
-        }]);
+        },
+    ]);
     return { payment, certificate, user, duplicate: false };
 }
 export const settleTursoPayment = settlePayment;
 export function isValidWebhookSignature(body, signature) {
-    const expected = crypto.createHmac('sha256', env.PAYMENT_WEBHOOK_SECRET).update(JSON.stringify(body)).digest();
+    const expected = crypto
+        .createHmac('sha256', env.PAYMENT_WEBHOOK_SECRET)
+        .update(JSON.stringify(body))
+        .digest();
     if (!/^[a-f0-9]{64}$/i.test(signature))
         return false;
     const provided = Buffer.from(signature, 'hex');

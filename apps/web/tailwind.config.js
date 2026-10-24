@@ -1,1 +1,22 @@
-export default {content:['./index.html','./src/**/*.{ts,tsx}'],theme:{extend:{colors:{primary:{50:'#effcf9',100:'#d7f5ee',500:'#0f9488',600:'#0f766e',700:'#115e59',900:'#134e4a'},gold:'#c9a65b',slate:{950:'#0b1220'}},fontFamily:{sans:['Inter','Cairo','system-ui','sans-serif']},boxShadow:{soft:'0 12px 35px rgba(15, 35, 50, .07)'}}},plugins:[]};
+export default {
+  content: ['./index.html', './src/**/*.{ts,tsx}'],
+  theme: {
+    extend: {
+      colors: {
+        primary: {
+          50: '#effcf9',
+          100: '#d7f5ee',
+          500: '#0f9488',
+          600: '#0f766e',
+          700: '#115e59',
+          900: '#134e4a',
+        },
+        gold: '#c9a65b',
+        slate: { 950: '#0b1220' },
+      },
+      fontFamily: { sans: ['Inter', 'Cairo', 'system-ui', 'sans-serif'] },
+      boxShadow: { soft: '0 12px 35px rgba(15, 35, 50, .07)' },
+    },
+  },
+  plugins: [],
+};

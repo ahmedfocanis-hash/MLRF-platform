@@ -23,7 +23,9 @@ app.use((req, res, next) => {
 // Serverless DB connection verification middleware
 app.use(async (_req, _res, next) => {
     try {
-        if (process.env.TURSO_DATABASE_URL || process.env.NODE_ENV === 'production' || process.env.CONNECT_TURSO === 'true') {
+        if (process.env.TURSO_DATABASE_URL ||
+            process.env.NODE_ENV === 'production' ||
+            process.env.CONNECT_TURSO === 'true') {
             await initDatabase();
         }
         next();

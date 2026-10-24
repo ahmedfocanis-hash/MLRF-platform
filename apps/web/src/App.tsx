@@ -221,7 +221,7 @@ export default function App() {
   const nav = useMemo(
     () => [
       { id: 'overview' as Page, label: t('overview'), icon: LayoutDashboard },
-      
+
       {
         id: 'analytics' as Page,
         label: t('analytics'),
@@ -443,11 +443,7 @@ export default function App() {
                 <UserPlus size={16} />
                 <span>{t('landing.registerAction', { defaultValue: 'إنشاء حساب' })}</span>
               </button>
-              <button
-                type="button"
-                className="nav-login-btn"
-                onClick={() => navigateTo('/login')}
-              >
+              <button type="button" className="nav-login-btn" onClick={() => navigateTo('/login')}>
                 <User size={16} />
                 <span>{t('landing.loginAction', { defaultValue: 'تسجيل الدخول' })}</span>
               </button>
@@ -488,11 +484,7 @@ export default function App() {
               <h1 className="hero-headline">{t('landing.heroTitle')}</h1>
               <p className="hero-lead">{t('landing.heroSubtitle')}</p>
 
-              <button
-                type="button"
-                className="hero-cta-btn"
-                onClick={() => navigateTo('/login')}
-              >
+              <button type="button" className="hero-cta-btn" onClick={() => navigateTo('/login')}>
                 <User size={18} />
                 <span>{t('landing.loginAction', { defaultValue: 'تسجيل الدخول إلى المنصة' })}</span>
                 <ArrowRight size={18} />
@@ -510,14 +502,19 @@ export default function App() {
                   <span className="hero-feature-icon">🏛️</span>
                   <div>
                     <strong>اعتماد رسمي ورقمي موحد</strong>
-                    <p>شهادة رقمية موثقة ومعتمدة لدى وزارة الصحة ونقابات المهن الطبية وجهات التفتيش.</p>
+                    <p>
+                      شهادة رقمية موثقة ومعتمدة لدى وزارة الصحة ونقابات المهن الطبية وجهات التفتيش.
+                    </p>
                   </div>
                 </div>
                 <div className="hero-feature-item">
                   <span className="hero-feature-icon">🛡️</span>
                   <div>
                     <strong>مظلة تكافلية تشمل كافة التخصصات</strong>
-                    <p>تعويضات مقرة بموجب قانون تنظيم المسئولية الطبية وسلامة المريض رقم (13) لسنة 2025 لحماية الأطباء والمنشآت الصحية.</p>
+                    <p>
+                      تعويضات مقرة بموجب قانون تنظيم المسئولية الطبية وسلامة المريض رقم (13) لسنة
+                      2025 لحماية الأطباء والمنشآت الصحية.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -559,15 +556,21 @@ export default function App() {
                 <div className="law-highlights">
                   <div className="highlight-item">
                     <CheckCircle2 size={18} className="highlight-icon" />
-                    <span>توفير مظلة تعويضية قانونية فورية للمتضررين من الأخطاء المهنية الطبية.</span>
+                    <span>
+                      توفير مظلة تعويضية قانونية فورية للمتضررين من الأخطاء المهنية الطبية.
+                    </span>
                   </div>
                   <div className="highlight-item">
                     <CheckCircle2 size={18} className="highlight-icon" />
-                    <span>حماية الاستقرار الوظيفي للأطباء وأعضاء المهن الطبية والمنشآت الصحية.</span>
+                    <span>
+                      حماية الاستقرار الوظيفي للأطباء وأعضاء المهن الطبية والمنشآت الصحية.
+                    </span>
                   </div>
                   <div className="highlight-item">
                     <CheckCircle2 size={18} className="highlight-icon" />
-                    <span>إرساء منظومة رقمية متكاملة تضمن سرعة الفصل والتعويض العادل بشفافية تامة.</span>
+                    <span>
+                      إرساء منظومة رقمية متكاملة تضمن سرعة الفصل والتعويض العادل بشفافية تامة.
+                    </span>
                   </div>
                 </div>
               </div>
@@ -578,7 +581,10 @@ export default function App() {
                     <HeartPulse size={22} />
                     <h4>الأطباء والممارسون</h4>
                   </div>
-                  <p>تغطية تأمينية لكافة الفئات من أطباء بشريين، أسنان، صيادلة، علاج طبيعي، وهيئات التمريض.</p>
+                  <p>
+                    تغطية تأمينية لكافة الفئات من أطباء بشريين، أسنان، صيادلة، علاج طبيعي، وهيئات
+                    التمريض.
+                  </p>
                 </div>
 
                 <div className="panel pillar-card">
@@ -586,7 +592,10 @@ export default function App() {
                     <Building2 size={22} />
                     <h4>المنشآت والمراكز الصحية</h4>
                   </div>
-                  <p>حماية المستشفيات، المراكز الطبية، العيادات، معامل التحاليل، ومراكز الأشعة وفق المعايير المعتمدة.</p>
+                  <p>
+                    حماية المستشفيات، المراكز الطبية، العيادات، معامل التحاليل، ومراكز الأشعة وفق
+                    المعايير المعتمدة.
+                  </p>
                 </div>
 
                 <div className="panel pillar-card">
@@ -594,7 +603,10 @@ export default function App() {
                     <ScanLine size={22} />
                     <h4>الرقابة والتفتيش الرقمي</h4>
                   </div>
-                  <p>التحقق اللحظي عبر الرمز المشفر (QR) والتفتيش الميداني للتأكد من انتظام التغطية والتراخيص.</p>
+                  <p>
+                    التحقق اللحظي عبر الرمز المشفر (QR) والتفتيش الميداني للتأكد من انتظام التغطية
+                    والتراخيص.
+                  </p>
                 </div>
               </div>
             </div>
@@ -708,11 +720,7 @@ export default function App() {
               >
                 <Globe size={18} />
               </button>
-              <button
-                type="button"
-                className="notification-btn"
-                title={t('shell.notifications')}
-              >
+              <button type="button" className="notification-btn" title={t('shell.notifications')}>
                 <Bell size={18} />
                 <i />
               </button>
@@ -782,11 +790,7 @@ export default function App() {
               >
                 <Globe size={18} />
               </button>
-              <button
-                type="button"
-                className="notification-btn"
-                title={t('shell.notifications')}
-              >
+              <button type="button" className="notification-btn" title={t('shell.notifications')}>
                 <Bell size={18} />
                 <i />
               </button>
@@ -824,1208 +828,1220 @@ export default function App() {
 
       {/* PORTAL 3: Fund Management & Admins Portal */}
       {isAdmin && (
-    <div className="app-shell">
-      <aside className={`sidebar ${sidebar ? 'sidebar-open' : ''}`}>
-        <div className="side-brand">
-          <div className="brand-mark">
-            <ShieldCheck size={23} />
-          </div>
-          <div>
-            <strong>MLRF</strong>
-            <span>{t('portal')}</span>
-          </div>
-          <button className="icon-btn close-side" onClick={() => setSidebar(false)}>
-            <X size={18} />
-          </button>
-        </div>
-        <div className="workspace-pill">
-          <div className="workspace-avatar">
-            <Building2 size={17} />
-          </div>
-          <div>
-            <strong>{t('shell.nationalFund')}</strong>
-            <span>{t('shell.egyptDemo')}</span>
-          </div>
-          <ChevronDown size={15} />
-        </div>
-        <div className="nav-label">{t('shell.workspace')}</div>
-        <nav>
-          {nav
-            .filter(
-              (n) =>
-                !n.permission ||
-                can(n.permission) ||
-                (n.id === 'analytics' && can('analytics:facilities')),
-            )
-            .map((item) => (
-              <button
-                key={item.id}
-                className={`nav-item ${page === item.id ? 'active' : ''}`}
-                onClick={() => {
-                  setPage(item.id);
-                  setSidebar(false);
-                }}
-              >
-                <item.icon size={18} />
-                <span>{item.label}</span>
-                {item.id === 'audit' && <span className="nav-live" />}
-              </button>
-            ))}
-        </nav>
-        <div className="side-bottom">
-          <div className="help-card">
-            <div className="help-icon">
-              <Activity size={17} />
-            </div>
-            <strong>{t('shell.needHelp')}</strong>
-            <p>{t('shell.helpBody')}</p>
-            <button onClick={() => setPage('guide')}>
-              {t('shell.openGuide')} <ArrowRight size={14} />
-            </button>
-          </div>
-          <div className="side-user">
-            <div className="avatar">
-              {currentUser.name
-                .split(' ')
-                .map((s) => s[0])
-                .slice(0, 2)
-                .join('')}
-            </div>
-            <div className="user-info">
-              <strong>{currentUser.name}</strong>
-              <span>{roleLabel(currentUser.role)}</span>
-            </div>
-            <button className="icon-btn" onClick={signOut} title={t('logout')}>
-              <LogOut size={17} />
-            </button>
-          </div>
-        </div>
-      </aside>
-      <main className="main">
-        <header className="topbar">
-          <div className="top-left">
-            <button className="icon-btn mobile-menu" onClick={() => setSidebar(true)}>
-              <Menu />
-            </button>
-            <div className="breadcrumb">
-              <span>{t('workspace')}</span>
-              <span className="crumb-slash">/</span>
-              <strong>{nav.find((n) => n.id === page)?.label ?? t('overview')}</strong>
-            </div>
-          </div>
-          <div className="top-actions">
-            <div className="environment">
-              <span className="live-dot" />
-              {t('demo')}
-            </div>
-            <div className="role-switch">
-              <span>{t('role')}</span>
-              <select
-                value={role}
-                onChange={(e) => void switchRole(e.target.value as Role)}
-                aria-label={t('role')}
-              >
-                {roles.map((r) => (
-                  <option value={r} key={r}>
-                    {roleLabel(r)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="portal-actions">
-              <button
-                type="button"
-                className="icon-btn"
-                title={t('shell.toggleTheme')}
-                onClick={() => setDark(!dark)}
-              >
-                {dark ? <Sun size={18} /> : <Moon size={18} />}
-              </button>
-              <button
-                type="button"
-                className="icon-btn"
-                title={t('shell.switchLanguage')}
-                onClick={() => void i18n.changeLanguage(i18n.language === 'en' ? 'ar' : 'en')}
-              >
-                <Globe size={18} />
-              </button>
-              <button
-                type="button"
-                className="notification-btn"
-                title={t('shell.notifications')}
-              >
-                <Bell size={18} />
-                <i />
-              </button>
-              <div
-                role="button"
-                tabIndex={0}
-                className="avatar-circle"
-                onClick={signOut}
-                onKeyDown={(e) => e.key === 'Enter' && signOut()}
-                title={t('logout')}
-              >
-                {currentUser.name
-                  .split(' ')
-                  .map((s) => s[0])
-                  .slice(0, 2)
-                  .join('')
-                  .toUpperCase()}
+        <div className="app-shell">
+          <aside className={`sidebar ${sidebar ? 'sidebar-open' : ''}`}>
+            <div className="side-brand">
+              <div className="brand-mark">
+                <ShieldCheck size={23} />
               </div>
+              <div>
+                <strong>MLRF</strong>
+                <span>{t('portal')}</span>
+              </div>
+              <button className="icon-btn close-side" onClick={() => setSidebar(false)}>
+                <X size={18} />
+              </button>
             </div>
-          </div>
-        </header>
-        <div className="page-content">
-          {page === 'overview' && (
-            <>
-              <div className="welcome-row">
-                <div>
-                  <div className="eyebrow">
-                    {formatLongDate('2026-10-19T12:00:00')} <span className="gold-line" />
-                  </div>
-                  <h1>
-                    {t('welcome')}, {currentUser.name.split(' ')[0]} <span className="wave">✦</span>
-                  </h1>
-                  <p className="muted">{t('overviewPage.todayLead')}</p>
+            <div className="workspace-pill">
+              <div className="workspace-avatar">
+                <Building2 size={17} />
+              </div>
+              <div>
+                <strong>{t('shell.nationalFund')}</strong>
+                <span>{t('shell.egyptDemo')}</span>
+              </div>
+              <ChevronDown size={15} />
+            </div>
+            <div className="nav-label">{t('shell.workspace')}</div>
+            <nav>
+              {nav
+                .filter(
+                  (n) =>
+                    !n.permission ||
+                    can(n.permission) ||
+                    (n.id === 'analytics' && can('analytics:facilities')),
+                )
+                .map((item) => (
+                  <button
+                    key={item.id}
+                    className={`nav-item ${page === item.id ? 'active' : ''}`}
+                    onClick={() => {
+                      setPage(item.id);
+                      setSidebar(false);
+                    }}
+                  >
+                    <item.icon size={18} />
+                    <span>{item.label}</span>
+                    {item.id === 'audit' && <span className="nav-live" />}
+                  </button>
+                ))}
+            </nav>
+            <div className="side-bottom">
+              <div className="help-card">
+                <div className="help-icon">
+                  <Activity size={17} />
                 </div>
-                <button className="btn btn-outline" onClick={() => void qc.invalidateQueries()}>
-                  <RefreshCw size={16} /> {t('overviewPage.refresh')}
+                <strong>{t('shell.needHelp')}</strong>
+                <p>{t('shell.helpBody')}</p>
+                <button onClick={() => setPage('guide')}>
+                  {t('shell.openGuide')} <ArrowRight size={14} />
                 </button>
               </div>
-              <div className="hero-banner">
-                <div className="hero-pattern" />
-                <div className="hero-content">
-                  <div className="hero-badge">
-                    <ShieldCheck size={14} /> {t('overviewPage.badge')}
-                  </div>
-                  <h2>
-                    {t('overviewPage.heroTitle')}
-                    <br />
-                    <em>{t('overviewPage.heroEmphasis')}</em>
-                  </h2>
-                  <p>{t('overviewPage.heroBody')}</p>
-                  <button className="btn btn-light" onClick={() => setPage('analytics')}>
-                    {t('overviewPage.explore')} <ArrowRight size={16} />
-                  </button>
+              <div className="side-user">
+                <div className="avatar">
+                  {currentUser.name
+                    .split(' ')
+                    .map((s) => s[0])
+                    .slice(0, 2)
+                    .join('')}
                 </div>
-                <div className="hero-illustration">
-                  <div className="orbit orbit-one" />
-                  <div className="orbit orbit-two" />
-                  <div className="hero-shield">
-                    <ShieldCheck size={68} />
-                  </div>
-                  <div className="float-chip chip-one">
-                    <CheckCircle2 size={17} />
-                    <span>
-                      <b>{t('overviewPage.verified')}</b>
-                      <small>{t('overviewPage.coverageActive')}</small>
-                    </span>
-                  </div>
-                  <div className="float-chip chip-two">
-                    <Activity size={17} />
-                    <span>
-                      <b>+12.8%</b>
-                      <small>{t('overviewPage.renewalGrowth')}</small>
-                    </span>
-                  </div>
-                  <div className="float-chip chip-three">
-                    <Building2 size={17} />
-                    <span>
-                      <b>27</b>
-                      <small>{t('login.governorates')}</small>
-                    </span>
-                  </div>
+                <div className="user-info">
+                  <strong>{currentUser.name}</strong>
+                  <span>{roleLabel(currentUser.role)}</span>
+                </div>
+                <button className="icon-btn" onClick={signOut} title={t('logout')}>
+                  <LogOut size={17} />
+                </button>
+              </div>
+            </div>
+          </aside>
+          <main className="main">
+            <header className="topbar">
+              <div className="top-left">
+                <button className="icon-btn mobile-menu" onClick={() => setSidebar(true)}>
+                  <Menu />
+                </button>
+                <div className="breadcrumb">
+                  <span>{t('workspace')}</span>
+                  <span className="crumb-slash">/</span>
+                  <strong>{nav.find((n) => n.id === page)?.label ?? t('overview')}</strong>
                 </div>
               </div>
-              <div className="section-heading">
-                <div>
-                  <h2>{t('overviewPage.glance')}</h2>
-                  <p>{t('overviewPage.glanceBody')}</p>
+              <div className="top-actions">
+                <div className="environment">
+                  <span className="live-dot" />
+                  {t('demo')}
                 </div>
-                <div className="select-wrap">
-                  <span>{t('overviewPage.fiscalYear')}</span>
-                  <select value={year} onChange={(e) => setYear(e.target.value)}>
-                    <option value="year1">{t('years.year1')}</option>
-                    <option value="year2_3">{t('years.year23')}</option>
+                <div className="role-switch">
+                  <span>{t('role')}</span>
+                  <select
+                    value={role}
+                    onChange={(e) => void switchRole(e.target.value as Role)}
+                    aria-label={t('role')}
+                  >
+                    {roles.map((r) => (
+                      <option value={r} key={r}>
+                        {roleLabel(r)}
+                      </option>
+                    ))}
                   </select>
                 </div>
+                <div className="portal-actions">
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    title={t('shell.toggleTheme')}
+                    onClick={() => setDark(!dark)}
+                  >
+                    {dark ? <Sun size={18} /> : <Moon size={18} />}
+                  </button>
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    title={t('shell.switchLanguage')}
+                    onClick={() => void i18n.changeLanguage(i18n.language === 'en' ? 'ar' : 'en')}
+                  >
+                    <Globe size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    className="notification-btn"
+                    title={t('shell.notifications')}
+                  >
+                    <Bell size={18} />
+                    <i />
+                  </button>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    className="avatar-circle"
+                    onClick={signOut}
+                    onKeyDown={(e) => e.key === 'Enter' && signOut()}
+                    title={t('logout')}
+                  >
+                    {currentUser.name
+                      .split(' ')
+                      .map((s) => s[0])
+                      .slice(0, 2)
+                      .join('')
+                      .toUpperCase()}
+                  </div>
+                </div>
               </div>
-              <div className="kpi-grid">
-                <Kpi
-                  title={t('active')}
-                  value={formatCount(kpis.activeSubscribers)}
-                  change="12.8%"
-                  trend="up"
-                  icon={Users}
-                  color="teal"
-                  caption={t('overviewPage.vsPrior')}
-                />
-                <Kpi
-                  title={t('revenue')}
-                  value={money(kpis.totalRevenue)}
-                  change="8.3%"
-                  trend="up"
-                  icon={Banknote}
-                  color="gold"
-                  caption={t('overviewPage.vsPrior')}
-                />
-                <Kpi
-                  title={t('renewal')}
-                  value={`${kpis.yoyRenewalRate}%`}
-                  change="2.4%"
-                  trend="up"
-                  icon={RefreshCw}
-                  color="blue"
-                  caption={t('overviewPage.yoyCaption')}
-                />
-                <Kpi
-                  title={t('churn')}
-                  value={formatCount(kpis.unrenewed)}
-                  change="4.1%"
-                  trend="down"
-                  icon={ArrowDownRight}
-                  color="rose"
-                  caption={t('overviewPage.followUp')}
-                />
-              </div>
-              <div className="dashboard-grid">
-                <section className="panel growth-panel">
-                  <div className="panel-heading">
+            </header>
+            <div className="page-content">
+              {page === 'overview' && (
+                <>
+                  <div className="welcome-row">
                     <div>
-                      <h3>{t('overviewPage.growth')}</h3>
-                      <p>{t('overviewPage.growthBody')}</p>
-                    </div>
-                    <button
-                      className="subtle-select"
-                      onClick={() => setYear(year === 'year1' ? 'year2_3' : 'year1')}
-                    >
-                      {year === 'year1' ? t('years.year1') : t('years.year23')} <ChevronDown size={14} />
-                    </button>
-                  </div>
-                  <div className="chart-legend">
-                    <span>
-                      <i className="legend-dot teal-bg" /> {t('overviewPage.newSubscribers')}
-                    </span>
-                    <span>
-                      <i className="legend-dot gold-bg" /> {t('overviewPage.renewals')}
-                    </span>
-                  </div>
-                  <div className="bar-chart">
-                    {(
-                      analytics.data?.cohorts ?? [
-                        { name: 'Q1', signups: 440, renewals: 320 },
-                        { name: 'Q2', signups: 510, renewals: 370 },
-                        { name: 'Q3', signups: 390, renewals: 430 },
-                        { name: 'Q4', signups: 620, renewals: 500 },
-                      ]
-                    ).map((d: any, i: number) => (
-                      <div className="bar-group" key={d.name}>
-                        <div className="bars">
-                          <div
-                            className="bar teal-bar"
-                            style={{
-                              height: `${Math.max(15, Math.min(100, (d.signups ?? d.newSignups ?? 0) / 7))}%`,
-                            }}
-                            title={t('overviewPage.signupsTitle', {
-                              n: d.signups ?? d.newSignups ?? 0,
-                            })}
-                          />
-                          <div
-                            className="bar gold-bar"
-                            style={{
-                              height: `${Math.max(12, Math.min(100, (d.renewals ?? 0) / 7))}%`,
-                            }}
-                            title={t('overviewPage.renewalsTitle', { n: d.renewals ?? 0 })}
-                          />
-                        </div>
-                        <span>{cohortLabel(['Q1', 'Q2', 'Q3', 'Q4'][i] ?? d.name)}</span>
+                      <div className="eyebrow">
+                        {formatLongDate('2026-10-19T12:00:00')} <span className="gold-line" />
                       </div>
-                    ))}
-                  </div>
-                  <div className="chart-footer">
-                    <span>
-                      <span className="status-dot success-dot" /> {t('overviewPage.aboveTarget')}
-                    </span>
-                    <button onClick={() => setPage('analytics')}>
-                      {t('overviewPage.viewReport')} <ArrowRight size={14} />
+                      <h1>
+                        {t('welcome')}, {currentUser.name.split(' ')[0]}{' '}
+                        <span className="wave">✦</span>
+                      </h1>
+                      <p className="muted">{t('overviewPage.todayLead')}</p>
+                    </div>
+                    <button className="btn btn-outline" onClick={() => void qc.invalidateQueries()}>
+                      <RefreshCw size={16} /> {t('overviewPage.refresh')}
                     </button>
                   </div>
-                </section>
-                <section className="panel activity-panel">
-                  <div className="panel-heading">
+                  <div className="hero-banner">
+                    <div className="hero-pattern" />
+                    <div className="hero-content">
+                      <div className="hero-badge">
+                        <ShieldCheck size={14} /> {t('overviewPage.badge')}
+                      </div>
+                      <h2>
+                        {t('overviewPage.heroTitle')}
+                        <br />
+                        <em>{t('overviewPage.heroEmphasis')}</em>
+                      </h2>
+                      <p>{t('overviewPage.heroBody')}</p>
+                      <button className="btn btn-light" onClick={() => setPage('analytics')}>
+                        {t('overviewPage.explore')} <ArrowRight size={16} />
+                      </button>
+                    </div>
+                    <div className="hero-illustration">
+                      <div className="orbit orbit-one" />
+                      <div className="orbit orbit-two" />
+                      <div className="hero-shield">
+                        <ShieldCheck size={68} />
+                      </div>
+                      <div className="float-chip chip-one">
+                        <CheckCircle2 size={17} />
+                        <span>
+                          <b>{t('overviewPage.verified')}</b>
+                          <small>{t('overviewPage.coverageActive')}</small>
+                        </span>
+                      </div>
+                      <div className="float-chip chip-two">
+                        <Activity size={17} />
+                        <span>
+                          <b>+12.8%</b>
+                          <small>{t('overviewPage.renewalGrowth')}</small>
+                        </span>
+                      </div>
+                      <div className="float-chip chip-three">
+                        <Building2 size={17} />
+                        <span>
+                          <b>27</b>
+                          <small>{t('login.governorates')}</small>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="section-heading">
                     <div>
-                      <h3>{t('recentActivity')}</h3>
-                      <p>{t('overviewPage.latestEvents')}</p>
+                      <h2>{t('overviewPage.glance')}</h2>
+                      <p>{t('overviewPage.glanceBody')}</p>
+                    </div>
+                    <div className="select-wrap">
+                      <span>{t('overviewPage.fiscalYear')}</span>
+                      <select value={year} onChange={(e) => setYear(e.target.value)}>
+                        <option value="year1">{t('years.year1')}</option>
+                        <option value="year2_3">{t('years.year23')}</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="kpi-grid">
+                    <Kpi
+                      title={t('active')}
+                      value={formatCount(kpis.activeSubscribers)}
+                      change="12.8%"
+                      trend="up"
+                      icon={Users}
+                      color="teal"
+                      caption={t('overviewPage.vsPrior')}
+                    />
+                    <Kpi
+                      title={t('revenue')}
+                      value={money(kpis.totalRevenue)}
+                      change="8.3%"
+                      trend="up"
+                      icon={Banknote}
+                      color="gold"
+                      caption={t('overviewPage.vsPrior')}
+                    />
+                    <Kpi
+                      title={t('renewal')}
+                      value={`${kpis.yoyRenewalRate}%`}
+                      change="2.4%"
+                      trend="up"
+                      icon={RefreshCw}
+                      color="blue"
+                      caption={t('overviewPage.yoyCaption')}
+                    />
+                    <Kpi
+                      title={t('churn')}
+                      value={formatCount(kpis.unrenewed)}
+                      change="4.1%"
+                      trend="down"
+                      icon={ArrowDownRight}
+                      color="rose"
+                      caption={t('overviewPage.followUp')}
+                    />
+                  </div>
+                  <div className="dashboard-grid">
+                    <section className="panel growth-panel">
+                      <div className="panel-heading">
+                        <div>
+                          <h3>{t('overviewPage.growth')}</h3>
+                          <p>{t('overviewPage.growthBody')}</p>
+                        </div>
+                        <button
+                          className="subtle-select"
+                          onClick={() => setYear(year === 'year1' ? 'year2_3' : 'year1')}
+                        >
+                          {year === 'year1' ? t('years.year1') : t('years.year23')}{' '}
+                          <ChevronDown size={14} />
+                        </button>
+                      </div>
+                      <div className="chart-legend">
+                        <span>
+                          <i className="legend-dot teal-bg" /> {t('overviewPage.newSubscribers')}
+                        </span>
+                        <span>
+                          <i className="legend-dot gold-bg" /> {t('overviewPage.renewals')}
+                        </span>
+                      </div>
+                      <div className="bar-chart">
+                        {(
+                          analytics.data?.cohorts ?? [
+                            { name: 'Q1', signups: 440, renewals: 320 },
+                            { name: 'Q2', signups: 510, renewals: 370 },
+                            { name: 'Q3', signups: 390, renewals: 430 },
+                            { name: 'Q4', signups: 620, renewals: 500 },
+                          ]
+                        ).map((d: any, i: number) => (
+                          <div className="bar-group" key={d.name}>
+                            <div className="bars">
+                              <div
+                                className="bar teal-bar"
+                                style={{
+                                  height: `${Math.max(15, Math.min(100, (d.signups ?? d.newSignups ?? 0) / 7))}%`,
+                                }}
+                                title={t('overviewPage.signupsTitle', {
+                                  n: d.signups ?? d.newSignups ?? 0,
+                                })}
+                              />
+                              <div
+                                className="bar gold-bar"
+                                style={{
+                                  height: `${Math.max(12, Math.min(100, (d.renewals ?? 0) / 7))}%`,
+                                }}
+                                title={t('overviewPage.renewalsTitle', { n: d.renewals ?? 0 })}
+                              />
+                            </div>
+                            <span>{cohortLabel(['Q1', 'Q2', 'Q3', 'Q4'][i] ?? d.name)}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="chart-footer">
+                        <span>
+                          <span className="status-dot success-dot" />{' '}
+                          {t('overviewPage.aboveTarget')}
+                        </span>
+                        <button onClick={() => setPage('analytics')}>
+                          {t('overviewPage.viewReport')} <ArrowRight size={14} />
+                        </button>
+                      </div>
+                    </section>
+                    <section className="panel activity-panel">
+                      <div className="panel-heading">
+                        <div>
+                          <h3>{t('recentActivity')}</h3>
+                          <p>{t('overviewPage.latestEvents')}</p>
+                        </div>
+                        <button
+                          className="icon-btn"
+                          onClick={() => void qc.invalidateQueries({ queryKey: ['audit'] })}
+                        >
+                          <MoreHorizontal />
+                        </button>
+                      </div>
+                      <div className="activity-list">
+                        {(
+                          auditQuery.data?.items ?? [
+                            {
+                              id: 'a1',
+                              action: 'PAYMENT_SUCCESS',
+                              user: 'Dr. Mariam Hassan',
+                              timestamp: new Date().toISOString(),
+                              role: 'subscriber',
+                            },
+                            {
+                              id: 'a2',
+                              action: 'PROFILE_UPDATED',
+                              user: 'Ahmed Inspector',
+                              timestamp: new Date(Date.now() - 3600000).toISOString(),
+                              role: 'inspector',
+                            },
+                            {
+                              id: 'a3',
+                              action: 'LOGIN',
+                              user: 'Finance Admin',
+                              timestamp: new Date(Date.now() - 7200000).toISOString(),
+                              role: 'finance_admin',
+                            },
+                            {
+                              id: 'a4',
+                              action: 'EXPORT_REQUESTED',
+                              user: 'Super Admin',
+                              timestamp: new Date(Date.now() - 10800000).toISOString(),
+                              role: 'super_admin',
+                            },
+                          ]
+                        )
+                          .slice(0, 4)
+                          .map((a: any, i: number) => (
+                            <div className="activity-item" key={a.id}>
+                              <div className={`activity-icon activity-${i % 4}`}>
+                                {i === 0 ? (
+                                  <WalletCards size={16} />
+                                ) : i === 1 ? (
+                                  <Users size={16} />
+                                ) : i === 2 ? (
+                                  <LockKeyhole size={16} />
+                                ) : (
+                                  <FileText size={16} />
+                                )}
+                              </div>
+                              <div className="activity-text">
+                                <strong>{actionLabel(a.action)}</strong>
+                                <span>
+                                  {a.user} · {roleLabel(a.role ?? '')}
+                                </span>
+                              </div>
+                              <time>{timeAgo(a.timestamp)}</time>
+                            </div>
+                          ))}
+                      </div>
+                      <button className="activity-all" onClick={() => setPage('audit')}>
+                        {t('overviewPage.viewAll')} <ArrowRight size={14} />
+                      </button>
+                    </section>
+                  </div>
+                  <div className="section-heading action-heading">
+                    <div>
+                      <h2>{t('quickActions')}</h2>
+                      <p>{t('overviewPage.jump')}</p>
+                    </div>
+                  </div>
+                  <div className="quick-grid">
+                    <Quick
+                      icon={ScanLine}
+                      title={t('verify')}
+                      detail={t('overviewPage.scanDetail')}
+                      onClick={() => void switchRole('inspector')}
+                    />
+                    <Quick
+                      icon={UploadCloud}
+                      title={t('newBatch')}
+                      detail={t('overviewPage.batchDetail')}
+                      onClick={() => setPage('bulk')}
+                    />
+                    <Quick
+                      icon={ChartNoAxesCombined}
+                      title={t('viewAnalytics')}
+                      detail={t('overviewPage.analyticsDetail')}
+                      onClick={() => setPage('analytics')}
+                    />
+                  </div>
+                </>
+              )}
+              {page === 'analytics' && (
+                <>
+                  <PageTitle
+                    eyebrow={t('analyticsPage.eyebrow')}
+                    title={t('analyticsPage.title')}
+                    description={t('analyticsPage.body')}
+                    action={
+                      <button
+                        className="btn btn-outline"
+                        onClick={() => {
+                          const rows = (
+                            analytics.data?.distribution ??
+                            DEMO_TIERS.slice(0, 6).map((tier, i) => ({
+                              name: tier.name,
+                              subscribers: 160 - i * 12,
+                              revenue: (160 - i * 12) * tier.fee,
+                            }))
+                          ).map((d: any) => ({
+                            [t('analyticsPage.specialty') || 'التخصص / الفئة']: specialtyLabel(
+                              d.name,
+                            ),
+                            [t('analyticsPage.subscribers') || 'عدد المشتركين']: d.subscribers,
+                            [t('analyticsPage.revenue') || 'إجمالي الرسوم (جنيه)']: d.revenue,
+                          }));
+                          exportToExcel(rows, `mlrf_analytics_${year}.xlsx`, 'Analytics');
+                          setToast(
+                            i18n.language === 'ar'
+                              ? 'تم استخراج وتحميل تقرير التحليلات بنجاح'
+                              : 'Analytics report exported successfully',
+                          );
+                        }}
+                      >
+                        <Download size={16} /> {t('analyticsPage.export')}
+                      </button>
+                    }
+                  />
+                  <div className="filter-row">
+                    <div className="select-wrap">
+                      <span>{t('analyticsPage.scenario')}</span>
+                      <select value={year} onChange={(e) => setYear(e.target.value)}>
+                        <option value="year1">{t('years.year1')}</option>
+                        <option value="year2_3">{t('years.year23')}</option>
+                      </select>
+                    </div>
+                    <div className="filter-note">
+                      <Activity size={15} /> {t('analyticsPage.live')}
+                    </div>
+                  </div>
+                  <div className="kpi-grid">
+                    <Kpi
+                      title={t('active')}
+                      value={formatCount(kpis.activeSubscribers)}
+                      change="12.8%"
+                      trend="up"
+                      icon={Users}
+                      color="teal"
+                      caption={t('overviewPage.vsPriorShort')}
+                    />
+                    <Kpi
+                      title={t('revenue')}
+                      value={money(kpis.totalRevenue)}
+                      change="8.3%"
+                      trend="up"
+                      icon={Banknote}
+                      color="gold"
+                      caption={t('overviewPage.paidContributions')}
+                    />
+                    <Kpi
+                      title={t('yoyRenewal')}
+                      value={`${kpis.yoyRenewalRate}%`}
+                      change="2.4%"
+                      trend="up"
+                      icon={RefreshCw}
+                      color="blue"
+                      caption={t('overviewPage.yoyShort')}
+                    />
+                    <Kpi
+                      title={t('churn')}
+                      value={formatCount(kpis.unrenewed)}
+                      change="4.1%"
+                      trend="down"
+                      icon={ArrowDownRight}
+                      color="rose"
+                      caption={t('overviewPage.followUpShort')}
+                    />
+                  </div>
+                  <div className="dashboard-grid">
+                    <section className="panel">
+                      <div className="panel-heading">
+                        <div>
+                          <h3>{t('analyticsPage.revenueBy')}</h3>
+                          <p>{t('analyticsPage.revenueHint')}</p>
+                        </div>
+                      </div>
+                      <div className="horizontal-bars">
+                        {(
+                          analytics.data?.distribution ??
+                          DEMO_TIERS.slice(0, 6).map((tier, i) => ({
+                            name: tier.name,
+                            subscribers: 160 - i * 12,
+                            revenue: (160 - i * 12) * tier.fee,
+                          }))
+                        )
+                          .slice(0, 7)
+                          .map((d: any) => (
+                            <div className="horizontal-row" key={d.name}>
+                              <div>
+                                <span>{specialtyLabel(d.name)}</span>
+                                <strong>{money(d.revenue)}</strong>
+                              </div>
+                              <div className="track">
+                                <span
+                                  style={{ width: `${Math.min(100, (d.revenue / 90000) * 100)}%` }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </section>
+                    <section className="panel">
+                      <div className="panel-heading">
+                        <div>
+                          <h3>{t('analyticsPage.cohorts')}</h3>
+                          <p>{t('analyticsPage.cohortsHint')}</p>
+                        </div>
+                      </div>
+                      <div className="cohort-list">
+                        {(analytics.data?.cohorts ?? []).map((d: any) => (
+                          <div className="cohort-row" key={d.name}>
+                            <span>{cohortLabel(d.name)}</span>
+                            <strong>
+                              {formatCount(d.signups || d.newSignups || d.renewals || 0)}
+                            </strong>
+                            <div className="track">
+                              <span
+                                style={{
+                                  width: `${Math.min(100, (d.signups || d.newSignups || d.renewals || 0) / 10)}%`,
+                                }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="note-card compact">
+                        <Activity />
+                        <div>
+                          <strong>
+                            {t('analyticsPage.scenarioNamed', {
+                              name: year === 'year1' ? t('years.year1') : t('years.years23'),
+                            })}
+                          </strong>
+                          <p>{t('analyticsPage.switchScenario')}</p>
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                  <section className="panel heatmap-panel">
+                    <div className="panel-heading">
+                      <div>
+                        <h3>{t('analyticsPage.heatmap')}</h3>
+                        <p>{t('analyticsPage.heatmapHint')}</p>
+                      </div>
+                      <span className="status-chip warning">{t('analyticsPage.weakest')}</span>
+                    </div>
+                    <div className="heatmap-table">
+                      <div className="heat-row heat-head">
+                        <span>{t('analyticsPage.governorate')}</span>
+                        {(
+                          analytics.data?.heatmap?.[0]?.values ??
+                          DEMO_TIERS.slice(0, 5).map((tier) => ({ specialty: tier.name }))
+                        )
+                          .slice(0, 5)
+                          .map((v: any) => (
+                            <span key={v.specialty}>{specialtyLabel(v.specialty)}</span>
+                          ))}
+                      </div>
+                      {(analytics.data?.heatmap ?? []).slice(0, 7).map((g: any) => (
+                        <div className="heat-row" key={g.governorate}>
+                          <strong>{governorateLabel(g.governorate)}</strong>
+                          {g.values.slice(0, 5).map((v: any) => (
+                            <span
+                              className={`heat-cell ${v.rate < 60 ? 'heat-low' : v.rate < 75 ? 'heat-mid' : 'heat-high'}`}
+                              key={v.specialty}
+                              title={`${specialtyLabel(v.specialty)}: ${v.rate}%`}
+                            >
+                              {v.rate}%
+                            </span>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                </>
+              )}
+              {page === 'bulk' && (
+                <>
+                  <PageTitle
+                    eyebrow={t('bulkPage.eyebrow')}
+                    title={t('bulkPage.title')}
+                    description={t('bulkPage.body')}
+                    action={
+                      <button
+                        className="btn btn-outline"
+                        onClick={() => {
+                          setBulkText(
+                            'name,phone,nationalId,specialty,amount\nDr. Sample One,01012345678,29901011234567,General Practitioner,1800\nDr. Sample Two,01112345678,29902021234568,Surgery,4200\nDuplicate Example,01012345678,29901011234567,General Practitioner,1800\nInvalid ID,01212345678,123,Cardiology,3000',
+                          );
+                          setBulkPreview(null);
+                        }}
+                      >
+                        <RefreshCw size={15} /> {t('bulkPage.reset')}
+                      </button>
+                    }
+                  />
+                  <div className="bulk-summary">
+                    <div>
+                      <FileSpreadsheet />
+                      <span>
+                        <small>{t('bulkPage.tiers')}</small>
+                        <strong>{t('bulkPage.feeTiers', { n: DEMO_TIERS.length })}</strong>
+                      </span>
+                    </div>
+                    <div>
+                      <ShieldCheck />
+                      <span>
+                        <small>{t('bulkPage.duplicates')}</small>
+                        <strong>{t('bulkPage.duplicateKey')}</strong>
+                      </span>
+                    </div>
+                    <div>
+                      <Bell />
+                      <span>
+                        <small>{t('bulkPage.notifications')}</small>
+                        <strong>{t('bulkPage.sms')}</strong>
+                      </span>
+                    </div>
+                  </div>
+                  <div className="panel upload-panel">
+                    <div className="panel-heading">
+                      <div>
+                        <h3>{t('bulkPage.import')}</h3>
+                        <p>{t('bulkPage.importBody')}</p>
+                      </div>
+                      <span className="status-chip neutral">{t('bulkPage.dryRun')}</span>
+                    </div>
+                    <textarea
+                      className="bulk-textarea"
+                      value={bulkText}
+                      onChange={(e) => setBulkText(e.target.value)}
+                      rows={7}
+                      aria-label={t('bulkPage.csvLabel')}
+                    />
+                    <div className="upload-footer">
+                      <span>
+                        <FileText size={15} /> {t('bulkPage.csvHint')}
+                      </span>
+                      <div>
+                        <button className="btn btn-outline" onClick={() => void previewBulk(false)}>
+                          <Search size={15} /> {t('bulkPage.preview')}
+                        </button>
+                        <button
+                          className="btn btn-primary"
+                          disabled={!bulkPreview?.rows?.length || bulkPreview?.dryRun === false}
+                          onClick={() => void previewBulk(true)}
+                        >
+                          <Check size={16} /> {t('bulkPage.commit')}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  {bulkPreview && (
+                    <section className="panel results-panel">
+                      <div className="panel-heading">
+                        <div>
+                          <h3>
+                            {bulkPreview.dryRun
+                              ? t('bulkPage.previewTitle')
+                              : t('bulkPage.committedTitle')}
+                          </h3>
+                          <p>{t('bulkPage.review')}</p>
+                        </div>
+                        <span
+                          className={`status-chip ${bulkPreview.dryRun ? 'warning' : 'success'}`}
+                        >
+                          {bulkPreview.dryRun
+                            ? t('bulkPage.dryRunChip')
+                            : t('bulkPage.committedChip')}
+                        </span>
+                      </div>
+                      <div className="mini-kpis">
+                        <Mini
+                          label={t('bulkPage.total')}
+                          value={bulkPreview.summary?.total ?? bulkPreview.total}
+                        />
+                        <Mini
+                          label={t('bulkPage.created')}
+                          value={bulkPreview.summary?.created ?? bulkPreview.created}
+                          tone="success"
+                        />
+                        <Mini
+                          label={t('bulkPage.duplicate')}
+                          value={bulkPreview.summary?.duplicate ?? bulkPreview.duplicate}
+                          tone="warning"
+                        />
+                        <Mini
+                          label={t('bulkPage.invalid')}
+                          value={bulkPreview.summary?.invalid ?? bulkPreview.invalid}
+                          tone="danger"
+                        />
+                      </div>
+                      <div className="table-scroll">
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>{t('bulkPage.row')}</th>
+                              <th>{t('bulkPage.name')}</th>
+                              <th>{t('bulkPage.nationalId')}</th>
+                              <th>{t('bulkPage.specialty')}</th>
+                              <th>{t('bulkPage.amount')}</th>
+                              <th>{t('bulkPage.status')}</th>
+                              <th>{t('bulkPage.reason')}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(bulkPreview.rows ?? []).map((r: any) => (
+                              <tr key={r.rowNumber}>
+                                <td>{r.rowNumber}</td>
+                                <td>{r.name}</td>
+                                <td>{r.nationalId}</td>
+                                <td>{specialtyLabel(r.specialty)}</td>
+                                <td>{money(Number(r.amount) || 0)}</td>
+                                <td>
+                                  <span
+                                    className={`status-chip ${r.status === 'created' ? 'success' : r.status === 'duplicate' ? 'warning' : 'danger'}`}
+                                  >
+                                    {statusLabel(r.status)}
+                                  </span>
+                                </td>
+                                <td>{reasonLabel(r.reason)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  )}
+                </>
+              )}
+              {page === 'claims' && (
+                <>
+                  <PageTitle
+                    eyebrow={t('claimsPage.eyebrow')}
+                    title={t('claimsPage.title')}
+                    description={t('claimsPage.body')}
+                    action={
+                      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                        <button
+                          className="btn btn-outline"
+                          onClick={() => {
+                            const items = claimsQuery.data?.items ?? [];
+                            const rows = items.map((c: any) => ({
+                              [t('claimsPage.id') || 'رقم المطالبة']: c.id,
+                              [t('claimsPage.doctor') || 'الطبيب / الممارس']: c.doctor,
+                              [t('claimsPage.hospital') || 'المنشأة الطبية']: c.hospital,
+                              [t('claimsPage.specialty') || 'التخصص']: specialtyLabel(c.specialty),
+                              [t('claimsPage.stage') || 'المرحلة']: stageLabel(c.stage),
+                              [t('claimsPage.awarded') || 'التعويض المقضي به (جنيه)']: c.awarded,
+                              [t('claimsPage.paid') || 'المبلغ المنصرف (جنيه)']: c.paid,
+                            }));
+                            exportToExcel(
+                              rows.length
+                                ? rows
+                                : [
+                                    {
+                                      [t('claimsPage.id') || 'رقم المطالبة']: 'CLM-2026-001',
+                                      [t('claimsPage.doctor') || 'الطبيب']: 'د. طارق محمود',
+                                      [t('claimsPage.hospital') || 'المنشأة']:
+                                        'مستشفى السلام الدولي',
+                                      [t('claimsPage.specialty') || 'التخصص']: 'جراحة عامة',
+                                      [t('claimsPage.stage') || 'المرحلة']: 'صرف التعويض',
+                                      [t('claimsPage.awarded') || 'التعويض']: 150000,
+                                      [t('claimsPage.paid') || 'المنصرف']: 150000,
+                                    },
+                                  ],
+                              'mlrf_claims_ledger.xlsx',
+                              'Claims',
+                            );
+                            setToast(
+                              i18n.language === 'ar'
+                                ? 'تم استخراج وتحميل سجل التعويضات بنجاح'
+                                : 'Claims ledger exported successfully',
+                            );
+                          }}
+                        >
+                          <Download size={16} /> {t('analyticsPage.export')}
+                        </button>
+                        <span className="status-chip neutral">{t('claimsPage.future')}</span>
+                      </div>
+                    }
+                  />
+                  <div className="kpi-grid">
+                    <Kpi
+                      title={t('claimsPage.filed')}
+                      value={formatCount(claimsQuery.data?.kpis.totalFiled ?? 28)}
+                      change=""
+                      trend="up"
+                      icon={ClipboardCheck}
+                      color="teal"
+                      caption={t('claimsPage.filedCaption')}
+                    />
+                    <Kpi
+                      title={t('claimsPage.review')}
+                      value={formatCount(claimsQuery.data?.kpis.underLegalReview ?? 6)}
+                      change=""
+                      trend="up"
+                      icon={Clock3}
+                      color="gold"
+                      caption={t('claimsPage.reviewCaption')}
+                    />
+                    <Kpi
+                      title={t('claimsPage.approved')}
+                      value={formatCount(claimsQuery.data?.kpis.approvedCompensations ?? 22)}
+                      change=""
+                      trend="up"
+                      icon={BadgeCheck}
+                      color="blue"
+                      caption={t('claimsPage.approvedCaption')}
+                    />
+                    <Kpi
+                      title={t('claimsPage.disbursed')}
+                      value={money(claimsQuery.data?.kpis.disbursed ?? 50000)}
+                      change=""
+                      trend="up"
+                      icon={Banknote}
+                      color="rose"
+                      caption={t('claimsPage.disbursedCaption')}
+                    />
+                  </div>
+                  <section className="panel">
+                    <div className="panel-heading">
+                      <div>
+                        <h3>{t('claimsPage.ledger')}</h3>
+                        <p>{t('claimsPage.ledgerBody')}</p>
+                      </div>
+                      <div className="search-field compact-search">
+                        <Search size={15} />
+                        <input
+                          value={search}
+                          onChange={(e) => setSearch(e.target.value)}
+                          placeholder={t('claimsPage.search')}
+                        />
+                      </div>
+                    </div>
+                    <div className="table-scroll">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>{t('claimsPage.id')}</th>
+                            <th>{t('claimsPage.doctor')}</th>
+                            <th>{t('claimsPage.hospital')}</th>
+                            <th>{t('claimsPage.specialty')}</th>
+                            <th>{t('claimsPage.stage')}</th>
+                            <th>{t('claimsPage.awarded')}</th>
+                            <th>{t('claimsPage.paid')}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(claimsQuery.data?.items ?? [])
+                            .filter((c: any) =>
+                              `${c.id} ${c.doctor} ${c.hospital}`
+                                .toLowerCase()
+                                .includes(search.toLowerCase()),
+                            )
+                            .map((c: any) => (
+                              <tr key={c.id}>
+                                <td>
+                                  <strong>{c.id}</strong>
+                                </td>
+                                <td>{c.doctor}</td>
+                                <td>{c.hospital}</td>
+                                <td>{specialtyLabel(c.specialty)}</td>
+                                <td>
+                                  <span
+                                    className={`status-chip ${c.stage === 'Payout' ? 'success' : c.stage === 'Legal Review' ? 'warning' : 'neutral'}`}
+                                  >
+                                    {stageLabel(c.stage)}
+                                  </span>
+                                </td>
+                                <td>{money(c.awarded)}</td>
+                                <td>{money(c.paid)}</td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+                </>
+              )}
+              {page === 'audit' && (
+                <>
+                  <PageTitle
+                    eyebrow={t('auditPage.eyebrow')}
+                    title={t('auditPage.title')}
+                    description={t('auditPage.body')}
+                    action={
+                      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                        <button
+                          className="btn btn-outline"
+                          onClick={() => {
+                            const items = auditQuery.data?.items ?? [];
+                            const rows = items.map((a: any) => ({
+                              [t('auditPage.time') || 'الوقت']: formatDateTime(a.timestamp),
+                              [t('auditPage.user') || 'المستخدم']: a.user,
+                              [t('usersPage.role') || 'الدور']: roleLabel(a.role),
+                              [t('auditPage.action') || 'الإجراء']: actionLabel(a.action),
+                              [t('auditPage.entity') || 'الكائن']: a.entity,
+                              [t('auditPage.ip') || 'عنوان IP']: a.ip,
+                            }));
+                            exportToExcel(
+                              rows.length ? rows : [{ الملاحظة: 'لا توجد سجلات حالية' }],
+                              'mlrf_transactions_audit.xlsx',
+                              'Transactions',
+                            );
+                            setToast(
+                              i18n.language === 'ar'
+                                ? 'تم استخراج وتحميل سجل العمليات والمعاملات بنجاح'
+                                : 'Transactions log exported successfully',
+                            );
+                          }}
+                        >
+                          <Download size={16} /> {t('analyticsPage.export')}
+                        </button>
+                        <span className="live-indicator">
+                          <i /> {t('auditPage.live')}
+                        </span>
+                      </div>
+                    }
+                  />
+                  <div className="filter-row">
+                    <div className="search-field compact-search">
+                      <Search size={15} />
+                      <input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder={t('auditPage.filter')}
+                      />
                     </div>
                     <button
-                      className="icon-btn"
+                      className="btn btn-outline"
                       onClick={() => void qc.invalidateQueries({ queryKey: ['audit'] })}
                     >
-                      <MoreHorizontal />
+                      <RefreshCw size={15} /> {t('auditPage.refresh')}
                     </button>
                   </div>
-                  <div className="activity-list">
-                    {(
-                      auditQuery.data?.items ?? [
-                        {
-                          id: 'a1',
-                          action: 'PAYMENT_SUCCESS',
-                          user: 'Dr. Mariam Hassan',
-                          timestamp: new Date().toISOString(),
-                          role: 'subscriber',
-                        },
-                        {
-                          id: 'a2',
-                          action: 'PROFILE_UPDATED',
-                          user: 'Ahmed Inspector',
-                          timestamp: new Date(Date.now() - 3600000).toISOString(),
-                          role: 'inspector',
-                        },
-                        {
-                          id: 'a3',
-                          action: 'LOGIN',
-                          user: 'Finance Admin',
-                          timestamp: new Date(Date.now() - 7200000).toISOString(),
-                          role: 'finance_admin',
-                        },
-                        {
-                          id: 'a4',
-                          action: 'EXPORT_REQUESTED',
-                          user: 'Super Admin',
-                          timestamp: new Date(Date.now() - 10800000).toISOString(),
-                          role: 'super_admin',
-                        },
-                      ]
-                    )
-                      .slice(0, 4)
-                      .map((a: any, i: number) => (
-                        <div className="activity-item" key={a.id}>
-                          <div className={`activity-icon activity-${i % 4}`}>
-                            {i === 0 ? (
-                              <WalletCards size={16} />
-                            ) : i === 1 ? (
-                              <Users size={16} />
-                            ) : i === 2 ? (
-                              <LockKeyhole size={16} />
-                            ) : (
-                              <FileText size={16} />
-                            )}
-                          </div>
-                          <div className="activity-text">
-                            <strong>{actionLabel(a.action)}</strong>
-                            <span>
-                              {a.user} · {roleLabel(a.role ?? '')}
-                            </span>
-                          </div>
-                          <time>{timeAgo(a.timestamp)}</time>
-                        </div>
-                      ))}
-                  </div>
-                  <button className="activity-all" onClick={() => setPage('audit')}>
-                    {t('overviewPage.viewAll')} <ArrowRight size={14} />
-                  </button>
-                </section>
-              </div>
-              <div className="section-heading action-heading">
-                <div>
-                  <h2>{t('quickActions')}</h2>
-                  <p>{t('overviewPage.jump')}</p>
-                </div>
-              </div>
-              <div className="quick-grid">
-                <Quick
-                  icon={ScanLine}
-                  title={t('verify')}
-                  detail={t('overviewPage.scanDetail')}
-                  onClick={() => void switchRole('inspector')}
-                />
-                <Quick
-                  icon={UploadCloud}
-                  title={t('newBatch')}
-                  detail={t('overviewPage.batchDetail')}
-                  onClick={() => setPage('bulk')}
-                />
-                <Quick
-                  icon={ChartNoAxesCombined}
-                  title={t('viewAnalytics')}
-                  detail={t('overviewPage.analyticsDetail')}
-                  onClick={() => setPage('analytics')}
-                />
-              </div>
-            </>
-          )}
-          {page === 'analytics' && (
-            <>
-              <PageTitle
-                eyebrow={t('analyticsPage.eyebrow')}
-                title={t('analyticsPage.title')}
-                description={t('analyticsPage.body')}
-                action={
-                  <button
-                    className="btn btn-outline"
-                    onClick={() => {
-                      const rows = (
-                        analytics.data?.distribution ??
-                        DEMO_TIERS.slice(0, 6).map((tier, i) => ({
-                          name: tier.name,
-                          subscribers: 160 - i * 12,
-                          revenue: (160 - i * 12) * tier.fee,
-                        }))
-                      ).map((d: any) => ({
-                        [t('analyticsPage.specialty') || 'التخصص / الفئة']: specialtyLabel(d.name),
-                        [t('analyticsPage.subscribers') || 'عدد المشتركين']: d.subscribers,
-                        [t('analyticsPage.revenue') || 'إجمالي الرسوم (جنيه)']: d.revenue,
-                      }));
-                      exportToExcel(rows, `mlrf_analytics_${year}.xlsx`, 'Analytics');
-                      setToast(
-                        i18n.language === 'ar'
-                          ? 'تم استخراج وتحميل تقرير التحليلات بنجاح'
-                          : 'Analytics report exported successfully',
-                      );
-                    }}
-                  >
-                    <Download size={16} /> {t('analyticsPage.export')}
-                  </button>
-                }
-              />
-              <div className="filter-row">
-                <div className="select-wrap">
-                  <span>{t('analyticsPage.scenario')}</span>
-                  <select value={year} onChange={(e) => setYear(e.target.value)}>
-                    <option value="year1">{t('years.year1')}</option>
-                    <option value="year2_3">{t('years.year23')}</option>
-                  </select>
-                </div>
-                <div className="filter-note">
-                  <Activity size={15} /> {t('analyticsPage.live')}
-                </div>
-              </div>
-              <div className="kpi-grid">
-                <Kpi
-                  title={t('active')}
-                  value={formatCount(kpis.activeSubscribers)}
-                  change="12.8%"
-                  trend="up"
-                  icon={Users}
-                  color="teal"
-                  caption={t('overviewPage.vsPriorShort')}
-                />
-                <Kpi
-                  title={t('revenue')}
-                  value={money(kpis.totalRevenue)}
-                  change="8.3%"
-                  trend="up"
-                  icon={Banknote}
-                  color="gold"
-                  caption={t('overviewPage.paidContributions')}
-                />
-                <Kpi
-                  title={t('yoyRenewal')}
-                  value={`${kpis.yoyRenewalRate}%`}
-                  change="2.4%"
-                  trend="up"
-                  icon={RefreshCw}
-                  color="blue"
-                  caption={t('overviewPage.yoyShort')}
-                />
-                <Kpi
-                  title={t('churn')}
-                  value={formatCount(kpis.unrenewed)}
-                  change="4.1%"
-                  trend="down"
-                  icon={ArrowDownRight}
-                  color="rose"
-                  caption={t('overviewPage.followUpShort')}
-                />
-              </div>
-              <div className="dashboard-grid">
-                <section className="panel">
-                  <div className="panel-heading">
-                    <div>
-                      <h3>{t('analyticsPage.revenueBy')}</h3>
-                      <p>{t('analyticsPage.revenueHint')}</p>
-                    </div>
-                  </div>
-                  <div className="horizontal-bars">
-                    {(
-                      analytics.data?.distribution ??
-                      DEMO_TIERS.slice(0, 6).map((tier, i) => ({
-                        name: tier.name,
-                        subscribers: 160 - i * 12,
-                        revenue: (160 - i * 12) * tier.fee,
-                      }))
-                    )
-                      .slice(0, 7)
-                      .map((d: any) => (
-                        <div className="horizontal-row" key={d.name}>
-                          <div>
-                            <span>{specialtyLabel(d.name)}</span>
-                            <strong>{money(d.revenue)}</strong>
-                          </div>
-                          <div className="track">
-                            <span
-                              style={{ width: `${Math.min(100, (d.revenue / 90000) * 100)}%` }}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                </section>
-                <section className="panel">
-                  <div className="panel-heading">
-                    <div>
-                      <h3>{t('analyticsPage.cohorts')}</h3>
-                      <p>{t('analyticsPage.cohortsHint')}</p>
-                    </div>
-                  </div>
-                  <div className="cohort-list">
-                    {(analytics.data?.cohorts ?? []).map((d: any) => (
-                      <div className="cohort-row" key={d.name}>
-                        <span>{cohortLabel(d.name)}</span>
-                        <strong>
-                          {formatCount(d.signups || d.newSignups || d.renewals || 0)}
-                        </strong>
-                        <div className="track">
-                          <span
-                            style={{
-                              width: `${Math.min(100, (d.signups || d.newSignups || d.renewals || 0) / 10)}%`,
-                            }}
-                          />
-                        </div>
+                  <section className="panel">
+                    <div className="panel-heading">
+                      <div>
+                        <h3>{t('auditPage.stream')}</h3>
+                        <p>{t('auditPage.streamBody')}</p>
                       </div>
-                    ))}
+                      <span className="status-chip success">{t('auditPage.enabled')}</span>
+                    </div>
+                    <div className="table-scroll">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>{t('auditPage.time')}</th>
+                            <th>{t('auditPage.user')}</th>
+                            <th>{t('auditPage.action')}</th>
+                            <th>{t('auditPage.entity')}</th>
+                            <th>{t('auditPage.ip')}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(auditQuery.data?.items ?? [])
+                            .filter((a: any) =>
+                              `${a.user} ${a.action}`.toLowerCase().includes(search.toLowerCase()),
+                            )
+                            .map((a: any) => (
+                              <tr key={a.id}>
+                                <td className="mono">{formatDateTime(a.timestamp)}</td>
+                                <td>
+                                  <strong>{a.user}</strong>
+                                  <small className="table-sub">{roleLabel(a.role)}</small>
+                                </td>
+                                <td>
+                                  <span className="action-label">{actionLabel(a.action)}</span>
+                                </td>
+                                <td>{a.entity}</td>
+                                <td className="mono">{a.ip}</td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                      {!auditQuery.data?.items?.length && <Empty text={t('auditPage.empty')} />}
+                    </div>
+                  </section>
+                </>
+              )}
+              {page === 'users' && (
+                <>
+                  <PageTitle
+                    eyebrow={t('usersPage.eyebrow')}
+                    title={t('usersPage.title')}
+                    description={t('usersPage.body')}
+                    action={<span className="status-chip neutral">{t('usersPage.rbac')}</span>}
+                  />
+                  <section className="panel">
+                    <div className="panel-heading">
+                      <div>
+                        <h3>{t('usersPage.demoUsers')}</h3>
+                        <p>{t('usersPage.demoBody')}</p>
+                      </div>
+                      <div className="search-field compact-search">
+                        <Search size={15} />
+                        <input
+                          value={search}
+                          onChange={(e) => setSearch(e.target.value)}
+                          placeholder={t('usersPage.search')}
+                        />
+                      </div>
+                    </div>
+                    <div className="table-scroll">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>{t('usersPage.name')}</th>
+                            <th>{t('usersPage.email')}</th>
+                            <th>{t('usersPage.role')}</th>
+                            <th>{t('usersPage.status')}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(userQuery.data ?? [])
+                            .filter((u) =>
+                              `${u.name} ${u.email} ${u.role}`
+                                .toLowerCase()
+                                .includes(search.toLowerCase()),
+                            )
+                            .map((u) => (
+                              <tr key={u.id}>
+                                <td>
+                                  <strong>{u.name}</strong>
+                                </td>
+                                <td>{u.email}</td>
+                                <td>
+                                  <span className="role-chip">{roleLabel(u.role)}</span>
+                                </td>
+                                <td>
+                                  <span
+                                    className={`status-chip ${u.status === 'active' ? 'success' : 'warning'}`}
+                                  >
+                                    {statusLabel(u.status)}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+                  <section className="panel permissions-panel">
+                    <div className="panel-heading">
+                      <div>
+                        <h3>{t('usersPage.matrix')}</h3>
+                        <p>{t('usersPage.matrixBody')}</p>
+                      </div>
+                    </div>
+                    <div className="table-scroll">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>{t('usersPage.role')}</th>
+                            {[
+                              'users:manage',
+                              'bulk:upload',
+                              'analytics',
+                              'claims:read',
+                              'audit:read',
+                              'inspections:verify',
+                              'export:run',
+                            ].map((p) => (
+                              <th key={p}>{t(`permissions.${p.replaceAll(':', '_')}`)}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {roles.map((r) => (
+                            <tr key={r}>
+                              <td>
+                                <strong>{roleLabel(r)}</strong>
+                              </td>
+                              {[
+                                'users:manage',
+                                'bulk:upload',
+                                'analytics',
+                                'claims:read',
+                                'audit:read',
+                                'inspections:verify',
+                                'export:run',
+                              ].map((p) => (
+                                <td key={p} className="permission-cell">
+                                  {(ROLE_PERMISSIONS[r] as readonly string[]).some((x) =>
+                                    p === 'analytics' ? x.startsWith('analytics:') : x === p,
+                                  ) ? (
+                                    <CheckCircle2 size={16} className="yes" />
+                                  ) : (
+                                    <span className="no">—</span>
+                                  )}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+                </>
+              )}
+              {page === 'guide' && (
+                <>
+                  <PageTitle
+                    eyebrow={t('guidePage.eyebrow')}
+                    title={t('guidePage.title')}
+                    description={t('guidePage.body')}
+                  />
+                  <div className="guide-grid">
+                    <GuideStep
+                      n="01"
+                      title={t('guidePage.step1Title')}
+                      text={t('guidePage.step1')}
+                      onClick={() => setPage('analytics')}
+                    />
+                    <GuideStep
+                      n="02"
+                      title={t('guidePage.step2Title')}
+                      text={t('guidePage.step2')}
+                      onClick={() => void switchRole('inspector')}
+                    />
+                    <GuideStep
+                      n="03"
+                      title={t('guidePage.step3Title')}
+                      text={t('guidePage.step3')}
+                      onClick={() => setPage('bulk')}
+                    />
+                    <GuideStep
+                      n="04"
+                      title={t('guidePage.step4Title')}
+                      text={t('guidePage.step4')}
+                      onClick={() => setPage('audit')}
+                    />
                   </div>
-                  <div className="note-card compact">
-                    <Activity />
+                  <div className="note-card">
+                    <ShieldCheck />
                     <div>
-                      <strong>
-                        {t('analyticsPage.scenarioNamed', {
-                          name: year === 'year1' ? t('years.year1') : t('years.years23'),
-                        })}
-                      </strong>
-                      <p>{t('analyticsPage.switchScenario')}</p>
+                      <strong>{t('guidePage.credentials')}</strong>
+                      <p>{t('guidePage.credentialsBody')}</p>
                     </div>
                   </div>
-                </section>
-              </div>
-              <section className="panel heatmap-panel">
-                <div className="panel-heading">
-                  <div>
-                    <h3>{t('analyticsPage.heatmap')}</h3>
-                    <p>{t('analyticsPage.heatmapHint')}</p>
-                  </div>
-                  <span className="status-chip warning">{t('analyticsPage.weakest')}</span>
-                </div>
-                <div className="heatmap-table">
-                  <div className="heat-row heat-head">
-                    <span>{t('analyticsPage.governorate')}</span>
-                    {(
-                      analytics.data?.heatmap?.[0]?.values ??
-                      DEMO_TIERS.slice(0, 5).map((tier) => ({ specialty: tier.name }))
-                    )
-                      .slice(0, 5)
-                      .map((v: any) => (
-                        <span key={v.specialty}>{specialtyLabel(v.specialty)}</span>
-                      ))}
-                  </div>
-                  {(analytics.data?.heatmap ?? []).slice(0, 7).map((g: any) => (
-                    <div className="heat-row" key={g.governorate}>
-                      <strong>{governorateLabel(g.governorate)}</strong>
-                      {g.values.slice(0, 5).map((v: any) => (
-                        <span
-                          className={`heat-cell ${v.rate < 60 ? 'heat-low' : v.rate < 75 ? 'heat-mid' : 'heat-high'}`}
-                          key={v.specialty}
-                          title={`${specialtyLabel(v.specialty)}: ${v.rate}%`}
-                        >
-                          {v.rate}%
-                        </span>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              </section>
-            </>
-          )}
-          {page === 'bulk' && (
-            <>
-              <PageTitle
-                eyebrow={t('bulkPage.eyebrow')}
-                title={t('bulkPage.title')}
-                description={t('bulkPage.body')}
-                action={
                   <button
                     className="btn btn-outline"
-                    onClick={() => {
-                      setBulkText(
-                        'name,phone,nationalId,specialty,amount\nDr. Sample One,01012345678,29901011234567,General Practitioner,1800\nDr. Sample Two,01112345678,29902021234568,Surgery,4200\nDuplicate Example,01012345678,29901011234567,General Practitioner,1800\nInvalid ID,01212345678,123,Cardiology,3000',
-                      );
-                      setBulkPreview(null);
-                    }}
+                    onClick={() =>
+                      void request('/dev/demo-guide')
+                        .then(() => setToast(t('toasts.checklist')))
+                        .catch((e) => setToast(messageFromError(e, t('errors.REQUEST_FAILED'))))
+                    }
                   >
-                    <RefreshCw size={15} /> {t('bulkPage.reset')}
+                    {t('guidePage.load')} <ArrowRight size={15} />
                   </button>
-                }
-              />
-              <div className="bulk-summary">
-                <div>
-                  <FileSpreadsheet />
-                  <span>
-                    <small>{t('bulkPage.tiers')}</small>
-                    <strong>{t('bulkPage.feeTiers', { n: DEMO_TIERS.length })}</strong>
-                  </span>
-                </div>
-                <div>
-                  <ShieldCheck />
-                  <span>
-                    <small>{t('bulkPage.duplicates')}</small>
-                    <strong>{t('bulkPage.duplicateKey')}</strong>
-                  </span>
-                </div>
-                <div>
-                  <Bell />
-                  <span>
-                    <small>{t('bulkPage.notifications')}</small>
-                    <strong>{t('bulkPage.sms')}</strong>
-                  </span>
-                </div>
-              </div>
-              <div className="panel upload-panel">
-                <div className="panel-heading">
-                  <div>
-                    <h3>{t('bulkPage.import')}</h3>
-                    <p>{t('bulkPage.importBody')}</p>
-                  </div>
-                  <span className="status-chip neutral">{t('bulkPage.dryRun')}</span>
-                </div>
-                <textarea
-                  className="bulk-textarea"
-                  value={bulkText}
-                  onChange={(e) => setBulkText(e.target.value)}
-                  rows={7}
-                  aria-label={t('bulkPage.csvLabel')}
-                />
-                <div className="upload-footer">
-                  <span>
-                    <FileText size={15} /> {t('bulkPage.csvHint')}
-                  </span>
-                  <div>
-                    <button className="btn btn-outline" onClick={() => void previewBulk(false)}>
-                      <Search size={15} /> {t('bulkPage.preview')}
-                    </button>
-                    <button
-                      className="btn btn-primary"
-                      disabled={!bulkPreview?.rows?.length || bulkPreview?.dryRun === false}
-                      onClick={() => void previewBulk(true)}
-                    >
-                      <Check size={16} /> {t('bulkPage.commit')}
-                    </button>
-                  </div>
-                </div>
-              </div>
-              {bulkPreview && (
-                <section className="panel results-panel">
-                  <div className="panel-heading">
-                    <div>
-                      <h3>{bulkPreview.dryRun ? t('bulkPage.previewTitle') : t('bulkPage.committedTitle')}</h3>
-                      <p>{t('bulkPage.review')}</p>
-                    </div>
-                    <span className={`status-chip ${bulkPreview.dryRun ? 'warning' : 'success'}`}>
-                      {bulkPreview.dryRun ? t('bulkPage.dryRunChip') : t('bulkPage.committedChip')}
-                    </span>
-                  </div>
-                  <div className="mini-kpis">
-                    <Mini
-                      label={t('bulkPage.total')}
-                      value={bulkPreview.summary?.total ?? bulkPreview.total}
-                    />
-                    <Mini
-                      label={t('bulkPage.created')}
-                      value={bulkPreview.summary?.created ?? bulkPreview.created}
-                      tone="success"
-                    />
-                    <Mini
-                      label={t('bulkPage.duplicate')}
-                      value={bulkPreview.summary?.duplicate ?? bulkPreview.duplicate}
-                      tone="warning"
-                    />
-                    <Mini
-                      label={t('bulkPage.invalid')}
-                      value={bulkPreview.summary?.invalid ?? bulkPreview.invalid}
-                      tone="danger"
-                    />
-                  </div>
-                  <div className="table-scroll">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>{t('bulkPage.row')}</th>
-                          <th>{t('bulkPage.name')}</th>
-                          <th>{t('bulkPage.nationalId')}</th>
-                          <th>{t('bulkPage.specialty')}</th>
-                          <th>{t('bulkPage.amount')}</th>
-                          <th>{t('bulkPage.status')}</th>
-                          <th>{t('bulkPage.reason')}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(bulkPreview.rows ?? []).map((r: any) => (
-                          <tr key={r.rowNumber}>
-                            <td>{r.rowNumber}</td>
-                            <td>{r.name}</td>
-                            <td>{r.nationalId}</td>
-                            <td>{specialtyLabel(r.specialty)}</td>
-                            <td>{money(Number(r.amount) || 0)}</td>
-                            <td>
-                              <span
-                                className={`status-chip ${r.status === 'created' ? 'success' : r.status === 'duplicate' ? 'warning' : 'danger'}`}
-                              >
-                                {statusLabel(r.status)}
-                              </span>
-                            </td>
-                            <td>{reasonLabel(r.reason)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </section>
+                </>
               )}
-            </>
-          )}
-          {page === 'claims' && (
-            <>
-              <PageTitle
-                eyebrow={t('claimsPage.eyebrow')}
-                title={t('claimsPage.title')}
-                description={t('claimsPage.body')}
-                action={
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                    <button
-                      className="btn btn-outline"
-                      onClick={() => {
-                        const items = claimsQuery.data?.items ?? [];
-                        const rows = items.map((c: any) => ({
-                          [t('claimsPage.id') || 'رقم المطالبة']: c.id,
-                          [t('claimsPage.doctor') || 'الطبيب / الممارس']: c.doctor,
-                          [t('claimsPage.hospital') || 'المنشأة الطبية']: c.hospital,
-                          [t('claimsPage.specialty') || 'التخصص']: specialtyLabel(c.specialty),
-                          [t('claimsPage.stage') || 'المرحلة']: stageLabel(c.stage),
-                          [t('claimsPage.awarded') || 'التعويض المقضي به (جنيه)']: c.awarded,
-                          [t('claimsPage.paid') || 'المبلغ المنصرف (جنيه)']: c.paid,
-                        }));
-                        exportToExcel(
-                          rows.length
-                            ? rows
-                            : [
-                                {
-                                  [t('claimsPage.id') || 'رقم المطالبة']: 'CLM-2026-001',
-                                  [t('claimsPage.doctor') || 'الطبيب']: 'د. طارق محمود',
-                                  [t('claimsPage.hospital') || 'المنشأة']: 'مستشفى السلام الدولي',
-                                  [t('claimsPage.specialty') || 'التخصص']: 'جراحة عامة',
-                                  [t('claimsPage.stage') || 'المرحلة']: 'صرف التعويض',
-                                  [t('claimsPage.awarded') || 'التعويض']: 150000,
-                                  [t('claimsPage.paid') || 'المنصرف']: 150000,
-                                },
-                              ],
-                          'mlrf_claims_ledger.xlsx',
-                          'Claims',
-                        );
-                        setToast(
-                          i18n.language === 'ar'
-                            ? 'تم استخراج وتحميل سجل التعويضات بنجاح'
-                            : 'Claims ledger exported successfully',
-                        );
-                      }}
-                    >
-                      <Download size={16} /> {t('analyticsPage.export')}
-                    </button>
-                    <span className="status-chip neutral">{t('claimsPage.future')}</span>
-                  </div>
-                }
-              />
-              <div className="kpi-grid">
-                <Kpi
-                  title={t('claimsPage.filed')}
-                  value={formatCount(claimsQuery.data?.kpis.totalFiled ?? 28)}
-                  change=""
-                  trend="up"
-                  icon={ClipboardCheck}
-                  color="teal"
-                  caption={t('claimsPage.filedCaption')}
-                />
-                <Kpi
-                  title={t('claimsPage.review')}
-                  value={formatCount(claimsQuery.data?.kpis.underLegalReview ?? 6)}
-                  change=""
-                  trend="up"
-                  icon={Clock3}
-                  color="gold"
-                  caption={t('claimsPage.reviewCaption')}
-                />
-                <Kpi
-                  title={t('claimsPage.approved')}
-                  value={formatCount(claimsQuery.data?.kpis.approvedCompensations ?? 22)}
-                  change=""
-                  trend="up"
-                  icon={BadgeCheck}
-                  color="blue"
-                  caption={t('claimsPage.approvedCaption')}
-                />
-                <Kpi
-                  title={t('claimsPage.disbursed')}
-                  value={money(claimsQuery.data?.kpis.disbursed ?? 50000)}
-                  change=""
-                  trend="up"
-                  icon={Banknote}
-                  color="rose"
-                  caption={t('claimsPage.disbursedCaption')}
-                />
-              </div>
-              <section className="panel">
-                <div className="panel-heading">
-                  <div>
-                    <h3>{t('claimsPage.ledger')}</h3>
-                    <p>{t('claimsPage.ledgerBody')}</p>
-                  </div>
-                  <div className="search-field compact-search">
-                    <Search size={15} />
-                    <input
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder={t('claimsPage.search')}
-                    />
-                  </div>
-                </div>
-                <div className="table-scroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>{t('claimsPage.id')}</th>
-                        <th>{t('claimsPage.doctor')}</th>
-                        <th>{t('claimsPage.hospital')}</th>
-                        <th>{t('claimsPage.specialty')}</th>
-                        <th>{t('claimsPage.stage')}</th>
-                        <th>{t('claimsPage.awarded')}</th>
-                        <th>{t('claimsPage.paid')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(claimsQuery.data?.items ?? [])
-                        .filter((c: any) =>
-                          `${c.id} ${c.doctor} ${c.hospital}`
-                            .toLowerCase()
-                            .includes(search.toLowerCase()),
-                        )
-                        .map((c: any) => (
-                          <tr key={c.id}>
-                            <td>
-                              <strong>{c.id}</strong>
-                            </td>
-                            <td>{c.doctor}</td>
-                            <td>{c.hospital}</td>
-                            <td>{specialtyLabel(c.specialty)}</td>
-                            <td>
-                              <span
-                                className={`status-chip ${c.stage === 'Payout' ? 'success' : c.stage === 'Legal Review' ? 'warning' : 'neutral'}`}
-                              >
-                                {stageLabel(c.stage)}
-                              </span>
-                            </td>
-                            <td>{money(c.awarded)}</td>
-                            <td>{money(c.paid)}</td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-            </>
-          )}
-          {page === 'audit' && (
-            <>
-              <PageTitle
-                eyebrow={t('auditPage.eyebrow')}
-                title={t('auditPage.title')}
-                description={t('auditPage.body')}
-                action={
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                    <button
-                      className="btn btn-outline"
-                      onClick={() => {
-                        const items = auditQuery.data?.items ?? [];
-                        const rows = items.map((a: any) => ({
-                          [t('auditPage.time') || 'الوقت']: formatDateTime(a.timestamp),
-                          [t('auditPage.user') || 'المستخدم']: a.user,
-                          [t('usersPage.role') || 'الدور']: roleLabel(a.role),
-                          [t('auditPage.action') || 'الإجراء']: actionLabel(a.action),
-                          [t('auditPage.entity') || 'الكائن']: a.entity,
-                          [t('auditPage.ip') || 'عنوان IP']: a.ip,
-                        }));
-                        exportToExcel(
-                          rows.length ? rows : [{ 'الملاحظة': 'لا توجد سجلات حالية' }],
-                          'mlrf_transactions_audit.xlsx',
-                          'Transactions',
-                        );
-                        setToast(
-                          i18n.language === 'ar'
-                            ? 'تم استخراج وتحميل سجل العمليات والمعاملات بنجاح'
-                            : 'Transactions log exported successfully',
-                        );
-                      }}
-                    >
-                      <Download size={16} /> {t('analyticsPage.export')}
-                    </button>
-                    <span className="live-indicator">
-                      <i /> {t('auditPage.live')}
-                    </span>
-                  </div>
-                }
-              />
-              <div className="filter-row">
-                <div className="search-field compact-search">
-                  <Search size={15} />
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder={t('auditPage.filter')}
-                  />
-                </div>
-                <button
-                  className="btn btn-outline"
-                  onClick={() => void qc.invalidateQueries({ queryKey: ['audit'] })}
-                >
-                  <RefreshCw size={15} /> {t('auditPage.refresh')}
-                </button>
-              </div>
-              <section className="panel">
-                <div className="panel-heading">
-                  <div>
-                    <h3>{t('auditPage.stream')}</h3>
-                    <p>{t('auditPage.streamBody')}</p>
-                  </div>
-                  <span className="status-chip success">{t('auditPage.enabled')}</span>
-                </div>
-                <div className="table-scroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>{t('auditPage.time')}</th>
-                        <th>{t('auditPage.user')}</th>
-                        <th>{t('auditPage.action')}</th>
-                        <th>{t('auditPage.entity')}</th>
-                        <th>{t('auditPage.ip')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(auditQuery.data?.items ?? [])
-                        .filter((a: any) =>
-                          `${a.user} ${a.action}`.toLowerCase().includes(search.toLowerCase()),
-                        )
-                        .map((a: any) => (
-                          <tr key={a.id}>
-                            <td className="mono">{formatDateTime(a.timestamp)}</td>
-                            <td>
-                              <strong>{a.user}</strong>
-                              <small className="table-sub">{roleLabel(a.role)}</small>
-                            </td>
-                            <td>
-                              <span className="action-label">{actionLabel(a.action)}</span>
-                            </td>
-                            <td>{a.entity}</td>
-                            <td className="mono">{a.ip}</td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                  {!auditQuery.data?.items?.length && (
-                    <Empty text={t('auditPage.empty')} />
-                  )}
-                </div>
-              </section>
-            </>
-          )}
-          {page === 'users' && (
-            <>
-              <PageTitle
-                eyebrow={t('usersPage.eyebrow')}
-                title={t('usersPage.title')}
-                description={t('usersPage.body')}
-                action={<span className="status-chip neutral">{t('usersPage.rbac')}</span>}
-              />
-              <section className="panel">
-                <div className="panel-heading">
-                  <div>
-                    <h3>{t('usersPage.demoUsers')}</h3>
-                    <p>{t('usersPage.demoBody')}</p>
-                  </div>
-                  <div className="search-field compact-search">
-                    <Search size={15} />
-                    <input
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder={t('usersPage.search')}
-                    />
-                  </div>
-                </div>
-                <div className="table-scroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>{t('usersPage.name')}</th>
-                        <th>{t('usersPage.email')}</th>
-                        <th>{t('usersPage.role')}</th>
-                        <th>{t('usersPage.status')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(userQuery.data ?? [])
-                        .filter((u) =>
-                          `${u.name} ${u.email} ${u.role}`
-                            .toLowerCase()
-                            .includes(search.toLowerCase()),
-                        )
-                        .map((u) => (
-                          <tr key={u.id}>
-                            <td>
-                              <strong>{u.name}</strong>
-                            </td>
-                            <td>{u.email}</td>
-                            <td>
-                              <span className="role-chip">{roleLabel(u.role)}</span>
-                            </td>
-                            <td>
-                              <span
-                                className={`status-chip ${u.status === 'active' ? 'success' : 'warning'}`}
-                              >
-                                {statusLabel(u.status)}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-              <section className="panel permissions-panel">
-                <div className="panel-heading">
-                  <div>
-                    <h3>{t('usersPage.matrix')}</h3>
-                    <p>{t('usersPage.matrixBody')}</p>
-                  </div>
-                </div>
-                <div className="table-scroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>{t('usersPage.role')}</th>
-                        {[
-                          'users:manage',
-                          'bulk:upload',
-                          'analytics',
-                          'claims:read',
-                          'audit:read',
-                          'inspections:verify',
-                          'export:run',
-                        ].map((p) => (
-                          <th key={p}>{t(`permissions.${p.replaceAll(':', '_')}`)}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {roles.map((r) => (
-                        <tr key={r}>
-                          <td>
-                            <strong>{roleLabel(r)}</strong>
-                          </td>
-                          {[
-                            'users:manage',
-                            'bulk:upload',
-                            'analytics',
-                            'claims:read',
-                            'audit:read',
-                            'inspections:verify',
-                            'export:run',
-                          ].map((p) => (
-                            <td key={p} className="permission-cell">
-                              {(ROLE_PERMISSIONS[r] as readonly string[]).some((x) =>
-                                p === 'analytics' ? x.startsWith('analytics:') : x === p,
-                              ) ? (
-                                <CheckCircle2 size={16} className="yes" />
-                              ) : (
-                                <span className="no">—</span>
-                              )}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-            </>
-          )}
-          {page === 'guide' && (
-            <>
-              <PageTitle
-                eyebrow={t('guidePage.eyebrow')}
-                title={t('guidePage.title')}
-                description={t('guidePage.body')}
-              />
-              <div className="guide-grid">
-                <GuideStep
-                  n="01"
-                  title={t('guidePage.step1Title')}
-                  text={t('guidePage.step1')}
-                  onClick={() => setPage('analytics')}
-                />
-                <GuideStep
-                  n="02"
-                  title={t('guidePage.step2Title')}
-                  text={t('guidePage.step2')}
-                  onClick={() => void switchRole('inspector')}
-                />
-                <GuideStep
-                  n="03"
-                  title={t('guidePage.step3Title')}
-                  text={t('guidePage.step3')}
-                  onClick={() => setPage('bulk')}
-                />
-                <GuideStep
-                  n="04"
-                  title={t('guidePage.step4Title')}
-                  text={t('guidePage.step4')}
-                  onClick={() => setPage('audit')}
-                />
-              </div>
-              <div className="note-card">
-                <ShieldCheck />
-                <div>
-                  <strong>{t('guidePage.credentials')}</strong>
-                  <p>{t('guidePage.credentialsBody')}</p>
-                </div>
-              </div>
-              <button
-                className="btn btn-outline"
-                onClick={() =>
-                  void request('/dev/demo-guide')
-                    .then(() => setToast(t('toasts.checklist')))
-                    .catch((e) => setToast(messageFromError(e, t('errors.REQUEST_FAILED'))))
-                }
-              >
-                {t('guidePage.load')} <ArrowRight size={15} />
-              </button>
-            </>
+            </div>
+          </main>
+          {sidebar && (
+            <button
+              className="sidebar-overlay"
+              aria-label={t('shell.closeNav')}
+              onClick={() => setSidebar(false)}
+            />
           )}
         </div>
-      </main>
-      {sidebar && (
-        <button
-          className="sidebar-overlay"
-          aria-label={t('shell.closeNav')}
-          onClick={() => setSidebar(false)}
-        />
-      )}
-    </div>
       )}
 
       {toast && (
@@ -2203,7 +2219,8 @@ function Subscriber({
   const active = tiers.find((t) => t.id === tier) ?? tiers[0]!;
   const effectiveStep = forceCertificateView ? 4 : step;
   const isPaid = forceCertificateView || paid;
-  const progressVal = effectiveStep === 4 ? 100 : effectiveStep === 3 ? 75 : effectiveStep === 2 ? 50 : 25;
+  const progressVal =
+    effectiveStep === 4 ? 100 : effectiveStep === 3 ? 75 : effectiveStep === 2 ? 50 : 25;
   const progressFormatted =
     i18n.language === 'ar' ? Number(progressVal).toLocaleString('ar-EG') + '٪' : `${progressVal}%`;
 
@@ -2335,7 +2352,9 @@ function Subscriber({
               </div>
               <div className="form-field full-field">
                 <label>
-                  {entity === 'individual' ? t('subscriberPage.nationalId') : t('subscriberPage.license')}
+                  {entity === 'individual'
+                    ? t('subscriberPage.nationalId')
+                    : t('subscriberPage.license')}
                 </label>
                 <input
                   value={profileId}
@@ -2501,16 +2520,10 @@ function Subscriber({
                   {t('subscriberPage.back')}
                 </button>
                 <div style={{ display: 'flex', gap: 12 }}>
-                  <button
-                    className="btn btn-simulate-failure"
-                    onClick={handleSimulateFailure}
-                  >
+                  <button className="btn btn-simulate-failure" onClick={handleSimulateFailure}>
                     <AlertTriangle size={16} /> {t('subscriberPage.simulateFailure')}
                   </button>
-                  <button
-                    className="btn btn-simulate-success"
-                    onClick={handleSimulateSuccess}
-                  >
+                  <button className="btn btn-simulate-success" onClick={handleSimulateSuccess}>
                     <CheckCircle2 size={16} /> {t('subscriberPage.simulateSuccess')}
                   </button>
                 </div>
@@ -2533,7 +2546,9 @@ function Subscriber({
               <p className="certificate-payment-note">
                 {t('certificate.paymentConfirmation', {
                   lng: 'ar',
-                  amount: Number(selected?.fee ?? selected?.amount ?? active.fee).toLocaleString('ar-EG'),
+                  amount: Number(selected?.fee ?? selected?.amount ?? active.fee).toLocaleString(
+                    'ar-EG',
+                  ),
                 })}
               </p>
               <div className="certificate-data">
@@ -2543,7 +2558,9 @@ function Subscriber({
                 </div>
                 <div>
                   <span>{t('subscriberPage.coverageStatus', { lng: 'ar' })}</span>
-                  <strong className="success-text">{t('subscriberPage.valid', { lng: 'ar' })}</strong>
+                  <strong className="success-text">
+                    {t('subscriberPage.valid', { lng: 'ar' })}
+                  </strong>
                 </div>
                 <div>
                   <span>{t('subscriberPage.period', { lng: 'ar' })}</span>
@@ -2557,7 +2574,9 @@ function Subscriber({
                 <div className="qr-placeholder">
                   <QRCodeSVG
                     value={
-                      typeof window !== 'undefined' && window.location.origin && window.location.origin.startsWith('http')
+                      typeof window !== 'undefined' &&
+                      window.location.origin &&
+                      window.location.origin.startsWith('http')
                         ? `${window.location.origin}/api/v1/certificates/MLRF-2026-000123/pdf`
                         : 'https://mlrf-platform-ykit.vercel.app/api/v1/certificates/MLRF-2026-000123/pdf'
                     }
@@ -2571,7 +2590,9 @@ function Subscriber({
                   className="btn btn-primary"
                   onClick={() => {
                     const pdfUrl =
-                      typeof window !== 'undefined' && window.location.origin && window.location.origin.startsWith('http')
+                      typeof window !== 'undefined' &&
+                      window.location.origin &&
+                      window.location.origin.startsWith('http')
                         ? `${window.location.origin}/api/v1/certificates/MLRF-2026-000123/pdf`
                         : 'https://mlrf-platform-ykit.vercel.app/api/v1/certificates/MLRF-2026-000123/pdf';
                     window.open(pdfUrl, '_blank');
@@ -2636,7 +2657,6 @@ function Subscriber({
   );
 }
 
-
 function InspectorStandalone({
   identifier,
   setIdentifier,
@@ -2667,7 +2687,9 @@ function InspectorStandalone({
         <div className="page-title-row" style={{ marginBottom: 16 }}>
           <div>
             <div className="eyebrow">{t('inspectorPortal.badge')}</div>
-            <h1 style={{ fontSize: 24, margin: '4px 0 6px' }}>{t('inspectorPortal.headerTitle')}</h1>
+            <h1 style={{ fontSize: 24, margin: '4px 0 6px' }}>
+              {t('inspectorPortal.headerTitle')}
+            </h1>
             <p className="muted" style={{ fontSize: 13, margin: 0 }}>
               {t('inspectorPortal.headerSubtitle')}
             </p>
@@ -2776,7 +2798,14 @@ function InspectorStandalone({
         {/* Field Action Controls */}
         {verifyResult && (
           <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+            <span
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                color: 'var(--text-muted)',
+                textTransform: 'uppercase',
+              }}
+            >
               {t('inspectorPortal.actionsHeading')}
             </span>
             <div className="inspector-actions-bar">

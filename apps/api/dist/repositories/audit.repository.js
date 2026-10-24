@@ -54,7 +54,11 @@ export const auditRepository = {
         return result.rows.map((row) => ({
             _id: row.id,
             ...row,
-            metadata: row.metadata ? (typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata) : {},
+            metadata: row.metadata
+                ? typeof row.metadata === 'string'
+                    ? JSON.parse(row.metadata)
+                    : row.metadata
+                : {},
         }));
     },
 };

@@ -23,16 +23,25 @@ const bidi = bidiFactory();
 
 export function formatArabic(text: string): string {
   if (!text) return '';
-  const reshaper = (arabicReshaper as any).convertArabic ? (arabicReshaper as any) : ((arabicReshaper as any).default || arabicReshaper);
-  const reshapedText = typeof reshaper.convertArabic === 'function'
-    ? reshaper.convertArabic(String(text))
-    : (typeof reshaper === 'function' ? reshaper(String(text)) : String(text));
+  const reshaper = (arabicReshaper as any).convertArabic
+    ? (arabicReshaper as any)
+    : (arabicReshaper as any).default || arabicReshaper;
+  const reshapedText =
+    typeof reshaper.convertArabic === 'function'
+      ? reshaper.convertArabic(String(text))
+      : typeof reshaper === 'function'
+        ? reshaper(String(text))
+        : String(text);
   const embeddingLevels = bidi.getEmbeddingLevels(reshapedText, 'rtl');
   const visualText = bidi.getReorderedString(reshapedText, embeddingLevels);
   return visualText;
 }
 
-function wrapAndFormatArabic(doc: InstanceType<typeof PDFDocument>, text: string, maxWidth: number): string[] {
+function wrapAndFormatArabic(
+  doc: InstanceType<typeof PDFDocument>,
+  text: string,
+  maxWidth: number,
+): string[] {
   const words = text.split(' ');
   const lines: string[] = [];
   let currentWords: string[] = [];
@@ -154,23 +163,36 @@ export async function generateCertificatePdf(data: CertificatePdfData): Promise<
 
   // Official State & Fund Header
   doc.font('Amiri-Bold').fontSize(15).fillColor('#0f3e46');
-  doc.text(formatArabic('جمهورية مصر العربية'), 30, 32, { align: 'center', width: pageWidth - 60, lineBreak: false });
+  doc.text(formatArabic('جمهورية مصر العربية'), 30, 32, {
+    align: 'center',
+    width: pageWidth - 60,
+    lineBreak: false,
+  });
 
   doc.font('Amiri-Bold').fontSize(12.5).fillColor('#0d9488');
-  doc.text(formatArabic('الصندوق الحكومي للتأمين ضد الأخطار الناجمة عن الاخطاء الطبية'), 30, 54, { align: 'center', width: pageWidth - 60, lineBreak: false });
+  doc.text(formatArabic('الصندوق الحكومي للتأمين ضد الأخطار الناجمة عن الاخطاء الطبية'), 30, 54, {
+    align: 'center',
+    width: pageWidth - 60,
+    lineBreak: false,
+  });
 
   doc.font('Amiri').fontSize(9).fillColor('#4b5563');
   doc.text(
-    formatArabic('صادر طبقاً لأحكام قانون تنظيم المسئولية الطبية وسلامة المريض رقم 13 لسنة 2025 ولائحته التنفيذية'),
+    formatArabic(
+      'صادر طبقاً لأحكام قانون تنظيم المسئولية الطبية وسلامة المريض رقم 13 لسنة 2025 ولائحته التنفيذية',
+    ),
     30,
     74,
-    { align: 'center', width: pageWidth - 60, lineBreak: false }
+    { align: 'center', width: pageWidth - 60, lineBreak: false },
   );
 
   // Divider
   doc.save();
   doc.lineWidth(1).strokeColor('#0d9488');
-  doc.moveTo(50, 92).lineTo(pageWidth - 50, 92).stroke();
+  doc
+    .moveTo(50, 92)
+    .lineTo(pageWidth - 50, 92)
+    .stroke();
   doc.restore();
 
   // Title badge
@@ -188,10 +210,12 @@ export async function generateCertificatePdf(data: CertificatePdfData): Promise<
   // Certification statement
   doc.font('Amiri').fontSize(9.5).fillColor('#1f2937');
   doc.text(
-    formatArabic('تشهد إدارة الصندوق بأن العضو المذكور أدناه مسجل ومقيد رسمياً ومسدد لاشتراكات الصندوق الحكومي للتأمين ضد الأخطار الناجمة عن الاخطاء الطبية:'),
+    formatArabic(
+      'تشهد إدارة الصندوق بأن العضو المذكور أدناه مسجل ومقيد رسمياً ومسدد لاشتراكات الصندوق الحكومي للتأمين ضد الأخطار الناجمة عن الاخطاء الطبية:',
+    ),
     30,
     138,
-    { align: 'center', width: pageWidth - 60, lineBreak: false }
+    { align: 'center', width: pageWidth - 60, lineBreak: false },
   );
 
   // Status mapping
@@ -214,7 +238,10 @@ export async function generateCertificatePdf(data: CertificatePdfData): Promise<
     { label: 'رقم وثيقة التغطية المعتمدة:', value: certNumber },
     { label: 'اسم الطبيب / المنشأة المسجلة:', value: holderName },
     { label: 'التخصص الطبي والفئة:', value: specialty },
-    { label: 'فترة التغطية التأمينية:', value: `من ${issuedAt} حتى ${expiresAt} (سنة مالية كاملة)` },
+    {
+      label: 'فترة التغطية التأمينية:',
+      value: `من ${issuedAt} حتى ${expiresAt} (سنة مالية كاملة)`,
+    },
     { label: 'موقف سريان التغطية القانونية:', value: statusText },
   ];
 
@@ -223,18 +250,32 @@ export async function generateCertificatePdf(data: CertificatePdfData): Promise<
     if (idx > 0) {
       doc.save();
       doc.lineWidth(0.5).strokeColor('#e2e8f0');
-      doc.moveTo(46, currentY - 3).lineTo(pageWidth - 46, currentY - 3).stroke();
+      doc
+        .moveTo(46, currentY - 3)
+        .lineTo(pageWidth - 46, currentY - 3)
+        .stroke();
       doc.restore();
     }
 
     // Right label
     doc.font('Amiri-Bold').fontSize(9.5).fillColor('#334155');
-    doc.text(formatArabic(r.label), pageWidth - 250, currentY, { width: 200, align: 'right', lineBreak: false });
+    doc.text(formatArabic(r.label), pageWidth - 250, currentY, {
+      width: 200,
+      align: 'right',
+      lineBreak: false,
+    });
 
     // Left value
     const isStatus = idx === 4;
-    doc.font(isStatus ? 'Amiri-Bold' : 'Amiri').fontSize(9.5).fillColor(isStatus ? '#059669' : '#0f172a');
-    doc.text(formatArabic(r.value), 46, currentY, { width: pageWidth - 305, align: 'right', lineBreak: false });
+    doc
+      .font(isStatus ? 'Amiri-Bold' : 'Amiri')
+      .fontSize(9.5)
+      .fillColor(isStatus ? '#059669' : '#0f172a');
+    doc.text(formatArabic(r.value), 46, currentY, {
+      width: pageWidth - 305,
+      align: 'right',
+      lineBreak: false,
+    });
 
     currentY += 26;
   });
@@ -243,7 +284,9 @@ export async function generateCertificatePdf(data: CertificatePdfData): Promise<
   const attestationTop = 314;
   const attestationHeight = 84;
   doc.save();
-  doc.roundedRect(36, attestationTop, pageWidth - 72, attestationHeight, 6).fillAndStroke('#fefce8', '#fef08a');
+  doc
+    .roundedRect(36, attestationTop, pageWidth - 72, attestationHeight, 6)
+    .fillAndStroke('#fefce8', '#fef08a');
   doc.restore();
 
   doc.font('Amiri-Bold').fontSize(10).fillColor('#854d0e');
@@ -309,10 +352,23 @@ export async function generateCertificatePdf(data: CertificatePdfData): Promise<
 
   // Right column: Fund Executive Seal
   doc.font('Amiri-Bold').fontSize(10).fillColor('#0f3e46');
-  doc.text(formatArabic('خاتم اعتماد الصندوق الرسمي'), pageWidth - 240, footerTop, { width: 190, align: 'center', lineBreak: false });
+  doc.text(formatArabic('خاتم اعتماد الصندوق الرسمي'), pageWidth - 240, footerTop, {
+    width: 190,
+    align: 'center',
+    lineBreak: false,
+  });
   doc.font('Amiri').fontSize(7.5).fillColor('#64748b');
-  doc.text(formatArabic('الصندوق الحكومي للتأمين ضد الأخطار الناجمة عن الاخطاء الطبية'), pageWidth - 240, footerTop + 18, { width: 190, align: 'center', lineBreak: false });
-  doc.text(formatArabic('جمهورية مصر العربية'), pageWidth - 240, footerTop + 32, { width: 190, align: 'center', lineBreak: false });
+  doc.text(
+    formatArabic('الصندوق الحكومي للتأمين ضد الأخطار الناجمة عن الاخطاء الطبية'),
+    pageWidth - 240,
+    footerTop + 18,
+    { width: 190, align: 'center', lineBreak: false },
+  );
+  doc.text(formatArabic('جمهورية مصر العربية'), pageWidth - 240, footerTop + 32, {
+    width: 190,
+    align: 'center',
+    lineBreak: false,
+  });
 
   // Center: Official Stamp circle
   doc.save();
@@ -320,23 +376,45 @@ export async function generateCertificatePdf(data: CertificatePdfData): Promise<
   doc.circle(pageWidth / 2, footerTop + 28, 26).stroke();
   doc.restore();
   doc.font('Amiri-Bold').fontSize(8).fillColor('#0d9488');
-  doc.text(formatArabic('خاتم الصندوق'), pageWidth / 2 - 35, footerTop + 18, { width: 70, align: 'center', lineBreak: false });
-  doc.text(formatArabic('المعتمد'), pageWidth / 2 - 35, footerTop + 30, { width: 70, align: 'center', lineBreak: false });
+  doc.text(formatArabic('خاتم الصندوق'), pageWidth / 2 - 35, footerTop + 18, {
+    width: 70,
+    align: 'center',
+    lineBreak: false,
+  });
+  doc.text(formatArabic('المعتمد'), pageWidth / 2 - 35, footerTop + 30, {
+    width: 70,
+    align: 'center',
+    lineBreak: false,
+  });
 
   // Left column: Registrar General Signature
   doc.font('Amiri-Bold').fontSize(10).fillColor('#0f3e46');
-  doc.text(formatArabic('أمانة السجل الرقمي والتوثيق'), 46, footerTop, { width: 180, align: 'center', lineBreak: false });
+  doc.text(formatArabic('أمانة السجل الرقمي والتوثيق'), 46, footerTop, {
+    width: 180,
+    align: 'center',
+    lineBreak: false,
+  });
   doc.font('Amiri').fontSize(7.8).fillColor('#64748b');
-  doc.text(formatArabic('وحدة إصدار وثائق التغطية الإلكترونية'), 46, footerTop + 18, { width: 180, align: 'center', lineBreak: false });
-  doc.text(formatArabic('وثيقة مؤمنة إلكترونياً'), 46, footerTop + 32, { width: 180, align: 'center', lineBreak: false });
+  doc.text(formatArabic('وحدة إصدار وثائق التغطية الإلكترونية'), 46, footerTop + 18, {
+    width: 180,
+    align: 'center',
+    lineBreak: false,
+  });
+  doc.text(formatArabic('وثيقة مؤمنة إلكترونياً'), 46, footerTop + 32, {
+    width: 180,
+    align: 'center',
+    lineBreak: false,
+  });
 
   // Bottom Security Line
   doc.font('Amiri').fontSize(7.5).fillColor('#94a3b8');
   doc.text(
-    formatArabic('وثيقة تغطية رسمية مؤمنة بقانون تنظيم المسئولية الطبية رقم 13 لسنة 2025 — أي كشط أو تعديل يُلغي صلاحية هذه الوثيقة ويعرض الفاعل للمساءلة الجنائية.'),
+    formatArabic(
+      'وثيقة تغطية رسمية مؤمنة بقانون تنظيم المسئولية الطبية رقم 13 لسنة 2025 — أي كشط أو تعديل يُلغي صلاحية هذه الوثيقة ويعرض الفاعل للمساءلة الجنائية.',
+    ),
     36,
     810,
-    { width: pageWidth - 72, align: 'center', lineBreak: false }
+    { width: pageWidth - 72, align: 'center', lineBreak: false },
   );
 
   doc.end();

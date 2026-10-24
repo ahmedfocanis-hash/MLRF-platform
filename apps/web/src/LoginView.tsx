@@ -68,11 +68,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
       {/* Top Floating Navbar for Login View */}
       <header className="landing-nav">
         <div className="landing-nav-inner">
-          <div
-            className="landing-brand"
-            style={{ cursor: 'pointer' }}
-            onClick={onBackToHome}
-          >
+          <div className="landing-brand" style={{ cursor: 'pointer' }} onClick={onBackToHome}>
             <div className="brand-mark">
               <ShieldCheck size={28} />
             </div>
@@ -92,20 +88,12 @@ export const LoginView: React.FC<LoginViewProps> = ({
               <span>{t('landing.backToHome')}</span>
             </button>
             {onNavigateToRegister && (
-              <button
-                type="button"
-                className="nav-register-btn"
-                onClick={onNavigateToRegister}
-              >
+              <button type="button" className="nav-register-btn" onClick={onNavigateToRegister}>
                 <UserPlus size={16} />
                 <span>{t('landing.registerAction', { defaultValue: 'إنشاء حساب' })}</span>
               </button>
             )}
-            <button
-              type="button"
-              className="nav-login-btn"
-              style={{ cursor: 'default' }}
-            >
+            <button type="button" className="nav-login-btn" style={{ cursor: 'default' }}>
               <User size={16} />
               <span>{t('landing.loginAction', { defaultValue: 'تسجيل الدخول' })}</span>
             </button>
@@ -133,7 +121,14 @@ export const LoginView: React.FC<LoginViewProps> = ({
       <div className="login-page-container">
         <div className="landing-login-card login-card-standalone">
           <div className="login-card-header">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 6,
+              }}
+            >
               <span className="eyebrow">{t('login.portal')}</span>
               <button
                 type="button"
@@ -182,12 +177,20 @@ export const LoginView: React.FC<LoginViewProps> = ({
               />
             </div>
             <button className="btn btn-primary full" type="submit" disabled={isSubmitting}>
-              {t('signIn')}{' '}
-              {isRtl ? <ArrowLeft size={17} /> : <ArrowRight size={17} />}
+              {t('signIn')} {isRtl ? <ArrowLeft size={17} /> : <ArrowRight size={17} />}
             </button>
             {onNavigateToRegister && (
-              <div style={{ marginTop: 14, textAlign: 'center', fontSize: 13, color: 'var(--text-muted)' }}>
-                <span>{t('register.hasNoAccount', { defaultValue: 'طبيب جديد؟ ليس لديك حساب؟' })} </span>
+              <div
+                style={{
+                  marginTop: 14,
+                  textAlign: 'center',
+                  fontSize: 13,
+                  color: 'var(--text-muted)',
+                }}
+              >
+                <span>
+                  {t('register.hasNoAccount', { defaultValue: 'طبيب جديد؟ ليس لديك حساب؟' })}{' '}
+                </span>
                 <button
                   type="button"
                   onClick={onNavigateToRegister}
