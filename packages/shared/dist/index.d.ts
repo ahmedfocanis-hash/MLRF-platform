@@ -2,9 +2,9 @@ import { z } from 'zod';
 export declare const ROLES: readonly ["super_admin", "finance_admin", "practitioner_analyst", "facility_analyst", "claims_admin", "inspector", "subscriber"];
 export type Role = (typeof ROLES)[number];
 export declare const ACCOUNT_STATUSES: readonly ["pending_verification", "incomplete", "pending_completion", "active", "expired"];
-export declare const PAYMENT_CHANNELS: readonly ["gateway", "bank_bulk"];
+export declare const PAYMENT_CHANNELS: readonly ["gateway"];
 export declare const VERIFICATION_RESULTS: readonly ["VALID", "EXPIRED", "INVALID"];
-export declare const PERMISSIONS: readonly ["users:manage", "bulk:upload", "payments:read", "analytics:individuals", "analytics:facilities", "claims:read", "audit:read", "inspections:verify", "export:run"];
+export declare const PERMISSIONS: readonly ["users:manage", "payments:read", "analytics:individuals", "analytics:facilities", "claims:read", "audit:read", "inspections:verify", "export:run"];
 export declare const ROLE_PERMISSIONS: Record<Role, readonly string[]>;
 export declare const GOVERNORATES: readonly [readonly ["Cairo", "القاهرة"], readonly ["Alexandria", "الإسكندرية"], readonly ["Giza", "الجيزة"], readonly ["Qalyubia", "القليوبية"], readonly ["Port Said", "بورسعيد"], readonly ["Suez", "السويس"], readonly ["Damietta", "دمياط"], readonly ["Dakahlia", "الدقهلية"], readonly ["Sharqia", "الشرقية"], readonly ["Gharbia", "الغربية"], readonly ["Monufia", "المنوفية"], readonly ["Kafr El Sheikh", "كفر الشيخ"], readonly ["Beheira", "البحيرة"], readonly ["Ismailia", "الإسماعيلية"], readonly ["Fayoum", "الفيوم"], readonly ["Beni Suef", "بني سويف"], readonly ["Minya", "المنيا"], readonly ["Asyut", "أسيوط"], readonly ["Sohag", "سوهاج"], readonly ["Qena", "قنا"], readonly ["Luxor", "الأقصر"], readonly ["Aswan", "أسوان"], readonly ["Red Sea", "البحر الأحمر"], readonly ["New Valley", "الوادي الجديد"], readonly ["Matrouh", "مطروح"], readonly ["North Sinai", "شمال سيناء"], readonly ["South Sinai", "جنوب سيناء"]];
 export declare const registerSchema: z.ZodObject<{

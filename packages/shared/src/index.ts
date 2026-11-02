@@ -16,11 +16,10 @@ export const ACCOUNT_STATUSES = [
   'active',
   'expired',
 ] as const;
-export const PAYMENT_CHANNELS = ['gateway', 'bank_bulk'] as const;
+export const PAYMENT_CHANNELS = ['gateway'] as const;
 export const VERIFICATION_RESULTS = ['VALID', 'EXPIRED', 'INVALID'] as const;
 export const PERMISSIONS = [
   'users:manage',
-  'bulk:upload',
   'payments:read',
   'analytics:individuals',
   'analytics:facilities',
@@ -31,7 +30,7 @@ export const PERMISSIONS = [
 ] as const;
 export const ROLE_PERMISSIONS: Record<Role, readonly string[]> = {
   super_admin: PERMISSIONS,
-  finance_admin: ['bulk:upload', 'payments:read', 'export:run'],
+  finance_admin: ['payments:read', 'export:run'],
   practitioner_analyst: ['analytics:individuals', 'export:run'],
   facility_analyst: ['analytics:facilities', 'export:run'],
   claims_admin: ['claims:read', 'export:run'],

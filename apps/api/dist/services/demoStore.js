@@ -96,9 +96,9 @@ export const audit = [
         timestamp: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
         user: 'Finance Admin',
         role: 'finance_admin',
-        action: 'BULK_BATCH_COMMITTED',
+        action: 'PAYMENT_SUCCEEDED',
         ip: '192.168.1.10',
-        entity: 'دفعة سداد مؤسسي BATCH-2026-084 (نقابة الأطباء فرع القاهرة)',
+        entity: 'سداد اشتراك سنوي إلكتروني مباشر عبر بوابة الصندوق للدكتور أحمد محمود',
     },
     {
         id: 'a-2',

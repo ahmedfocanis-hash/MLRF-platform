@@ -15,7 +15,6 @@ import {
   ChevronDown,
   ClipboardCheck,
   Download,
-  FileSpreadsheet,
   FileText,
   Globe,
   HeartPulse,
@@ -39,7 +38,6 @@ import {
   Stethoscope,
   Building2,
   ArrowRight,
-  UploadCloud,
   CheckCircle2,
   AlertTriangle,
   CreditCard,
@@ -78,7 +76,6 @@ type Page =
   | 'subscriber'
   | 'inspector'
   | 'analytics'
-  | 'bulk'
   | 'claims'
   | 'audit'
   | 'users'
@@ -142,10 +139,6 @@ export default function App() {
   const [toast, setToast] = useState('');
   const [identifier, setIdentifier] = useState('demo-qr-valid-7f0c1a');
   const [verifyResult, setVerifyResult] = useState<any>(null);
-  const [bulkText, setBulkText] = useState(
-    'name,phone,nationalId,specialty,amount\nDr. Sample One,01012345678,29901011234567,General Practitioner,1800\nDr. Sample Two,01112345678,29902021234568,Surgery,4200\nDuplicate Example,01012345678,29901011234567,General Practitioner,1800\nInvalid ID,01212345678,123,Cardiology,3000',
-  );
-  const [bulkPreview, setBulkPreview] = useState<any>(null);
   const [subscriberTab, setSubscriberTab] = useState<'journey' | 'certificate'>('journey');
   const [inspectorHistory, setInspectorHistory] = useState<
     Array<{ id: string; identifier: string; outcome: string; time: string }>
@@ -258,7 +251,6 @@ export default function App() {
         icon: ChartNoAxesCombined,
         permission: 'analytics:individuals',
       },
-      { id: 'bulk' as Page, label: t('bulk'), icon: FileSpreadsheet, permission: 'bulk:upload' },
       { id: 'claims' as Page, label: t('claims'), icon: ClipboardCheck, permission: 'claims:read' },
       { id: 'audit' as Page, label: t('audit'), icon: Shield, permission: 'audit:read' },
       { id: 'users' as Page, label: t('users'), icon: Users, permission: 'users:manage' },
@@ -384,31 +376,6 @@ export default function App() {
         result: 'ERROR',
         message: messageFromError(e, t('toasts.verifyFailed')),
       });
-    }
-  };
-  const previewBulk = async (commit = false) => {
-    try {
-      const rows = bulkText
-        .trim()
-        .split(/\r?\n/)
-        .slice(1)
-        .map((line) => {
-          const [name, phone, nationalId, specialty, amount] = line.split(',');
-          return { name, phone, nationalId, specialty, amount: Number(amount) };
-        });
-      const data = await request<any>(
-        '/admin/bulk-batches',
-        'post',
-        { filename: 'demo-bank-upload.csv', rows },
-        { dryRun: String(!commit) },
-      );
-      setBulkPreview(data);
-      if (commit) {
-        setToast(t('toasts.batchCommitted'));
-        await qc.invalidateQueries();
-      }
-    } catch (e) {
-      setToast(messageFromError(e, t('toasts.bulkFailed')));
     }
   };
   if (currentPath.startsWith('/verify')) {
@@ -1218,7 +1185,7 @@ export default function App() {
                           auditQuery.data?.items ?? [
                             {
                               id: 'a-1',
-                              action: 'BULK_BATCH_COMMITTED',
+                              action: 'PAYMENT_SUCCEEDED',
                               user: 'Finance Admin',
                               timestamp: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
                               role: 'finance_admin',
@@ -1289,10 +1256,10 @@ export default function App() {
                       onClick={() => void switchRole('inspector')}
                     />
                     <Quick
-                      icon={UploadCloud}
-                      title={t('newBatch')}
-                      detail={t('overviewPage.batchDetail')}
-                      onClick={() => setPage('bulk')}
+                      icon={ClipboardCheck}
+                      title={t('claims')}
+                      detail={t('overviewPage.claimsDetail')}
+                      onClick={() => setPage('claims')}
                     />
                     <Quick
                       icon={ChartNoAxesCombined}
@@ -1486,160 +1453,6 @@ export default function App() {
                       ))}
                     </div>
                   </section>
-                </>
-              )}
-              {page === 'bulk' && (
-                <>
-                  <PageTitle
-                    eyebrow={t('bulkPage.eyebrow')}
-                    title={t('bulkPage.title')}
-                    description={t('bulkPage.body')}
-                    action={
-                      <button
-                        className="btn btn-outline"
-                        onClick={() => {
-                          setBulkText(
-                            'name,phone,nationalId,specialty,amount\nDr. Sample One,01012345678,29901011234567,General Practitioner,1800\nDr. Sample Two,01112345678,29902021234568,Surgery,4200\nDuplicate Example,01012345678,29901011234567,General Practitioner,1800\nInvalid ID,01212345678,123,Cardiology,3000',
-                          );
-                          setBulkPreview(null);
-                        }}
-                      >
-                        <RefreshCw size={15} /> {t('bulkPage.reset')}
-                      </button>
-                    }
-                  />
-                  <div className="bulk-summary">
-                    <div>
-                      <FileSpreadsheet />
-                      <span>
-                        <small>{t('bulkPage.tiers')}</small>
-                        <strong>{t('bulkPage.feeTiers', { n: DEMO_TIERS.length })}</strong>
-                      </span>
-                    </div>
-                    <div>
-                      <ShieldCheck />
-                      <span>
-                        <small>{t('bulkPage.duplicates')}</small>
-                        <strong>{t('bulkPage.duplicateKey')}</strong>
-                      </span>
-                    </div>
-                    <div>
-                      <Bell />
-                      <span>
-                        <small>{t('bulkPage.notifications')}</small>
-                        <strong>{t('bulkPage.sms')}</strong>
-                      </span>
-                    </div>
-                  </div>
-                  <div className="panel upload-panel">
-                    <div className="panel-heading">
-                      <div>
-                        <h3>{t('bulkPage.import')}</h3>
-                        <p>{t('bulkPage.importBody')}</p>
-                      </div>
-                      <span className="status-chip neutral">{t('bulkPage.dryRun')}</span>
-                    </div>
-                    <textarea
-                      className="bulk-textarea"
-                      value={bulkText}
-                      onChange={(e) => setBulkText(e.target.value)}
-                      rows={7}
-                      aria-label={t('bulkPage.csvLabel')}
-                    />
-                    <div className="upload-footer">
-                      <span>
-                        <FileText size={15} /> {t('bulkPage.csvHint')}
-                      </span>
-                      <div>
-                        <button className="btn btn-outline" onClick={() => void previewBulk(false)}>
-                          <Search size={15} /> {t('bulkPage.preview')}
-                        </button>
-                        <button
-                          className="btn btn-primary"
-                          disabled={!bulkPreview?.rows?.length || bulkPreview?.dryRun === false}
-                          onClick={() => void previewBulk(true)}
-                        >
-                          <Check size={16} /> {t('bulkPage.commit')}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  {bulkPreview && (
-                    <section className="panel results-panel">
-                      <div className="panel-heading">
-                        <div>
-                          <h3>
-                            {bulkPreview.dryRun
-                              ? t('bulkPage.previewTitle')
-                              : t('bulkPage.committedTitle')}
-                          </h3>
-                          <p>{t('bulkPage.review')}</p>
-                        </div>
-                        <span
-                          className={`status-chip ${bulkPreview.dryRun ? 'warning' : 'success'}`}
-                        >
-                          {bulkPreview.dryRun
-                            ? t('bulkPage.dryRunChip')
-                            : t('bulkPage.committedChip')}
-                        </span>
-                      </div>
-                      <div className="mini-kpis">
-                        <Mini
-                          label={t('bulkPage.total')}
-                          value={bulkPreview.summary?.total ?? bulkPreview.total}
-                        />
-                        <Mini
-                          label={t('bulkPage.created')}
-                          value={bulkPreview.summary?.created ?? bulkPreview.created}
-                          tone="success"
-                        />
-                        <Mini
-                          label={t('bulkPage.duplicate')}
-                          value={bulkPreview.summary?.duplicate ?? bulkPreview.duplicate}
-                          tone="warning"
-                        />
-                        <Mini
-                          label={t('bulkPage.invalid')}
-                          value={bulkPreview.summary?.invalid ?? bulkPreview.invalid}
-                          tone="danger"
-                        />
-                      </div>
-                      <div className="table-scroll">
-                        <table>
-                          <thead>
-                            <tr>
-                              <th>{t('bulkPage.row')}</th>
-                              <th>{t('bulkPage.name')}</th>
-                              <th>{t('bulkPage.nationalId')}</th>
-                              <th>{t('bulkPage.specialty')}</th>
-                              <th>{t('bulkPage.amount')}</th>
-                              <th>{t('bulkPage.status')}</th>
-                              <th>{t('bulkPage.reason')}</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {(bulkPreview.rows ?? []).map((r: any) => (
-                              <tr key={r.rowNumber}>
-                                <td>{r.rowNumber}</td>
-                                <td>{r.name}</td>
-                                <td>{r.nationalId}</td>
-                                <td>{specialtyLabel(r.specialty)}</td>
-                                <td>{money(Number(r.amount) || 0)}</td>
-                                <td>
-                                  <span
-                                    className={`status-chip ${r.status === 'created' ? 'success' : r.status === 'duplicate' ? 'warning' : 'danger'}`}
-                                  >
-                                    {statusLabel(r.status)}
-                                  </span>
-                                </td>
-                                <td>{reasonLabel(r.reason)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </section>
-                  )}
                 </>
               )}
               {page === 'claims' && (
@@ -1969,7 +1782,7 @@ export default function App() {
                             <th>{t('usersPage.role')}</th>
                             {[
                               'users:manage',
-                              'bulk:upload',
+                              'payments:read',
                               'analytics',
                               'claims:read',
                               'audit:read',
@@ -1988,7 +1801,7 @@ export default function App() {
                               </td>
                               {[
                                 'users:manage',
-                                'bulk:upload',
+                                'payments:read',
                                 'analytics',
                                 'claims:read',
                                 'audit:read',
@@ -2037,7 +1850,7 @@ export default function App() {
                       n="03"
                       title={t('guidePage.step3Title')}
                       text={t('guidePage.step3')}
-                      onClick={() => setPage('bulk')}
+                      onClick={() => setPage('claims')}
                     />
                     <GuideStep
                       n="04"

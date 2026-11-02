@@ -101,7 +101,7 @@ export const en = {
     viewAll: 'View all activity',
     jump: 'Jump into your most-used workflows.',
     scanDetail: 'Scan or look up a certificate',
-    batchDetail: 'Review and import bank records',
+    claimsDetail: 'Review claims ledger and compensation decisions',
     analyticsDetail: 'Explore growth and renewal trends',
     signupsTitle: '{{n}} signups',
     renewalsTitle: '{{n}} renewals',
@@ -267,9 +267,9 @@ export const en = {
     step2Title: 'Verify a certificate',
     step2:
       'Open Inspector Tools and verify the seeded certificate. Try the unregistered scenario to see the invalid path.',
-    step3Title: 'Bank upload to completion',
+    step3Title: 'Claims & compensations ledger',
     step3:
-      'Preview the sample CSV, inspect duplicate and invalid rows, then commit accepted rows. View the mock SMS inbox endpoint.',
+      'Track and review medical liability claims, settlement decisions, and compensation disbursements.',
     step4Title: 'Role switching & audit',
     step4:
       'Use the role switcher in the top bar. Restricted modules disappear and every action creates an audit event.',
@@ -507,7 +507,7 @@ export const en = {
       'Registration, verification, specialty selection, fee payment, and digital certificate',
     inspectorDesc:
       'Mobile field verification, QR code lookup, license validity checks, and violation reporting',
-    adminDesc: 'Executive analytics, claims ledger, bank bulk upload, and user administration',
+    adminDesc: 'Executive analytics, claims ledger, digital compliance monitoring, and fund administration',
   },
   doctorPortal: {
     headerTitle: 'Doctor & Medical Facility Portal',
