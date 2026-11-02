@@ -66,5 +66,5 @@ export declare const certificates: {
     status: 'valid' | 'revoked';
 }[];
 export declare function recordAudit(user: string, role: string, action: string, entity?: string, ip?: string): void;
-export declare function feeFor(tierId: string): 400 | 100 | 240 | 920 | 160 | 24000 | 9600 | 3600 | 2400 | 1200;
+export declare function feeFor(tierId: string): 400 | 100 | 3600 | 240 | 920 | 160 | 24000 | 9600 | 2400 | 1200;
 export declare function resetDemo(): void;

@@ -105,6 +105,28 @@ const PROFILE_GOVERNORATES = [
   'Luxor',
   'Aswan',
 ] as const;
+
+const DEFAULT_DISTRIBUTION = [
+  { name: 'human_doctor_gp', subscribers: 412, revenue: 98880 },
+  { name: 'human_doctor_specialist', subscribers: 871, revenue: 801320 },
+  { name: 'dentist_pt_gp', subscribers: 210, revenue: 33600 },
+  { name: 'dentist_pt_specialist', subscribers: 230, revenue: 92000 },
+  { name: 'pharmacist', subscribers: 140, revenue: 33600 },
+  { name: 'other_medical_staff', subscribers: 76, revenue: 7600 },
+  { name: 'facility_hospital', subscribers: 138, revenue: 3312000 },
+  { name: 'facility_medical_center', subscribers: 135, revenue: 1296000 },
+  { name: 'facility_radiology', subscribers: 56, revenue: 201600 },
+  { name: 'facility_lab', subscribers: 94, revenue: 225600 },
+  { name: 'facility_pharmacy', subscribers: 119, revenue: 142800 },
+];
+
+const DEFAULT_COHORTS = [
+  { name: 'Q1', signups: 325, renewals: 295, total: 620 },
+  { name: 'Q2', signups: 340, renewals: 310, total: 650 },
+  { name: 'Q3', signups: 280, renewals: 305, total: 585 },
+  { name: 'Q4', signups: 298, renewals: 328, total: 626 },
+];
+
 export default function App() {
   const { t, i18n } = useTranslation();
   const qc = useQueryClient();
@@ -1143,19 +1165,14 @@ export default function App() {
                       </div>
                       <div className="bar-chart">
                         {(
-                          analytics.data?.cohorts ?? [
-                            { name: 'Q1', signups: 440, renewals: 320 },
-                            { name: 'Q2', signups: 510, renewals: 370 },
-                            { name: 'Q3', signups: 390, renewals: 430 },
-                            { name: 'Q4', signups: 620, renewals: 500 },
-                          ]
+                          analytics.data?.cohorts ?? DEFAULT_COHORTS
                         ).map((d: any, i: number) => (
                           <div className="bar-group" key={d.name}>
                             <div className="bars">
                               <div
                                 className="bar teal-bar"
                                 style={{
-                                  height: `${Math.max(15, Math.min(100, (d.signups ?? d.newSignups ?? 0) / 7))}%`,
+                                  height: `${Math.max(15, Math.min(100, ((d.signups ?? d.newSignups ?? 0) / 380) * 100))}%`,
                                 }}
                                 title={t('overviewPage.signupsTitle', {
                                   n: d.signups ?? d.newSignups ?? 0,
@@ -1164,7 +1181,7 @@ export default function App() {
                               <div
                                 className="bar gold-bar"
                                 style={{
-                                  height: `${Math.max(12, Math.min(100, (d.renewals ?? 0) / 7))}%`,
+                                  height: `${Math.max(12, Math.min(100, ((d.renewals ?? 0) / 380) * 100))}%`,
                                 }}
                                 title={t('overviewPage.renewalsTitle', { n: d.renewals ?? 0 })}
                               />
@@ -1200,32 +1217,32 @@ export default function App() {
                         {(
                           auditQuery.data?.items ?? [
                             {
-                              id: 'a1',
-                              action: 'PAYMENT_SUCCESS',
-                              user: 'Dr. Mariam Hassan',
-                              timestamp: new Date().toISOString(),
-                              role: 'subscriber',
-                            },
-                            {
-                              id: 'a2',
-                              action: 'PROFILE_UPDATED',
-                              user: 'Ahmed Inspector',
-                              timestamp: new Date(Date.now() - 3600000).toISOString(),
-                              role: 'inspector',
-                            },
-                            {
-                              id: 'a3',
-                              action: 'LOGIN',
+                              id: 'a-1',
+                              action: 'BULK_BATCH_COMMITTED',
                               user: 'Finance Admin',
-                              timestamp: new Date(Date.now() - 7200000).toISOString(),
+                              timestamp: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
                               role: 'finance_admin',
                             },
                             {
-                              id: 'a4',
+                              id: 'a-2',
+                              action: 'PAYMENT_SUCCEEDED',
+                              user: 'Claims Admin',
+                              timestamp: new Date(Date.now() - 48 * 60 * 1000).toISOString(),
+                              role: 'claims_admin',
+                            },
+                            {
+                              id: 'a-3',
                               action: 'EXPORT_REQUESTED',
                               user: 'Super Admin',
-                              timestamp: new Date(Date.now() - 10800000).toISOString(),
+                              timestamp: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
                               role: 'super_admin',
+                            },
+                            {
+                              id: 'a-4',
+                              action: 'PROFILE_UPDATED',
+                              user: 'Facility Analyst',
+                              timestamp: new Date(Date.now() - 4 * 3600 * 1000).toISOString(),
+                              role: 'facility_analyst',
                             },
                           ]
                         )
@@ -1297,12 +1314,7 @@ export default function App() {
                         className="btn btn-outline"
                         onClick={() => {
                           const rows = (
-                            analytics.data?.distribution ??
-                            DEMO_TIERS.slice(0, 6).map((tier, i) => ({
-                              name: tier.name,
-                              subscribers: 160 - i * 12,
-                              revenue: (160 - i * 12) * tier.fee,
-                            }))
+                            analytics.data?.distribution ?? DEFAULT_DISTRIBUTION
                           ).map((d: any) => ({
                             [t('analyticsPage.specialty') || 'التخصص / الفئة']: specialtyLabel(
                               d.name,
@@ -1382,27 +1394,22 @@ export default function App() {
                       </div>
                       <div className="horizontal-bars">
                         {(
-                          analytics.data?.distribution ??
-                          DEMO_TIERS.slice(0, 6).map((tier, i) => ({
-                            name: tier.name,
-                            subscribers: 160 - i * 12,
-                            revenue: (160 - i * 12) * tier.fee,
-                          }))
-                        )
-                          .slice(0, 7)
-                          .map((d: any) => (
-                            <div className="horizontal-row" key={d.name}>
-                              <div>
-                                <span>{specialtyLabel(d.name)}</span>
-                                <strong>{money(d.revenue)}</strong>
-                              </div>
-                              <div className="track">
-                                <span
-                                  style={{ width: `${Math.min(100, (d.revenue / 90000) * 100)}%` }}
-                                />
-                              </div>
+                          analytics.data?.distribution ?? DEFAULT_DISTRIBUTION
+                        ).map((d: any) => (
+                          <div className="horizontal-row" key={d.name}>
+                            <div>
+                              <span>{specialtyLabel(d.name)}</span>
+                              <strong>{money(d.revenue)}</strong>
                             </div>
-                          ))}
+                            <div className="track">
+                              <span
+                                style={{
+                                  width: `${Math.max(6, Math.min(100, (d.revenue / 3312000) * 100))}%`,
+                                }}
+                              />
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </section>
                     <section className="panel">
@@ -1413,21 +1420,22 @@ export default function App() {
                         </div>
                       </div>
                       <div className="cohort-list">
-                        {(analytics.data?.cohorts ?? []).map((d: any) => (
-                          <div className="cohort-row" key={d.name}>
-                            <span>{cohortLabel(d.name)}</span>
-                            <strong>
-                              {formatCount(d.signups || d.newSignups || d.renewals || 0)}
-                            </strong>
-                            <div className="track">
-                              <span
-                                style={{
-                                  width: `${Math.min(100, (d.signups || d.newSignups || d.renewals || 0) / 10)}%`,
-                                }}
-                              />
+                        {(analytics.data?.cohorts ?? DEFAULT_COHORTS).map((d: any) => {
+                          const totalVal = d.total ?? ((d.signups || d.newSignups || 0) + (d.renewals || 0));
+                          return (
+                            <div className="cohort-row" key={d.name}>
+                              <span>{cohortLabel(d.name)}</span>
+                              <strong>{formatCount(totalVal)}</strong>
+                              <div className="track">
+                                <span
+                                  style={{
+                                    width: `${Math.min(100, Math.max(12, (totalVal / 700) * 100))}%`,
+                                  }}
+                                />
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                       <div className="note-card compact">
                         <Activity />
@@ -1660,12 +1668,12 @@ export default function App() {
                                 ? rows
                                 : [
                                     {
-                                      [t('claimsPage.id') || 'رقم المطالبة']: 'CLM-2026-001',
-                                      [t('claimsPage.doctor') || 'الطبيب']: 'د. طارق محمود',
+                                      [t('claimsPage.id') || 'رقم المطالبة']: 'CLM-2026-0001',
+                                      [t('claimsPage.doctor') || 'الطبيب']: 'د. طارق محمود الشناوي',
                                       [t('claimsPage.hospital') || 'المنشأة']:
-                                        'مستشفى السلام الدولي',
+                                        'مستشفى قصر العيني التعليمي',
                                       [t('claimsPage.specialty') || 'التخصص']: 'جراحة عامة',
-                                      [t('claimsPage.stage') || 'المرحلة']: 'صرف التعويض',
+                                      [t('claimsPage.stage') || 'المرحلة']: 'صرف التعويض المقرر',
                                       [t('claimsPage.awarded') || 'التعويض']: 150000,
                                       [t('claimsPage.paid') || 'المنصرف']: 150000,
                                     },
@@ -1698,7 +1706,7 @@ export default function App() {
                     />
                     <Kpi
                       title={t('claimsPage.review')}
-                      value={formatCount(claimsQuery.data?.kpis.underLegalReview ?? 6)}
+                      value={formatCount(claimsQuery.data?.kpis.underLegalReview ?? 14)}
                       change=""
                       trend="up"
                       icon={Clock3}
@@ -1707,7 +1715,7 @@ export default function App() {
                     />
                     <Kpi
                       title={t('claimsPage.approved')}
-                      value={formatCount(claimsQuery.data?.kpis.approvedCompensations ?? 22)}
+                      value={formatCount(claimsQuery.data?.kpis.approvedCompensations ?? 14)}
                       change=""
                       trend="up"
                       icon={BadgeCheck}
@@ -1716,7 +1724,7 @@ export default function App() {
                     />
                     <Kpi
                       title={t('claimsPage.disbursed')}
-                      value={money(claimsQuery.data?.kpis.disbursed ?? 50000)}
+                      value={money(claimsQuery.data?.kpis.disbursed ?? 980000)}
                       change=""
                       trend="up"
                       icon={Banknote}

@@ -1551,51 +1551,113 @@ apiRouter.get('/admin/analytics', requireAuth, asyncHandler(async (req, res) => 
     const role = req.user.role;
     if (!ROLE_PERMISSIONS[role]?.some((p) => p.startsWith('analytics:')))
         throw new AppError(403, 'FORBIDDEN', 'Analytics permission required');
-    const active = users.filter((u) => u.status === 'active').length;
-    const revenue = payments
-        .filter((p) => p.status === 'paid')
-        .reduce((sum, p) => sum + p.amount, 0);
-    const governorates = ['Cairo', 'Giza', 'Alexandria', 'Dakahlia', 'Asyut', 'Luxor', 'Aswan'];
-    const specialties = DEMO_TIERS.filter((t) => t.entityType === 'individual').slice(0, 7);
+    const scenario = req.query.scenario ?? 'year2_3';
+    const isYear1 = scenario === 'year1';
+    // Mathematically coherent datasets:
+    // Year 2/3 (Full Operation):
+    // 2,481 Active Subscribers (1,939 Individuals + 542 Facilities)
+    // 6,245,000 EGP Annual Collections
+    // 78.4% YoY Renewal Rate (1,238 Renewals / (1,238 + 342 Unrenewed) = 78.4%)
+    const kpiData = isYear1
+        ? {
+            activeSubscribers: 1620,
+            totalRevenue: 4050000,
+            yoyRenewalRate: 92.5,
+            unrenewed: 130,
+        }
+        : {
+            activeSubscribers: 2481,
+            totalRevenue: 6245000,
+            yoyRenewalRate: 78.4,
+            unrenewed: 342,
+        };
+    const cohorts = isYear1
+        ? [
+            { name: 'Q1', signups: 280, renewals: 0, newSignups: 280, total: 280 },
+            { name: 'Q2', signups: 390, renewals: 0, newSignups: 390, total: 390 },
+            { name: 'Q3', signups: 430, renewals: 0, newSignups: 430, total: 430 },
+            { name: 'Q4', signups: 520, renewals: 0, newSignups: 520, total: 520 },
+        ]
+        : [
+            { name: 'Q1', signups: 325, renewals: 295, newSignups: 325, total: 620 },
+            { name: 'Q2', signups: 340, renewals: 310, newSignups: 340, total: 650 },
+            { name: 'Q3', signups: 280, renewals: 305, newSignups: 280, total: 585 },
+            { name: 'Q4', signups: 298, renewals: 328, newSignups: 298, total: 626 },
+        ];
+    const distribution = isYear1
+        ? [
+            { name: 'human_doctor_gp', subscribers: 290, revenue: 69600 },
+            { name: 'human_doctor_specialist', subscribers: 610, revenue: 561200 },
+            { name: 'dentist_pt_gp', subscribers: 145, revenue: 23200 },
+            { name: 'dentist_pt_specialist', subscribers: 160, revenue: 64000 },
+            { name: 'pharmacist', subscribers: 95, revenue: 22800 },
+            { name: 'other_medical_staff', subscribers: 50, revenue: 5000 },
+            { name: 'facility_hospital', subscribers: 90, revenue: 2160000 },
+            { name: 'facility_medical_center', subscribers: 85, revenue: 816000 },
+            { name: 'facility_radiology', subscribers: 35, revenue: 126000 },
+            { name: 'facility_lab', subscribers: 50, revenue: 120000 },
+            { name: 'facility_pharmacy', subscribers: 70, revenue: 84000 },
+        ]
+        : [
+            { name: 'human_doctor_gp', subscribers: 412, revenue: 98880 },
+            { name: 'human_doctor_specialist', subscribers: 871, revenue: 801320 },
+            { name: 'dentist_pt_gp', subscribers: 210, revenue: 33600 },
+            { name: 'dentist_pt_specialist', subscribers: 230, revenue: 92000 },
+            { name: 'pharmacist', subscribers: 140, revenue: 33600 },
+            { name: 'other_medical_staff', subscribers: 76, revenue: 7600 },
+            { name: 'facility_hospital', subscribers: 138, revenue: 3312000 },
+            { name: 'facility_medical_center', subscribers: 135, revenue: 1296000 },
+            { name: 'facility_radiology', subscribers: 56, revenue: 201600 },
+            { name: 'facility_lab', subscribers: 94, revenue: 225600 },
+            { name: 'facility_pharmacy', subscribers: 119, revenue: 142800 },
+        ];
+    const governorates = [
+        { name: 'Cairo', baseRate: 92 },
+        { name: 'Giza', baseRate: 88 },
+        { name: 'Alexandria', baseRate: 87 },
+        { name: 'Dakahlia', baseRate: 83 },
+        { name: 'Gharbia', baseRate: 81 },
+        { name: 'Sharqia', baseRate: 79 },
+        { name: 'Asyut', baseRate: 74 },
+        { name: 'Luxor', baseRate: 72 },
+        { name: 'Aswan', baseRate: 70 },
+    ];
+    const topSpecialties = DEMO_TIERS.slice(0, 5);
+    const heatmap = governorates.map((g, i) => ({
+        governorate: g.name,
+        values: topSpecialties.map((t, j) => ({
+            specialty: t.name,
+            rate: Math.min(99, Math.max(52, g.baseRate + ((j * 3 - i * 2) % 7))),
+        })),
+    }));
     ok(res, {
         filters: {
             fiscalYear: req.query.fiscalYear ?? '2026',
-            scenario: req.query.scenario ?? 'year2_3',
+            scenario,
         },
-        kpis: {
-            activeSubscribers: active + 2481,
-            totalRevenue: revenue + 6245000,
-            yoyRenewalRate: 78.4,
-            unrenewed: 342,
-        },
-        cohorts: [
-            { name: 'Year 1 signups', signups: 920, renewals: 0, newSignups: 920 },
-            { name: 'Year 2 renewals', signups: 0, renewals: 714, newSignups: 0 },
-            { name: 'Year 2 new signups', signups: 530, renewals: 0, newSignups: 530 },
-        ],
-        distribution: specialties.map((t, i) => ({
-            name: t.name,
-            subscribers: 110 + i * 27,
-            revenue: (110 + i * 27) * t.fee,
-        })),
-        heatmap: governorates.map((g, i) => ({
-            governorate: g,
-            values: specialties.map((t, j) => ({
-                specialty: t.name,
-                rate: Math.max(42, 91 - ((i * 5 + j * 3) % 47)),
-            })),
-        })),
-        facilities: { hospitals: 142, pharmacies: 480, clinics: 723, laboratories: 186 },
-        scenario: req.query.scenario ?? 'year2_3',
+        kpis: kpiData,
+        cohorts,
+        distribution,
+        heatmap,
+        facilities: isYear1
+            ? { hospitals: 90, pharmacies: 70, clinics: 85, laboratories: 50, radiology: 35, total: 330 }
+            : { hospitals: 138, pharmacies: 119, clinics: 135, laboratories: 94, radiology: 56, total: 542 },
+        individuals: isYear1 ? 1290 : 1939,
+        scenario,
     });
 }));
 apiRouter.get('/admin/claims', requireAuth, requirePermission('claims:read'), (req, res) => {
     const page = Math.max(1, Number(req.query.page ?? 1));
     const limit = Math.min(50, Math.max(1, Number(req.query.limit ?? 10)));
-    const filtered = claims.filter((c) => !req.query.search ||
-        `${c.doctor} ${c.hospital} ${c.specialty} ${c.id}`
+    const searchStr = req.query.search ? String(req.query.search).toLowerCase() : '';
+    const filtered = claims.filter((c) => !searchStr ||
+        `${c.doctor} ${c.hospital} ${c.specialty} ${c.id} ${c.stage}`
             .toLowerCase()
-            .includes(String(req.query.search).toLowerCase()));
+            .includes(searchStr));
+    const totalAwarded = claims.reduce((s, c) => s + c.awarded, 0);
+    const totalPaid = claims.reduce((s, c) => s + c.paid, 0);
+    const underReviewCount = claims.filter((c) => ['Legal Review', 'Claim Filed', 'Incident'].includes(c.stage)).length;
+    const approvedCount = claims.filter((c) => ['Payout', 'Court Verdict'].includes(c.stage)).length;
     ok(res, {
         items: filtered.slice((page - 1) * limit, page * limit),
         page,
@@ -1603,15 +1665,16 @@ apiRouter.get('/admin/claims', requireAuth, requirePermission('claims:read'), (r
         total: filtered.length,
         kpis: {
             totalFiled: claims.length,
-            underLegalReview: claims.filter((c) => c.stage === 'Legal Review').length,
-            approvedCompensations: claims.filter((c) => c.awarded > 0).length,
-            disbursed: claims.reduce((s, c) => s + c.paid, 0),
-            reserved: claims.reduce((s, c) => s + c.awarded - c.paid, 0),
+            underLegalReview: underReviewCount,
+            approvedCompensations: approvedCount,
+            disbursed: totalPaid,
+            reserved: totalAwarded - totalPaid,
         },
         topSpecialties: [
-            { name: 'Surgery', count: 14, value: 1280000 },
-            { name: 'Obstetrics', count: 9, value: 870000 },
-            { name: 'Cardiology', count: 5, value: 430000 },
+            { name: 'جراحة عامة', count: 6, value: 555000 },
+            { name: 'النساء والتوليد', count: 5, value: 485000 },
+            { name: 'جراحة المخ والأعصاب', count: 4, value: 410000 },
+            { name: 'التخدير والعناية المركزة', count: 3, value: 190000 },
         ],
     });
 });
