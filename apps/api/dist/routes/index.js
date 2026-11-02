@@ -943,7 +943,7 @@ apiRouter.post('/webhooks/payments', asyncHandler(async (req, res) => {
     ok(res, { accepted: true, duplicate: false, paymentId: payment.id, status: payment.status });
 }));
 apiRouter.get('/certificates/me', requireAuth, asyncHandler(async (req, res) => {
-    const host = req.get('host') || 'mlrf-platform-ykit.vercel.app';
+    const _host = req.get('host') || 'mlrf-platform-ykit.vercel.app';
     if (dbReady()) {
         const docs = await CertificateModel.find({ userId: req.user?.id })
             .select('+qrHash')

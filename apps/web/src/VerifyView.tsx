@@ -11,7 +11,6 @@ import {
   Moon,
   Globe,
   Loader2,
-  ExternalLink,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import * as htmlToImage from 'html-to-image';

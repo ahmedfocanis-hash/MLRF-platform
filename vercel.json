@@ -10,8 +10,9 @@
   ],
   "routes": [
     { "src": "/api/(.*)", "dest": "apps/api/src/server.ts" },
-    { "src": "/login", "dest": "apps/web/dist/index.html" },
-    { "src": "/register", "dest": "apps/web/dist/index.html" },
+    { "src": "/verify.*", "dest": "apps/web/dist/index.html" },
+    { "src": "/login.*", "dest": "apps/web/dist/index.html" },
+    { "src": "/register.*", "dest": "apps/web/dist/index.html" },
     { "src": "/(.*)", "dest": "apps/web/dist/$1" }
   ]
 }

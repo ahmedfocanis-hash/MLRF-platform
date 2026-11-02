@@ -1117,7 +1117,7 @@ apiRouter.get(
   '/certificates/me',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const host = req.get('host') || 'mlrf-platform-ykit.vercel.app';
+    const _host = req.get('host') || 'mlrf-platform-ykit.vercel.app';
     if (dbReady()) {
       const docs = await CertificateModel.find({ userId: req.user?.id })
         .select('+qrHash')

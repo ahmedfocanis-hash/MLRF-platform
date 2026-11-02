@@ -771,6 +771,7 @@ export default function App() {
               setToast={setToast}
               forceCertificateView={subscriberTab === 'certificate'}
               onGoToJourney={() => setSubscriberTab('journey')}
+              onNavigateToVerify={(certId) => navigateTo(`/verify/${certId}`)}
               currentUser={currentUser}
             />
           </main>
@@ -2220,11 +2221,13 @@ function Subscriber({
   setToast,
   forceCertificateView = false,
   onGoToJourney: _onGoToJourney,
+  onNavigateToVerify,
   currentUser,
 }: {
   setToast: (s: string) => void;
   forceCertificateView?: boolean;
   onGoToJourney?: () => void;
+  onNavigateToVerify?: (certNumber: string) => void;
   currentUser?: User | null;
 }) {
   const { t, i18n } = useTranslation();
@@ -2618,17 +2621,26 @@ function Subscriber({
                   <span>{t('subscriberPage.demoQr', { lng: 'ar' })}</span>
                 </div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 24 }}>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 24, flexWrap: 'wrap' }}>
                 <button
+                  type="button"
                   className="btn btn-primary"
                   onClick={() => {
+                    const certId = 'MLRF-2026-000123';
                     const verifyUrl =
                       typeof window !== 'undefined' &&
                       window.location.origin &&
                       window.location.origin.startsWith('http')
-                        ? `${window.location.origin}/verify/MLRF-2026-000123`
-                        : 'https://mlrf-platform-ykit.vercel.app/verify/MLRF-2026-000123';
-                    window.open(verifyUrl, '_blank');
+                        ? `${window.location.origin}/verify/${certId}`
+                        : `https://mlrf-platform-ykit.vercel.app/verify/${certId}`;
+                    const newWin = window.open(verifyUrl, '_blank');
+                    if (!newWin || newWin.closed || typeof newWin.closed === 'undefined') {
+                      if (onNavigateToVerify) {
+                        onNavigateToVerify(certId);
+                      } else if (typeof window !== 'undefined') {
+                        window.location.href = verifyUrl;
+                      }
+                    }
                   }}
                 >
                   <ExternalLink size={16} /> {t('subscriberPage.viewVerify', { defaultValue: 'عرض صفحة التحقق والتحميل' })}
