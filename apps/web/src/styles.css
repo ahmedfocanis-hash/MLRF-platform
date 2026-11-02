@@ -1936,24 +1936,28 @@ button:disabled {
 }
 
 .fund-logo-placeholder {
-  width: 80px;
-  height: 80px;
+  width: auto;
+  max-width: fit-content;
+  height: auto;
   margin: 0 auto 16px;
-  border: 1.5px dashed #78716c !important;
-  border-radius: 12px;
-  background: #f5f5f4 !important;
-  display: flex;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 999px;
+  background: #f0fdf4 !important;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 8px;
+  padding: 8px 18px;
+  gap: 8px;
 }
 
-.fund-logo-placeholder span {
-  font-size: 11px;
-  font-weight: 600;
-  color: #57534e !important;
-  line-height: 1.3;
+.fund-logo-placeholder span,
+.fund-logo-placeholder strong {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f766e !important;
+  line-height: 1.4;
+  white-space: normal;
 }
 
 .certificate-seal {
@@ -2042,23 +2046,26 @@ button:disabled {
 }
 
 .fund-stamp-placeholder {
-  width: 100px;
-  height: 100px;
-  border: 2px dashed #78716c !important;
+  width: 90px;
+  height: 90px;
+  border: 1.5px solid #0f766e !important;
   border-radius: 50%;
-  background: #f5f5f4 !important;
+  background: #f0fdf4 !important;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 10px;
+  padding: 8px;
+  color: #0f766e !important;
 }
 
 .fund-stamp-placeholder span {
   font-size: 10px;
-  font-weight: 600;
-  color: #57534e !important;
-  line-height: 1.3;
+  font-weight: 700;
+  color: #0f766e !important;
+  line-height: 1.2;
+  margin-top: 4px;
 }
 
 .certificate-footer .qr-placeholder {
@@ -3719,16 +3726,27 @@ tbody tr:last-child td {
 [data-theme='dark'] .certificate-preview .eyebrow,
 [data-theme='dark'] .certificate-preview > p,
 [data-theme='dark'] .certificate-preview .certificate-data span,
-[data-theme='dark'] .certificate-preview .qr-placeholder span,
-[data-theme='dark'] .certificate-preview .fund-logo-placeholder span,
-[data-theme='dark'] .certificate-preview .fund-stamp-placeholder span {
+[data-theme='dark'] .certificate-preview .qr-placeholder span {
   color: #57534e !important;
 }
 
-[data-theme='dark'] .certificate-preview .fund-logo-placeholder,
+[data-theme='dark'] .certificate-preview .fund-logo-placeholder {
+  background: #f0fdf4 !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme='dark'] .certificate-preview .fund-logo-placeholder span,
+[data-theme='dark'] .certificate-preview .fund-logo-placeholder strong {
+  color: #0f766e !important;
+}
+
 [data-theme='dark'] .certificate-preview .fund-stamp-placeholder {
-  background: #f5f5f4 !important;
-  border-color: #78716c !important;
+  background: #f0fdf4 !important;
+  border-color: #0f766e !important;
+}
+
+[data-theme='dark'] .certificate-preview .fund-stamp-placeholder span {
+  color: #0f766e !important;
 }
 
 [data-theme='dark'] .certificate-preview .certificate-payment-note {
@@ -4488,18 +4506,46 @@ html[lang='ar'],
     color: #059669 !important;
   }
 
-  .fund-logo-placeholder,
-  .fund-stamp-placeholder {
+  .fund-logo-placeholder {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-    border: 1.5px dashed #78716c !important;
-    background: #f5f5f4 !important;
-    color: #57534e !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 999px !important;
+    background: #f0fdf4 !important;
+    color: #0f766e !important;
+    width: auto !important;
+    height: auto !important;
+    padding: 8px 16px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
 
   .fund-logo-placeholder span,
+  .fund-logo-placeholder strong {
+    color: #0f766e !important;
+    font-size: 12px !important;
+  }
+
+  .fund-stamp-placeholder {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    border: 1.5px solid #0f766e !important;
+    border-radius: 50% !important;
+    background: #f0fdf4 !important;
+    color: #0f766e !important;
+    width: 90px !important;
+    height: 90px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
   .fund-stamp-placeholder span {
-    color: #57534e !important;
+    color: #0f766e !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
   }
 
   .certificate-payment-note {

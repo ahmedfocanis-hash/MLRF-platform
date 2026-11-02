@@ -2559,6 +2559,7 @@ function Subscriber({
           )}
           {effectiveStep === 4 && (
             <div className="certificate-preview" dir="rtl">
+              {/* Top Logo and Fund Identification */}
               <div
                 className="fund-logo-placeholder"
                 style={{
@@ -2566,19 +2567,35 @@ function Subscriber({
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '8px',
+                  width: 'auto',
+                  maxWidth: 'fit-content',
+                  height: 'auto',
+                  padding: '8px 16px',
+                  borderRadius: 999,
+                  margin: '0 auto 16px',
                 }}
               >
                 <BrandLogo className="w-8 h-8" />
-                <span>{t('brandShort', { lng: 'ar' })}</span>
+                <strong style={{ fontSize: 13, color: '#0f766e' }}>
+                  الصندوق الحكومي للتأمين ضد الأخطار الناجمة عن الاخطاء الطبية
+                </strong>
               </div>
+
+              {/* Certificate Seal */}
               <div className="certificate-seal">
                 <BrandLogo className="w-9 h-9" />
               </div>
-              <div className="eyebrow">{t('brandShort', { lng: 'ar' })}</div>
-              <h2>{t('subscriberPage.certTitle', { lng: 'ar' })}</h2>
-              <p>{t('subscriberPage.certifies', { lng: 'ar' })}</p>
-              <h3>{currentUser?.name || 'د. أحمد محمد محمود'}</h3>
-              <p>{t('subscriberPage.registered', { lng: 'ar' })}</p>
+
+              <div className="eyebrow">جمهورية مصر العربية — رئاسة مجلس الوزراء</div>
+              <h2>شهادة تغطية معتمدة ضد أخطار المسؤولية الطبية</h2>
+              <p>يشهد الصندوق الحكومي للتأمين ضد الأخطار الناجمة عن الأخطاء الطبية بأن السيد الطبيب:</p>
+              <h3 style={{ fontSize: 26, margin: '10px 0', color: '#0f766e' }}>
+                {currentUser?.name || 'د. أحمد محمد محمود'}
+              </h3>
+              <p>
+                مقيد ومعتمد بسجلات الصندوق ومغطى تأمينياً ضد الأخطار الناجمة عن المسؤولية والأخطاء الطبية
+                وفقاً لأحكام القانون والقرارات المنظمة.
+              </p>
               <p className="certificate-payment-note">
                 {t('certificate.paymentConfirmation', {
                   lng: 'ar',
@@ -2587,25 +2604,35 @@ function Subscriber({
                   ),
                 })}
               </p>
-              <div className="certificate-data">
+              <div className="certificate-data" style={{ margin: '24px 0' }}>
                 <div>
-                  <span>{t('subscriberPage.certNumber', { lng: 'ar' })}</span>
-                  <strong>MLRF-2026-000123</strong>
+                  <span>{t('subscriberPage.certNumber', { lng: 'ar', defaultValue: 'رقم الشهادة المعتمد' })}</span>
+                  <strong style={{ fontFamily: 'monospace', letterSpacing: 1 }}>MLRF-2026-000123</strong>
                 </div>
                 <div>
-                  <span>{t('subscriberPage.coverageStatus', { lng: 'ar' })}</span>
-                  <strong className="success-text">
-                    {t('subscriberPage.valid', { lng: 'ar' })}
+                  <span>{t('subscriberPage.coverageStatus', { lng: 'ar', defaultValue: 'حالة التغطية التأمينية' })}</span>
+                  <strong className="success-text" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <ShieldCheck size={14} /> {t('subscriberPage.valid', { lng: 'ar', defaultValue: 'سارية ومعتمدة' })}
                   </strong>
                 </div>
                 <div>
-                  <span>{t('subscriberPage.period', { lng: 'ar' })}</span>
-                  <strong>{t('subscriberPage.oneYear', { lng: 'ar' })}</strong>
+                  <span>{t('subscriberPage.period', { lng: 'ar', defaultValue: 'فترة التغطية التأمينية' })}</span>
+                  <strong>{t('subscriberPage.oneYear', { lng: 'ar', defaultValue: 'سنة مالية كاملة من تاريخ السداد' })}</strong>
                 </div>
               </div>
-              <div className="certificate-footer">
-                <div className="fund-stamp-placeholder">
-                  <span>{t('certificate.stampPlaceholder', { lng: 'ar' })}</span>
+              <div className="certificate-footer" style={{ marginTop: 24 }}>
+                <div
+                  className="fund-stamp-placeholder"
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 8,
+                  }}
+                >
+                  <BrandLogo className="w-8 h-8" />
+                  <span style={{ fontSize: 10, marginTop: 4, fontWeight: 700 }}>خاتم الصندوق الرقمي</span>
                 </div>
                 <div className="qr-placeholder">
                   <QRCodeSVG
@@ -2617,8 +2644,11 @@ function Subscriber({
                         : 'https://mlrf-platform-ykit.vercel.app/verify/MLRF-2026-000123'
                     }
                     size={110}
+                    level="M"
                   />
-                  <span>{t('subscriberPage.demoQr', { lng: 'ar' })}</span>
+                  <span style={{ fontSize: 10, marginTop: 4 }}>
+                    {t('subscriberPage.demoQr', { lng: 'ar', defaultValue: 'امسح للتحقق الرقمي المباشر' })}
+                  </span>
                 </div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 24, flexWrap: 'wrap' }}>
