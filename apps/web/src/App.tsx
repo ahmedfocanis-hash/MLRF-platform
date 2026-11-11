@@ -44,8 +44,11 @@ import {
   Lock,
   UserPlus,
   ExternalLink,
+  Camera,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { Capacitor } from '@capacitor/core';
+import { CameraQrScanner } from './components/CameraQrScanner';
 import { LoginView } from './LoginView';
 import { RegisterView } from './RegisterView';
 import { VerifyView } from './VerifyView';
@@ -124,14 +127,33 @@ const DEFAULT_COHORTS = [
   { name: 'Q4', signups: 298, renewals: 328, total: 626 },
 ];
 
+const isMobileWatcher =
+  typeof window !== 'undefined' &&
+  (Capacitor.isNativePlatform() ||
+    Boolean((window as any).Capacitor?.isNativePlatform?.()) ||
+    window.location.hostname === 'localhost' ||
+    window.location.protocol === 'capacitor:' ||
+    navigator.userAgent.includes('wv') ||
+    navigator.userAgent.includes('Capacitor'));
+
+const DEFAULT_INSPECTOR_USER: User = {
+  id: 'b9a5e915-584d-4e0f-9f53-c6bd41e937c9',
+  name: 'Ahmed Inspector',
+  email: 'inspector@mlrf.demo',
+  role: 'inspector',
+  status: 'active',
+};
+
 export default function App() {
   const { t, i18n } = useTranslation();
   const qc = useQueryClient();
-  const [token, setToken] = useState(localStorage.getItem('mlrf-token') ?? '');
-  const [role, setRole] = useState<Role>(
-    (localStorage.getItem('mlrf-role') as Role) || 'super_admin',
-  );
-  const [page, setPage] = useState<Page>('overview');
+  const [token, setToken] = useState(() => localStorage.getItem('mlrf-token') ?? '');
+  const [role, setRole] = useState<Role>(() => {
+    const saved = localStorage.getItem('mlrf-role') as Role;
+    if (saved) return saved;
+    return isMobileWatcher ? 'inspector' : 'super_admin';
+  });
+  const [page, setPage] = useState<Page>(() => (isMobileWatcher ? 'inspector' : 'overview'));
   const [year, setYear] = useState('year2_3');
   const [dark, setDark] = useState(false);
   const [sidebar, setSidebar] = useState(false);
@@ -200,7 +222,7 @@ export default function App() {
     enabled: !!token,
     retry: false,
   });
-  const currentUser = meQuery.data;
+  const currentUser = meQuery.data || (role === 'inspector' ? DEFAULT_INSPECTOR_USER : null);
   const analytics = useQuery({
     queryKey: ['analytics', year, role],
     queryFn: () => request<any>('/admin/analytics', 'get', undefined, { scenario: year }),
@@ -303,6 +325,14 @@ export default function App() {
       throw e;
     }
   };
+
+  useEffect(() => {
+    if (isMobileWatcher) {
+      if (!token || role !== 'inspector') {
+        void switchRole('inspector');
+      }
+    }
+  }, [token, role]);
   const signOut = () => {
     localStorage.removeItem('mlrf-token');
     localStorage.removeItem('mlrf-role');
@@ -394,7 +424,7 @@ export default function App() {
     );
   }
 
-  if (!token || !currentUser) {
+  if ((!token && !isMobileWatcher) || !currentUser) {
     if (currentPath === '/register') {
       return (
         <>
@@ -456,7 +486,21 @@ export default function App() {
                 <UserPlus size={16} />
                 <span>{t('landing.registerAction', { defaultValue: 'إنشاء حساب' })}</span>
               </button>
-              <button type="button" className="nav-login-btn" onClick={() => navigateTo('/login')}>
+              <button
+                type="button"
+                className="nav-login-btn"
+                onClick={() => {
+                  if (
+                    Capacitor.isNativePlatform() ||
+                    navigator.userAgent.includes('wv') ||
+                    window.location.hostname === 'localhost'
+                  ) {
+                    void switchRole('inspector');
+                  } else {
+                    navigateTo('/login');
+                  }
+                }}
+              >
                 <User size={16} />
                 <span>{t('landing.loginAction', { defaultValue: 'تسجيل الدخول' })}</span>
               </button>
@@ -497,7 +541,21 @@ export default function App() {
               <h1 className="hero-headline">{t('landing.heroTitle')}</h1>
               <p className="hero-lead">{t('landing.heroSubtitle')}</p>
 
-              <button type="button" className="hero-cta-btn" onClick={() => navigateTo('/login')}>
+              <button
+                type="button"
+                className="hero-cta-btn"
+                onClick={() => {
+                  if (
+                    Capacitor.isNativePlatform() ||
+                    navigator.userAgent.includes('wv') ||
+                    window.location.hostname === 'localhost'
+                  ) {
+                    void switchRole('inspector');
+                  } else {
+                    navigateTo('/login');
+                  }
+                }}
+              >
                 <User size={18} />
                 <span>{t('landing.loginAction', { defaultValue: 'تسجيل الدخول إلى المنصة' })}</span>
                 <ArrowRight size={18} />
@@ -769,64 +827,56 @@ export default function App() {
 
       {/* PORTAL 2: Inspector / Field Watcher Portal */}
       {isInspector && (
-        <div className="standalone-portal">
-          <header className="standalone-header">
-            <div className="standalone-brand">
-              <div className="brand-logo inspector-logo">
-                <ScanLine size={24} />
+        <div className="standalone-portal inspector-portal-app">
+          <header className="inspector-app-header">
+            <div className="inspector-app-brand">
+              <div className="inspector-app-logo">
+                <ScanLine size={22} />
               </div>
-              <div>
+              <div className="inspector-brand-text">
                 <h2>{t('inspectorPortal.title')}</h2>
-                <p>{t('inspectorPortal.subtitle')}</p>
+                <div className="inspector-badge-row">
+                  <span className="inspector-badge-pill">
+                    <ShieldCheck size={12} />
+                    <span>{currentUser.name}</span>
+                  </span>
+                  <span className="inspector-online-chip">
+                    <span className="online-dot" />
+                    <span>ميداني 🟢</span>
+                  </span>
+                </div>
               </div>
             </div>
 
-            <div className="portal-actions">
-              <div className="inspector-badge">
-                <ShieldCheck size={16} />
-                <span>
-                  {t('inspectorPortal.officerBadge')} ({currentUser.name})
-                </span>
-              </div>
+            <div className="inspector-header-controls">
               <button
                 type="button"
-                className="icon-btn"
+                className="icon-btn-compact"
                 title={t('shell.toggleTheme')}
                 onClick={() => setDark(!dark)}
               >
-                {dark ? <Sun size={18} /> : <Moon size={18} />}
+                {dark ? <Sun size={17} /> : <Moon size={17} />}
               </button>
               <button
                 type="button"
-                className="icon-btn"
+                className="icon-btn-compact"
                 title={t('shell.switchLanguage')}
                 onClick={() => void i18n.changeLanguage(i18n.language === 'en' ? 'ar' : 'en')}
               >
-                <Globe size={18} />
+                <Globe size={17} />
               </button>
-              <button type="button" className="notification-btn" title={t('shell.notifications')}>
-                <Bell size={18} />
-                <i />
-              </button>
-              <div
-                role="button"
-                tabIndex={0}
-                className="avatar-circle"
+              <button
+                type="button"
+                className="icon-btn-compact logout-btn"
                 onClick={signOut}
-                onKeyDown={(e) => e.key === 'Enter' && signOut()}
                 title={t('logout')}
               >
-                {currentUser.name
-                  .split(' ')
-                  .map((s) => s[0])
-                  .slice(0, 2)
-                  .join('')
-                  .toUpperCase()}
-              </div>
+                <LogOut size={17} />
+              </button>
             </div>
           </header>
 
-          <main className="standalone-main inspector-container">
+          <main className="inspector-app-main">
             <InspectorStandalone
               identifier={identifier}
               setIdentifier={setIdentifier}
@@ -2570,7 +2620,8 @@ function InspectorStandalone({
   onLogAction: (outcome: 'compliant' | 'notice' | 'violation') => Promise<void>;
   history: Array<{ id: string; identifier: string; outcome: string; time: string }>;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   const handleScenario = (id: string) => {
     setIdentifier(id);
@@ -2580,46 +2631,69 @@ function InspectorStandalone({
   return (
     <div className="inspector-panel-standalone">
       <div className="inspector-search-card">
-        <div className="page-title-row" style={{ marginBottom: 16 }}>
-          <div>
-            <div className="eyebrow">{t('inspectorPortal.badge')}</div>
-            <h1 style={{ fontSize: 24, margin: '4px 0 6px' }}>
-              {t('inspectorPortal.headerTitle')}
-            </h1>
-            <p className="muted" style={{ fontSize: 13, margin: 0 }}>
-              {t('inspectorPortal.headerSubtitle')}
-            </p>
+        {/* Mobile Camera Scan Hero Button */}
+        <div className="inspector-scan-hero-grid">
+          <button
+            type="button"
+            className="btn-camera-snap-hero"
+            onClick={() => setIsScannerOpen(true)}
+          >
+            <div className="scan-hero-icon-wrap">
+              <Camera size={26} />
+            </div>
+            <div className="scan-hero-text">
+              <span className="scan-hero-title">
+                {t('inspectorPortal.scanQrBtn')}
+              </span>
+              <span className="scan-hero-subtitle">
+                {i18n.language === 'ar'
+                  ? 'فتح الكاميرا لمسح رمز QR الخاص بوثيقة التغطية فورياً'
+                  : 'Open live camera to scan certificate QR code'}
+              </span>
+            </div>
+          </button>
+        </div>
+
+        {/* Divider for manual search */}
+        <div className="mobile-search-divider">
+          <span>{t('inspectorPortal.manualSearch')}</span>
+        </div>
+
+        <div className="inspector-search-row">
+          <div className="search-field-mobile">
+            <Search size={18} />
+            <input
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder={t('inspectorPortal.inputPlaceholder')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void onVerify();
+              }}
+            />
+            {identifier && (
+              <button
+                type="button"
+                className="input-clear-btn"
+                onClick={() => setIdentifier('')}
+                title="مسح"
+              >
+                <X size={15} />
+              </button>
+            )}
           </div>
+          <button className="btn-verify-mobile" onClick={() => void onVerify()}>
+            <ScanLine size={18} />
+            <span>{t('inspectorPortal.verifyButton')}</span>
+          </button>
         </div>
-
-        <label style={{ fontWeight: 600, fontSize: 13, marginBottom: 8, display: 'block' }}>
-          {t('inspectorPage.label')}
-        </label>
-        <div className="search-field" style={{ marginBottom: 12 }}>
-          <Search size={18} />
-          <input
-            value={identifier}
-            onChange={(e) => setIdentifier(e.target.value)}
-            placeholder={t('inspectorPortal.inputPlaceholder')}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') void onVerify();
-            }}
-          />
-        </div>
-
-        <button className="btn btn-primary full" onClick={() => void onVerify()}>
-          <ScanLine size={18} /> {t('inspectorPortal.verifyButton')}
-        </button>
 
         {/* 1-Click Presentation Scenarios */}
-        <div style={{ marginTop: 18 }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>
-            {t('inspectorPage.scenarios')}:
-          </span>
-          <div className="inspector-scenarios-row">
+        <div className="inspector-scenarios-container">
+          <span className="scenarios-label">{t('inspectorPage.scenarios')}:</span>
+          <div className="inspector-scenarios-scroll">
             <button
               type="button"
-              className="scenario-quick-btn"
+              className="scenario-pill-btn valid"
               onClick={() => handleScenario('demo-qr-valid-7f0c1a')}
             >
               <span className="scenario-dot valid-dot" />
@@ -2627,7 +2701,7 @@ function InspectorStandalone({
             </button>
             <button
               type="button"
-              className="scenario-quick-btn"
+              className="scenario-pill-btn expired"
               onClick={() => handleScenario('MLRF-EXPIRED-000001')}
             >
               <span className="scenario-dot expired-dot" />
@@ -2635,7 +2709,7 @@ function InspectorStandalone({
             </button>
             <button
               type="button"
-              className="scenario-quick-btn"
+              className="scenario-pill-btn invalid"
               onClick={() => handleScenario('unregistered-certificate')}
             >
               <span className="scenario-dot invalid-dot" />
@@ -2647,144 +2721,159 @@ function InspectorStandalone({
         {/* Verification Result Card */}
         {verifyResult && (
           <div
-            className={`verification-result ${verifyResult.result === 'VALID' ? 'valid' : verifyResult.result === 'EXPIRED' ? 'expired' : 'invalid'}`}
-            style={{ marginTop: 20 }}
+            className={`mobile-verification-card ${verifyResult.result === 'VALID' ? 'valid' : verifyResult.result === 'EXPIRED' ? 'expired' : 'invalid'}`}
           >
-            <div className="result-icon">
-              {verifyResult.result === 'VALID' ? (
-                <CheckCircle2 size={32} />
-              ) : verifyResult.result === 'EXPIRED' ? (
-                <AlertTriangle size={32} />
-              ) : (
-                <X size={32} />
-              )}
+            <div className="result-card-banner">
+              <div className="result-banner-icon">
+                {verifyResult.result === 'VALID' ? (
+                  <CheckCircle2 size={24} />
+                ) : verifyResult.result === 'EXPIRED' ? (
+                  <AlertTriangle size={24} />
+                ) : (
+                  <X size={24} />
+                )}
+              </div>
+              <div className="result-banner-status">
+                <strong>
+                  {verifyResult.result === 'VALID'
+                    ? t('inspectorPortal.statusValid')
+                    : verifyResult.result === 'EXPIRED'
+                      ? t('inspectorPortal.statusExpired')
+                      : verifyResult.result === 'INVALID'
+                        ? t('inspectorPortal.statusInvalid')
+                        : t('inspectorPage.error')}
+                </strong>
+                <p>
+                  {verifyResult.name ?? verifyResult.message ?? t('inspectorPage.noMatch')}
+                </p>
+              </div>
             </div>
-            <div>
-              <strong style={{ fontSize: 16 }}>
-                {verifyResult.result === 'VALID'
-                  ? t('inspectorPortal.statusValid')
-                  : verifyResult.result === 'EXPIRED'
-                    ? t('inspectorPortal.statusExpired')
-                    : verifyResult.result === 'INVALID'
-                      ? t('inspectorPortal.statusInvalid')
-                      : t('inspectorPage.error')}
-              </strong>
-              <p style={{ marginTop: 4, marginBottom: 4 }}>
-                {verifyResult.name ?? verifyResult.message ?? t('inspectorPage.noMatch')}
-              </p>
+
+            <div className="result-card-details">
               {verifyResult.specialty && (
-                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                  {t('subscriberPage.specialtyStep')}: <b>{verifyResult.specialty}</b>
+                <div className="result-detail-item">
+                  <span className="detail-key">{t('subscriberPage.specialtyStep')}:</span>
+                  <span className="detail-val">{verifyResult.specialty}</span>
                 </div>
               )}
               {verifyResult.certificateNumber && (
-                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                  {t('subscriberPage.certNumber')}: <b>{verifyResult.certificateNumber}</b>
+                <div className="result-detail-item">
+                  <span className="detail-key">{t('subscriberPage.certNumber')}:</span>
+                  <span className="detail-val">{verifyResult.certificateNumber}</span>
                 </div>
               )}
               {verifyResult.expiry && (
-                <small style={{ display: 'block', marginTop: 4 }}>
-                  {t('inspectorPage.expires', { date: formatDate(verifyResult.expiry) })}
-                </small>
+                <div className="result-detail-item">
+                  <span className="detail-key">{t('inspectorPage.expires', { date: '' }).replace(':', '').trim()}:</span>
+                  <span className="detail-val">{formatDate(verifyResult.expiry)}</span>
+                </div>
               )}
             </div>
-          </div>
-        )}
 
-        {/* Field Action Controls */}
-        {verifyResult && (
-          <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
-            <span
-              style={{
-                fontSize: 12,
-                fontWeight: 700,
-                color: 'var(--text-muted)',
-                textTransform: 'uppercase',
-              }}
-            >
-              {t('inspectorPortal.actionsHeading')}
-            </span>
-            <div className="inspector-actions-bar">
-              {verifyResult.result === 'VALID' && (
-                <button
-                  type="button"
-                  className="inspector-action-btn btn-compliant"
-                  onClick={() => void onLogAction('compliant')}
-                >
-                  <CheckCircle2 size={16} /> {t('inspectorPortal.logAction')}
-                </button>
-              )}
-              {verifyResult.result === 'EXPIRED' && (
-                <>
+            {/* Field Action Buttons */}
+            <div className="result-card-actions">
+              <span className="actions-header-label">{t('inspectorPortal.actionsHeading')}</span>
+              <div className="inspector-actions-grid">
+                {verifyResult.result === 'VALID' && (
                   <button
                     type="button"
-                    className="inspector-action-btn btn-notice"
-                    onClick={() => void onLogAction('notice')}
+                    className="mobile-action-btn btn-compliant"
+                    onClick={() => void onLogAction('compliant')}
                   >
-                    <Bell size={16} /> {t('inspectorPortal.sendNotice')}
+                    <CheckCircle2 size={18} />
+                    <span>{t('inspectorPortal.logAction')}</span>
                   </button>
+                )}
+                {verifyResult.result === 'EXPIRED' && (
+                  <>
+                    <button
+                      type="button"
+                      className="mobile-action-btn btn-notice"
+                      onClick={() => void onLogAction('notice')}
+                    >
+                      <Bell size={18} />
+                      <span>{t('inspectorPortal.sendNotice')}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="mobile-action-btn btn-violation"
+                      onClick={() => void onLogAction('violation')}
+                    >
+                      <AlertTriangle size={18} />
+                      <span>{t('inspectorPortal.reportViolation')}</span>
+                    </button>
+                  </>
+                )}
+                {verifyResult.result === 'INVALID' && (
                   <button
                     type="button"
-                    className="inspector-action-btn btn-violation"
+                    className="mobile-action-btn btn-violation"
                     onClick={() => void onLogAction('violation')}
                   >
-                    <AlertTriangle size={16} /> {t('inspectorPortal.reportViolation')}
+                    <AlertTriangle size={18} />
+                    <span>{t('inspectorPortal.reportViolation')}</span>
                   </button>
-                </>
-              )}
-              {verifyResult.result === 'INVALID' && (
-                <button
-                  type="button"
-                  className="inspector-action-btn btn-violation"
-                  onClick={() => void onLogAction('violation')}
-                >
-                  <AlertTriangle size={16} /> {t('inspectorPortal.reportViolation')}
-                </button>
-              )}
+                )}
+              </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Shift Inspection History */}
-      <div className="panel">
-        <div className="panel-heading">
+      {/* Shift Inspection History Panel */}
+      <div className="mobile-history-panel">
+        <div className="history-panel-header">
           <div>
-            <h3>{t('inspectorPortal.recentLogs')}</h3>
-            <p>{t('inspectorPage.scenariosBody')}</p>
+            <h3>{t('inspectorPortal.shiftHistory')}</h3>
+            <p>{t('inspectorPortal.recentLogs')}</p>
           </div>
+          <span className="history-badge-count">{history.length}</span>
         </div>
-        <table className="inspector-history-table">
-          <thead>
-            <tr>
-              <th>{t('subscriberPage.reference')}</th>
-              <th>{t('statusLabel')}</th>
-              <th>{t('recentActivity')}</th>
-            </tr>
-          </thead>
-          <tbody>
+
+        {history.length === 0 ? (
+          <div className="history-empty-card">
+            <Clock3 size={32} />
+            <p>{t('inspectorPortal.historyEmpty')}</p>
+          </div>
+        ) : (
+          <div className="mobile-history-cards">
             {history.map((item) => (
-              <tr key={item.id}>
-                <td>
-                  <strong>{item.identifier}</strong>
-                </td>
-                <td>
+              <div key={item.id} className="mobile-history-card">
+                <div className="history-card-top">
+                  <span className="history-id-text">{item.identifier}</span>
+                  <span className="history-time-text">{item.time}</span>
+                </div>
+                <div className="history-card-status">
                   <span
                     className={`status-chip ${item.outcome === 'compliant' ? 'success' : item.outcome === 'notice' ? 'warning' : 'danger'}`}
                   >
                     {item.outcome === 'compliant'
-                      ? t('inspectorPortal.statusValid')
+                      ? `✓ ${t('inspectorPortal.statusValid')}`
                       : item.outcome === 'notice'
-                        ? t('inspectorPortal.sendNotice')
-                        : t('inspectorPortal.reportViolation')}
+                        ? `✉ ${t('inspectorPortal.sendNotice')}`
+                        : `⚠ ${t('inspectorPortal.reportViolation')}`}
                   </span>
-                </td>
-                <td style={{ color: 'var(--text-muted)' }}>{item.time}</td>
-              </tr>
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+        )}
       </div>
+
+      {/* App Version Tag */}
+      <div className="inspector-footer-version">
+        <span>منظومة الضبطية القضائية والتفتيش الميداني</span> • <span>v1.1.0</span>
+      </div>
+
+      {/* Live Camera QR Scanner Modal */}
+      <CameraQrScanner
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScan={(scanned) => {
+          setIdentifier(scanned);
+          void onVerify(scanned);
+        }}
+      />
     </div>
   );
 }

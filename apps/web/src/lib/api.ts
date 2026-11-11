@@ -11,8 +11,10 @@ export class ApiError extends Error {
 
 export const api = axios.create({
   baseURL:
-    import.meta.env.VITE_API_URL ??
-    (import.meta.env.PROD ? '/api/v1' : 'http://localhost:4000/api/v1'),
+    import.meta.env.VITE_API_URL ||
+    (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && !window.location.origin.includes('capacitor')
+      ? '/api/v1'
+      : 'https://mlrf-platform-ykit.vercel.app/api/v1'),
   withCredentials: true,
 });
 api.interceptors.request.use((config) => {

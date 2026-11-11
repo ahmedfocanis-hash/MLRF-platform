@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MLRF Watcher</string>
+    <string name="title_activity_main">MLRF Watcher</string>
+    <string name="package_name">eg.gov.mlrf.watcher</string>
+    <string name="custom_url_scheme">eg.gov.mlrf.watcher</string>
+</resources>
